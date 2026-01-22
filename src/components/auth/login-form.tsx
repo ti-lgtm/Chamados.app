@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth as useFirebaseAuth, useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useRouter } from "next/navigation";
@@ -86,14 +86,20 @@ export function LoginForm() {
             createdAt: serverTimestamp(),
         };
 
-        setDoc(userDocRef, userData).catch((serverError) => {
-            const permissionError = new FirestorePermissionError({
+        try {
+            await setDoc(userDocRef, userData);
+        } catch (firestoreError) {
+             const permissionError = new FirestorePermissionError({
                 path: userDocRef.path,
                 operation: 'create',
                 requestResourceData: userData
             });
             errorEmitter.emit('permission-error', permissionError);
-        });
+            await signOut(auth);
+            setError("Falha ao configurar o perfil do usuário. Tente novamente.");
+            setLoading(false);
+            return;
+        }
       }
 
       toast({
@@ -130,14 +136,20 @@ export function LoginForm() {
             avatarUrl: user.photoURL
         };
 
-        setDoc(userDocRef, userData).catch((serverError) => {
-            const permissionError = new FirestorePermissionError({
+        try {
+            await setDoc(userDocRef, userData);
+        } catch (firestoreError) {
+             const permissionError = new FirestorePermissionError({
                 path: userDocRef.path,
                 operation: 'create',
                 requestResourceData: userData
             });
             errorEmitter.emit('permission-error', permissionError);
-        });
+            await signOut(auth);
+            setError("Falha ao configurar o perfil do usuário com Google. Tente novamente.");
+            setLoading(false);
+            return;
+        }
       }
       
       toast({
@@ -146,7 +158,11 @@ export function LoginForm() {
       });
       router.push("/dashboard");
     } catch (error: any) {
-        setError("Falha ao fazer login com o Google. Tente novamente.");
+        if (error.code === 'auth/popup-closed-by-user') {
+            // Don't show an error if the user just closes the popup.
+        } else {
+             setError("Falha ao fazer login com o Google. Tente novamente.");
+        }
     } finally {
         setLoading(false);
     }
