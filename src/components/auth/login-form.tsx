@@ -78,7 +78,7 @@ export function LoginForm() {
 
       if (!userDoc.exists()) {
          const userData = {
-            id: user.uid,
+            uid: user.uid,
             name: user.displayName || values.email.split('@')[0],
             email: user.email,
             role: "user" as const,
@@ -127,7 +127,7 @@ export function LoginForm() {
 
       if (!userDoc.exists()) {
         const userData = {
-            id: user.uid,
+            uid: user.uid,
             name: user.displayName,
             email: user.email,
             role: "user" as const,

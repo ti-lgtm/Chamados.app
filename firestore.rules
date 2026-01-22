@@ -98,7 +98,7 @@ service cloud.firestore {
      */
     function hasValidUserDataOnCreate(userId) {
       let data = request.resource.data;
-      return data.id == userId && data.role == 'user' && data.status == 'active';
+      return data.uid == userId && data.role == 'user' && data.status == 'active';
     }
 
     /**
@@ -107,7 +107,7 @@ service cloud.firestore {
     function hasImmutableUserFields() {
       let before = resource.data;
       let after = request.resource.data;
-      return after.id == before.id && after.email == before.email && after.createdAt == before.createdAt;
+      return after.uid == before.uid && after.email == before.email && after.createdAt == before.createdAt;
     }
 
     /**

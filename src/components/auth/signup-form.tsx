@@ -60,7 +60,7 @@ export function SignupForm() {
 
       const userDocRef = doc(db, "users", user.uid);
       const userData = {
-        id: user.uid,
+        uid: user.uid,
         name: values.name,
         email: values.email,
         role: "user", // Default role
