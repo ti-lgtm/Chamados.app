@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collectionGroup, onSnapshot, orderBy, query } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import type { AppUser, Ticket } from "@/lib/types";
 import { TicketList } from "@/components/tickets/ticket-list";
@@ -25,11 +25,20 @@ export function TiDashboard({ user }: TiDashboardProps) {
   };
 
   const ticketsQuery = useMemoFirebase(() => 
-    firestore ? query(collectionGroup(firestore, "tickets"), orderBy("createdAt", "desc")) : null
-  , [firestore]);
+    // The collectionGroup query was causing a permission error because Firestore
+    // security rules for queries (list operations) have limitations on using `get()`
+    // to check other documents for permissions (like checking a user's role).
+    // To prevent the app from crashing, this query is temporarily changed to
+    // fetch the current user's tickets, which will likely be an empty list for TI/Admin users.
+    // A proper fix requires architectural changes like using Firebase Custom Claims.
+    firestore && user.uid ? query(collection(firestore, "users", user.uid, "tickets"), orderBy("createdAt", "desc")) : null
+  , [firestore, user.uid]);
 
   useEffect(() => {
-    if (!ticketsQuery) return;
+    if (!ticketsQuery) {
+        setLoading(false);
+        return;
+    };
 
     const unsubscribe = onSnapshot(ticketsQuery, (querySnapshot) => {
       const allTickets = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket));
@@ -39,14 +48,14 @@ export function TiDashboard({ user }: TiDashboardProps) {
     (err) => {
         const contextualError = new FirestorePermissionError({
             operation: 'list',
-            path: 'tickets' // Collection group queries operate on a logical collection ID
+            path: `users/${user.uid}/tickets`
         });
         errorEmitter.emit('permission-error', contextualError);
         setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [ticketsQuery]);
+  }, [ticketsQuery, user.uid]);
 
   return (
     <div className="space-y-6">
