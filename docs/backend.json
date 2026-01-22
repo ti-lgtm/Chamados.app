@@ -62,6 +62,10 @@
           "type": "string",
           "description": "Unique identifier for the ticket."
         },
+        "ticketNumber": {
+          "type": "number",
+          "description": "A sequential number for the ticket."
+        },
         "title": {
           "type": "string",
           "description": "The title of the ticket."
@@ -94,6 +98,7 @@
       },
       "required": [
         "id",
+        "ticketNumber",
         "title",
         "description",
         "status",
@@ -172,6 +177,21 @@
         "ticketId",
         "rating",
         "createdAt"
+      ]
+    },
+    "Counter": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Counter",
+      "type": "object",
+      "description": "A generic counter for generating sequential IDs.",
+      "properties": {
+        "lastNumber": {
+          "type": "number",
+          "description": "The last number that was used."
+        }
+      },
+      "required": [
+        "lastNumber"
       ]
     }
   },
@@ -263,6 +283,22 @@
             {
               "name": "ratingId",
               "description": "The unique identifier of the rating."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/counters/{counterId}",
+        "definition": {
+          "entityName": "Counter",
+          "schema": {
+            "$ref": "#/backend/entities/Counter"
+          },
+          "description": "Stores global counters for things like ticket numbers. The 'counterId' would be 'tickets', for example.",
+          "params": [
+            {
+              "name": "counterId",
+              "description": "The name of the counter (e.g., 'tickets')."
             }
           ]
         }

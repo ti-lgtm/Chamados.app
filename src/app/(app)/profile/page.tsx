@@ -50,10 +50,15 @@ export default function ProfilePage() {
     setIsSubmitting(true);
     const userRef = doc(firestore, 'users', user.uid);
 
-    const updateData: {name: string, role: UserRole} = {
+    // Only include the role in the update if the current user is an admin.
+    const updateData: { name: string; role?: UserRole } = {
         name: values.name,
-        role: values.role
     };
+
+    if (user.role === 'admin') {
+        updateData.role = values.role;
+    }
+
 
     updateDoc(userRef, updateData)
         .then(() => {
@@ -91,7 +96,7 @@ export default function ProfilePage() {
         <CardHeader>
           <CardTitle className="font-headline text-2xl">Seu Perfil</CardTitle>
           <CardDescription>
-            Atualize suas informações. Após se promover a Admin, esta opção poderá ser restrita novamente por segurança.
+            Atualize suas informações de perfil. Apenas administradores podem alterar funções.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -116,7 +121,7 @@ export default function ProfilePage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Função</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={user.role !== 'admin'}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />

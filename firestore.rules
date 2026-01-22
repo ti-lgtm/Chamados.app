@@ -226,5 +226,15 @@ service cloud.firestore {
       allow update: if resource != null && isOwner(userId) && hasImmutableRatingFields();
       allow delete: if resource != null && isOwner(userId);
     }
+    
+    /**
+     * @description Controls access to global counters for sequential number generation.
+     * @path /counters/{counterId}
+     * @allow (read, write) Any authenticated user can read and write to a counter. This is necessary for the client-side transaction that generates ticket numbers. The transactional nature of the update provides safety against race conditions.
+     * @principle Enables client-side generation of sequential numbers.
+     */
+    match /counters/{counterId} {
+      allow read, write: if isSignedIn();
+    }
   }
 }

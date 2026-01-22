@@ -14,6 +14,7 @@ export interface AppUser {
 
 export interface Ticket {
   id: string;
+  ticketNumber: number;
   title: string;
   description: string;
   status: 'open' | 'in_progress' | 'resolved';

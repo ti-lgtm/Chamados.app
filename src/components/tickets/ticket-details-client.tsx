@@ -97,7 +97,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                 <Card>
                     <CardHeader>
                         <div className="flex justify-between items-start">
-                             <CardTitle className="font-headline text-2xl">{ticket.title}</CardTitle>
+                             <CardTitle className="font-headline text-2xl">{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</CardTitle>
                              <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="whitespace-nowrap">
                                 {statusMap[ticket.status]?.label || ticket.status}
                              </Badge>

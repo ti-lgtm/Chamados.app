@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, serverTimestamp, runTransaction, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useFirestore, useStorage } from "@/firebase";
 import { useAuth } from "@/hooks/useAuth";
@@ -58,7 +58,7 @@ export function NewTicketForm() {
   const fileRef = form.register("attachments");
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
+    if (!user || !db) {
       toast({
         title: "Erro de autenticação",
         description: "Você precisa estar logado para criar um chamado.",
@@ -79,31 +79,48 @@ export function NewTicketForm() {
             }
         }
 
-      const docRef = await addDoc(collection(db, "users", user.uid, "tickets"), {
-        title: values.title,
-        description: values.description,
-        priority: values.priority,
-        status: "open",
-        userId: user.uid,
-        assignedTo: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        attachments: attachmentUrls,
-      });
+        const newTicketData = await runTransaction(db, async (transaction) => {
+            const counterRef = doc(db, 'counters', 'tickets');
+            const counterDoc = await transaction.get(counterRef);
+            
+            const newNumber = (counterDoc.data()?.lastNumber || 0) + 1;
+            
+            transaction.set(counterRef, { lastNumber: newNumber }, { merge: true });
+
+            const newTicketRef = doc(collection(db, "users", user.uid, "tickets"));
+            
+            const ticketPayload = {
+              ticketNumber: newNumber,
+              title: values.title,
+              description: values.description,
+              priority: values.priority,
+              status: "open",
+              userId: user.uid,
+              assignedTo: null,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+              attachments: attachmentUrls,
+            };
+
+            transaction.set(newTicketRef, ticketPayload);
+
+            return { id: newTicketRef.id, number: newNumber };
+        });
 
       toast({
-        title: "Chamado criado com sucesso!",
+        title: `Chamado #${newTicketData.number} criado com sucesso!`,
         description: "Sua solicitação foi enviada para a equipe de TI.",
       });
-      router.push(`/tickets/${docRef.id}`);
+      router.push(`/tickets/${newTicketData.id}`);
+
     } catch (error) {
       setLoading(false);
       toast({
         title: "Erro ao criar chamado",
-        description: "Ocorreu um erro. Por favor, tente novamente.",
+        description: "Ocorreu um erro ao criar o número do chamado. Tente novamente.",
         variant: "destructive",
       });
-      console.error("Error adding document: ", error);
+      console.error("Error in transaction: ", error);
     }
   }
 
