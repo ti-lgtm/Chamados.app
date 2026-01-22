@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { useFirestore, useMemoFirebase } from "@/firebase";
+import {
+  doc,
+  getDoc,
+  getDocs,
+  collectionGroup,
+  query,
+  where,
+  limit,
+  documentId,
+} from "firebase/firestore";
+import { useFirestore } from "@/firebase";
 import type { Ticket, AppUser } from "@/lib/types";
 import { notFound } from "next/navigation";
 import { TicketDetailsClient } from "@/components/tickets/ticket-details-client";
@@ -13,13 +22,22 @@ async function getTicketData(
   ticketId: string
 ): Promise<Ticket | null> {
   if (!firestore) return null;
-  const ticketRef = doc(firestore, "tickets", ticketId);
-  const ticketSnap = await getDoc(ticketRef);
 
-  if (!ticketSnap.exists()) {
+  // Use a collection group query to find the ticket by its ID across all users
+  const ticketsCollectionGroup = collectionGroup(firestore, "tickets");
+  const q = query(
+    ticketsCollectionGroup,
+    where(documentId(), "==", ticketId),
+    limit(1)
+  );
+
+  const ticketSnapshots = await getDocs(q);
+
+  if (ticketSnapshots.empty) {
     return null;
   }
 
+  const ticketSnap = ticketSnapshots.docs[0];
   const ticketData = ticketSnap.data();
 
   // Fetch user data

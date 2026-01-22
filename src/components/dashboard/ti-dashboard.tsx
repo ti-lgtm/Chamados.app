@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
-import { useFirestore, useMemoFirebase } from "@/firebase";
+import { collectionGroup, onSnapshot, orderBy, query } from "firebase/firestore";
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import type { AppUser, Ticket } from "@/lib/types";
 import { TicketList } from "@/components/tickets/ticket-list";
 import { StatsCard } from "./stats-card";
@@ -25,7 +25,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
   };
 
   const ticketsQuery = useMemoFirebase(() => 
-    firestore ? query(collection(firestore, "tickets"), orderBy("createdAt", "desc")) : null
+    firestore ? query(collectionGroup(firestore, "tickets"), orderBy("createdAt", "desc")) : null
   , [firestore]);
 
   useEffect(() => {
@@ -35,6 +35,14 @@ export function TiDashboard({ user }: TiDashboardProps) {
       const allTickets = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket));
       setTickets(allTickets);
       setLoading(false);
+    },
+    (err) => {
+        const contextualError = new FirestorePermissionError({
+            operation: 'list',
+            path: 'tickets' // Collection group queries operate on a logical collection ID
+        });
+        errorEmitter.emit('permission-error', contextualError);
+        setLoading(false);
     });
 
     return () => unsubscribe();

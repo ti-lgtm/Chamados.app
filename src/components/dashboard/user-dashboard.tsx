@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import { useFirestore, useMemoFirebase } from "@/firebase";
 import type { AppUser, Ticket } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
   const ticketsQuery = useMemoFirebase(() => 
     firestore && user.uid
       ? query(
-          collection(firestore, "tickets"),
-          where("userId", "==", user.uid),
+          collection(firestore, "users", user.uid, "tickets"),
           orderBy("createdAt", "desc")
         )
       : null,

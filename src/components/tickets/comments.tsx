@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, getDoc, doc } from "firebase/firestore";
-import { useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, getDoc, doc } from "firebase/firestore";
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import type { AppUser, Comment as CommentType } from "@/lib/types";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -20,6 +20,7 @@ import { Skeleton } from "../ui/skeleton";
 
 interface CommentsProps {
     ticketId: string;
+    ticketCreatorId: string;
     currentUser: AppUser | null;
 }
 
@@ -29,7 +30,7 @@ const commentSchema = z.object({
 
 const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
-export function Comments({ ticketId, currentUser }: CommentsProps) {
+export function Comments({ ticketId, ticketCreatorId, currentUser }: CommentsProps) {
     const firestore = useFirestore();
     const [comments, setComments] = useState<(CommentType & { user?: AppUser })[]>([]);
     const [loading, setLoading] = useState(true);
@@ -42,8 +43,8 @@ export function Comments({ ticketId, currentUser }: CommentsProps) {
     });
     
     const commentsQuery = useMemoFirebase(() => 
-        firestore ? query(collection(firestore, "comments"), where("ticketId", "==", ticketId), orderBy("createdAt", "asc")) : null
-    , [firestore, ticketId]);
+        firestore ? query(collection(firestore, "users", ticketCreatorId, "tickets", ticketId, "comments"), orderBy("createdAt", "asc")) : null
+    , [firestore, ticketCreatorId, ticketId]);
 
     useEffect(() => {
         if (!commentsQuery || !firestore) return;
@@ -59,27 +60,47 @@ export function Comments({ ticketId, currentUser }: CommentsProps) {
             );
             setComments(commentsData);
             setLoading(false);
+        },
+        (err) => {
+            const contextualError = new FirestorePermissionError({
+                operation: 'list',
+                path: `users/${ticketCreatorId}/tickets/${ticketId}/comments`
+            });
+            errorEmitter.emit('permission-error', contextualError);
+            setLoading(false);
         });
 
         return () => unsubscribe();
-    }, [commentsQuery, firestore]);
+    }, [commentsQuery, firestore, ticketCreatorId, ticketId]);
 
     async function onSubmit(values: z.infer<typeof commentSchema>) {
         if (!currentUser || !firestore) return;
         setIsSubmitting(true);
-        try {
-            await addDoc(collection(firestore, "comments"), {
-                ticketId,
-                userId: currentUser.uid,
-                message: values.message,
-                createdAt: serverTimestamp(),
+        const commentData = {
+            ticketId,
+            userId: currentUser.uid,
+            message: values.message,
+            createdAt: serverTimestamp(),
+        };
+
+        const commentsCollectionRef = collection(firestore, "users", ticketCreatorId, "tickets", ticketId, "comments");
+
+        addDoc(commentsCollectionRef, commentData)
+            .then(() => {
+                form.reset();
+            })
+            .catch((error) => {
+                toast({ title: "Erro ao enviar comentário", variant: "destructive" });
+                const contextualError = new FirestorePermissionError({
+                    operation: 'create',
+                    path: `users/${ticketCreatorId}/tickets/${ticketId}/comments`,
+                    requestResourceData: commentData
+                });
+                errorEmitter.emit('permission-error', contextualError);
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
-            form.reset();
-        } catch (error) {
-            toast({ title: "Erro ao enviar comentário", variant: "destructive" });
-        } finally {
-            setIsSubmitting(false);
-        }
     }
 
     return (

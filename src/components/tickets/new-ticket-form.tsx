@@ -79,7 +79,7 @@ export function NewTicketForm() {
             }
         }
 
-      const docRef = await addDoc(collection(db, "tickets"), {
+      const docRef = await addDoc(collection(db, "users", user.uid, "tickets"), {
         title: values.title,
         description: values.description,
         priority: values.priority,

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
-import { useFirestore, useMemoFirebase } from "@/firebase";
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import type { Ticket, AppUser } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { format, formatDistanceToNow } from "date-fns";
@@ -39,35 +39,52 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     const { toast } = useToast();
     const [ticket, setTicket] = useState<Ticket>(initialTicket);
     const [isUpdating, setIsUpdating] = useState(false);
-    const [allUsers, setAllUsers] = useState<AppUser[]>([]);
 
     const ticketRef = useMemoFirebase(() => 
-        firestore ? doc(firestore, "tickets", initialTicket.id) : null
-    , [firestore, initialTicket.id]);
+        firestore ? doc(firestore, "users", initialTicket.userId, "tickets", initialTicket.id) : null
+    , [firestore, initialTicket.userId, initialTicket.id]);
 
     useEffect(() => {
         if (!ticketRef) return;
         const unsub = onSnapshot(ticketRef, (doc) => {
-            setTicket({ id: doc.id, ...doc.data() } as Ticket);
+            if(doc.exists()) {
+                setTicket({ id: doc.id, ...doc.data() } as Ticket);
+            }
+        },
+        (err) => {
+            const contextualError = new FirestorePermissionError({
+                operation: 'get',
+                path: ticketRef.path
+            });
+            errorEmitter.emit('permission-error', contextualError);
         });
         return () => unsub();
     }, [ticketRef]);
 
     const handleStatusChange = async (newStatus: "open" | "in_progress" | "resolved") => {
+        if (!ticketRef) return;
         setIsUpdating(true);
-        try {
-            if (!ticketRef) return;
-            await updateDoc(ticketRef, {
-                status: newStatus,
-                updatedAt: serverTimestamp(),
-            });
+        const updateData = {
+            status: newStatus,
+            updatedAt: serverTimestamp(),
+        };
+
+        updateDoc(ticketRef, updateData)
+        .then(() => {
             toast({ title: "Status do chamado atualizado com sucesso!" });
-        } catch (error) {
+        })
+        .catch(error => {
             toast({ title: "Erro ao atualizar status", variant: "destructive" });
-            console.error(error);
-        } finally {
+             const contextualError = new FirestorePermissionError({
+                operation: 'update',
+                path: ticketRef.path,
+                requestResourceData: updateData,
+            });
+            errorEmitter.emit('permission-error', contextualError);
+        })
+        .finally(() => {
             setIsUpdating(false);
-        }
+        });
     };
 
     const canEdit = user?.role === 'ti' || user?.role === 'admin';
@@ -107,7 +124,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         )}
                     </CardContent>
                 </Card>
-                <Comments ticketId={ticket.id} currentUser={user} />
+                <Comments ticketId={ticket.id} ticketCreatorId={ticket.userId} currentUser={user} />
             </div>
 
             <div className="lg:col-span-1 space-y-6">

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, addDoc, query, where, onSnapshot, serverTimestamp, limit } from "firebase/firestore";
-import { useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, addDoc, query, onSnapshot, serverTimestamp, limit } from "firebase/firestore";
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import type { AppUser, Rating } from "@/lib/types";
 import { Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,9 +29,7 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
 
     const ratingQuery = useMemoFirebase(() =>
         firestore ? query(
-            collection(firestore, "ratings"),
-            where("ticketId", "==", ticketId),
-            where("userId", "==", ticketCreatorId),
+            collection(firestore, "users", ticketCreatorId, "tickets", ticketId, "ratings"),
             limit(1)
         ) : null
     , [firestore, ticketId, ticketCreatorId]);
@@ -46,9 +44,17 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
                 setRating(ratingData.rating);
             }
             setLoading(false);
+        },
+        (err) => {
+            const contextualError = new FirestorePermissionError({
+                operation: 'list',
+                path: `users/${ticketCreatorId}/tickets/${ticketId}/ratings`
+            });
+            errorEmitter.emit('permission-error', contextualError);
+            setLoading(false);
         });
         return () => unsubscribe();
-    }, [ratingQuery]);
+    }, [ratingQuery, ticketCreatorId, ticketId]);
 
     const handleSubmit = async () => {
         if (rating === 0) {
@@ -58,20 +64,33 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
         if (!currentUser || !firestore) return;
 
         setIsSubmitting(true);
-        try {
-            await addDoc(collection(firestore, "ratings"), {
-                ticketId,
-                userId: currentUser.uid,
-                rating,
-                comment,
-                createdAt: serverTimestamp(),
+
+        const ratingData = {
+            ticketId,
+            userId: currentUser.uid,
+            rating,
+            comment,
+            createdAt: serverTimestamp(),
+        };
+
+        const ratingCollectionRef = collection(firestore, "users", ticketCreatorId, "tickets", ticketId, "ratings");
+
+        addDoc(ratingCollectionRef, ratingData)
+            .then(() => {
+                toast({ title: "Avaliação enviada com sucesso!" });
+            })
+            .catch((error) => {
+                toast({ title: "Erro ao enviar avaliação", variant: "destructive" });
+                const contextualError = new FirestorePermissionError({
+                    operation: 'create',
+                    path: `users/${ticketCreatorId}/tickets/${ticketId}/ratings`,
+                    requestResourceData: ratingData
+                });
+                errorEmitter.emit('permission-error', contextualError);
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
-            toast({ title: "Avaliação enviada com sucesso!" });
-        } catch (error) {
-            toast({ title: "Erro ao enviar avaliação", variant: "destructive" });
-        } finally {
-            setIsSubmitting(false);
-        }
     };
 
     if (loading) {
