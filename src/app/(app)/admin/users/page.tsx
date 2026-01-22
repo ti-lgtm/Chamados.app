@@ -15,13 +15,16 @@ export default function AdminUsersPage() {
     const { user: currentUser, loading: authLoading } = useAuth();
     const firestore = useFirestore();
 
-    const usersQuery = useMemoFirebase(() =>
-        firestore ? query(collection(firestore, "users"), orderBy("createdAt", "desc")) : null
-    , [firestore]);
+    const usersQuery = useMemoFirebase(() => {
+        if (firestore && currentUser?.role === 'admin') {
+            return query(collection(firestore, "users"), orderBy("createdAt", "desc"));
+        }
+        return null;
+    }, [firestore, currentUser]);
 
     const { data: users, isLoading: usersLoading, error: usersError } = useCollection<AppUser>(usersQuery);
 
-    const isLoading = authLoading || usersLoading;
+    const isLoading = authLoading || (currentUser?.role === 'admin' && usersLoading);
 
     if (isLoading) {
         return (
