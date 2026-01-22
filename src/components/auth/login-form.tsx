@@ -4,13 +4,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth as useFirebaseAuth, useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Form,
   FormControl,
@@ -23,6 +24,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
@@ -43,6 +54,9 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -138,6 +152,28 @@ export function LoginForm() {
     }
   }
 
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+        toast({ title: "Por favor, insira seu e-mail.", variant: "destructive" });
+        return;
+    }
+    setIsSendingReset(true);
+    try {
+        await sendPasswordResetEmail(auth, resetEmail);
+        toast({ title: "E-mail de redefinição de senha enviado!", description: "Verifique sua caixa de entrada." });
+        setIsResetDialogOpen(false);
+        setResetEmail("");
+    } catch (error: any) {
+        if (error.code === 'auth/user-not-found') {
+             toast({ title: "Nenhum usuário encontrado com este e-mail.", variant: "destructive" });
+        } else {
+            toast({ title: "Erro ao enviar e-mail de redefinição.", variant: "destructive" });
+        }
+    } finally {
+        setIsSendingReset(false);
+    }
+}
+
   return (
     <div className="space-y-6">
       <Form {...form}>
@@ -166,7 +202,12 @@ export function LoginForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Senha</FormLabel>
+                <div className="flex items-center justify-between">
+                    <FormLabel>Senha</FormLabel>
+                    <Button variant="link" type="button" className="p-0 h-auto text-sm" onClick={() => setIsResetDialogOpen(true)}>
+                        Esqueceu a senha?
+                    </Button>
+                </div>
                 <FormControl>
                     <div className="relative">
                         <Input type={showPassword ? "text" : "password"} placeholder="Sua senha" {...field} />
@@ -204,6 +245,28 @@ export function LoginForm() {
           Cadastre-se
         </Link>
       </p>
+
+        <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Redefinir Senha</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Digite seu endereço de e-mail abaixo e enviaremos um link para redefinir sua senha.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-2">
+                    <Label htmlFor="reset-email">E-mail</Label>
+                    <Input id="reset-email" placeholder="seu@email.com" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
+                </div>
+                <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handlePasswordReset} disabled={isSendingReset}>
+                    {isSendingReset && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Enviar Link
+                </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
