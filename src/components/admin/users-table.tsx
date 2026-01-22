@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserActions } from "./user-actions";
 import { format } from 'date-fns';
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+import { WithId } from "@/firebase";
 
 const getInitials = (name: string) => {
     if (!name) return '';
@@ -24,7 +25,7 @@ const statusMap: { [key: string]: { label: string; className: string } } = {
 };
 
 
-export function UsersTable({ users }: { users: AppUser[] }) {
+export function UsersTable({ users }: { users: WithId<AppUser>[] }) {
     return (
         <div className="rounded-md border">
             <Table>
@@ -45,7 +46,7 @@ export function UsersTable({ users }: { users: AppUser[] }) {
                         </TableRow>
                     )}
                     {users.map((user) => (
-                        <TableRow key={user.uid}>
+                        <TableRow key={user.id}>
                             <TableCell className="font-medium">
                                 <div className="flex items-center gap-3">
                                     <Avatar className="h-8 w-8">

@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState } from "react";
 import type { AppUser, UserRole } from "@/lib/types";
 import { doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { useFirestore, useAuth as useFirebaseAuth, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { useFirestore, useAuth as useFirebaseAuth, errorEmitter, FirestorePermissionError, WithId } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 import {
@@ -34,7 +33,7 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Loader2 } from "lucide-react";
 
 interface UserActionsProps {
-  user: AppUser;
+  user: WithId<AppUser>;
 }
 
 export function UserActions({ user }: UserActionsProps) {
@@ -46,7 +45,7 @@ export function UserActions({ user }: UserActionsProps) {
 
     const handleUpdateRole = (role: UserRole) => {
         setIsSubmitting(true);
-        const userRef = doc(firestore, "users", user.uid);
+        const userRef = doc(firestore, "users", user.id);
         const updateData = { role };
 
         updateDoc(userRef, updateData)
@@ -65,7 +64,7 @@ export function UserActions({ user }: UserActionsProps) {
 
     const handleUpdateStatus = (status: 'active' | 'suspended') => {
         setIsSubmitting(true);
-        const userRef = doc(firestore, "users", user.uid);
+        const userRef = doc(firestore, "users", user.id);
         const updateData = { status };
         
         updateDoc(userRef, updateData)
@@ -92,7 +91,7 @@ export function UserActions({ user }: UserActionsProps) {
 
     const handleDeleteUser = () => {
         setIsSubmitting(true);
-        const userRef = doc(firestore, "users", user.uid);
+        const userRef = doc(firestore, "users", user.id);
 
         deleteDoc(userRef)
             .then(() => {
