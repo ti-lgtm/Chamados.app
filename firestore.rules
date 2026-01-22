@@ -107,7 +107,7 @@ service cloud.firestore {
     function hasImmutableUserFields() {
       let before = resource.data;
       let after = request.resource.data;
-      return after.id == before.id && after.email == before.email && after.role == before.role && after.createdAt == before.createdAt && after.status == before.status;
+      return after.id == before.id && after.email == before.email && after.createdAt == before.createdAt;
     }
 
     /**

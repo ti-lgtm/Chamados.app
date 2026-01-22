@@ -103,7 +103,9 @@ export function AppHeader() {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>{user?.name}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem disabled>Perfil</DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/profile">Perfil</Link>
+          </DropdownMenuItem>
           <DropdownMenuItem disabled>Configurações</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>Sair</DropdownMenuItem>
