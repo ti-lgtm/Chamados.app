@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { useAuth as useFirebaseAuth } from "@/firebase";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { useAuth as useFirebaseAuth, useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export function LoginForm() {
   const router = useRouter();
   const auth = useFirebaseAuth();
+  const db = useFirestore();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -71,15 +73,38 @@ export function LoginForm() {
   async function handleGoogleSignIn() {
     setLoading(true);
     setError(null);
+    const provider = new GoogleAuthProvider();
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        const userData = {
+            id: user.uid,
+            name: user.displayName,
+            email: user.email,
+            role: "user" as const,
+            createdAt: serverTimestamp(),
+            avatarUrl: user.photoURL
+        };
+
+        setDoc(userDocRef, userData).catch((serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'create',
+                requestResourceData: userData
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+      }
+      
       toast({
         title: "Login com Google bem-sucedido!",
         description: "Redirecionando para o painel.",
       });
-      // Logic to create user in Firestore if they don't exist would be here
-      // But typically this is handled in a backend or cloud function on user creation
       router.push("/dashboard");
     } catch (error: any) {
         setError("Falha ao fazer login com o Google. Tente novamente.");

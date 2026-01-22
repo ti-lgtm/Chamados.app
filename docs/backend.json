@@ -28,6 +28,11 @@
           "type": "string",
           "description": "Timestamp of when the user was created.",
           "format": "date-time"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL of the user's avatar image.",
+          "format": "uri"
         }
       },
       "required": [

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { useAuth as useFirebaseAuth, useFirestore } from "@/firebase";
+import { useAuth as useFirebaseAuth, useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -54,12 +54,23 @@ export function SignupForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      // Create user document in Firestore
-      await setDoc(doc(db, "users", user.uid), {
+      const userDocRef = doc(db, "users", user.uid);
+      const userData = {
+        id: user.uid,
         name: values.name,
         email: values.email,
         role: "user", // Default role
         createdAt: serverTimestamp(),
+      };
+
+      // Create user document in Firestore
+      setDoc(userDocRef, userData).catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'create',
+          requestResourceData: userData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
       });
 
       toast({
