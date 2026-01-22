@@ -1,0 +1,45 @@
+import type { Timestamp } from 'firebase/firestore';
+
+export type UserRole = 'user' | 'ti' | 'admin';
+
+export interface AppUser {
+  uid: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: Timestamp;
+  avatarUrl?: string;
+}
+
+export interface Ticket {
+  id: string;
+  title: string;
+  description: string;
+  status: 'open' | 'in_progress' | 'resolved';
+  priority: 'low' | 'normal' | 'high';
+  userId: string;
+  user?: AppUser;
+  assignedTo: string | null;
+  assignedUser?: AppUser | null;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  attachments?: string[];
+}
+
+export interface Comment {
+  id: string;
+  ticketId: string;
+  userId: string;
+  user?: AppUser;
+  message: string;
+  createdAt: Timestamp;
+}
+
+export interface Rating {
+  id: string;
+  ticketId: string;
+  userId: string;
+  rating: number;
+  comment?: string;
+  createdAt: Timestamp;
+}

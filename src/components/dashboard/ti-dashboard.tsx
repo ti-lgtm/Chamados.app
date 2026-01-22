@@ -1,0 +1,65 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { AppUser, Ticket } from "@/lib/types";
+import { TicketList } from "@/components/tickets/ticket-list";
+import { StatsCard } from "./stats-card";
+import { Circle, GanttChart, CheckCircle } from "lucide-react";
+import { Skeleton } from "../ui/skeleton";
+
+interface TiDashboardProps {
+  user: AppUser;
+}
+
+export function TiDashboard({ user }: TiDashboardProps) {
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const stats = {
+    open: tickets.filter(t => t.status === 'open').length,
+    inProgress: tickets.filter(t => t.status === 'in_progress').length,
+    resolved: tickets.filter(t => t.status === 'resolved').length,
+  };
+
+  useEffect(() => {
+    const q = query(collection(db, "tickets"), orderBy("createdAt", "desc"));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const allTickets = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket));
+      setTickets(allTickets);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-headline font-bold">Painel de Controle TI</h1>
+        <p className="text-muted-foreground">Visão geral de todos os chamados do sistema.</p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatsCard title="Abertos" value={loading ? <Skeleton className="h-8 w-12"/> : stats.open} icon={Circle} />
+        <StatsCard title="Em Atendimento" value={loading ? <Skeleton className="h-8 w-12"/> : stats.inProgress} icon={GanttChart} />
+        <StatsCard title="Resolvidos" value={loading ? <Skeleton className="h-8 w-12"/> : stats.resolved} icon={CheckCircle} />
+      </div>
+
+      <div>
+        <h2 className="text-xl font-headline font-semibold mb-4">Todos os Chamados</h2>
+        {loading ? (
+             <div className="space-y-4">
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+            </div>
+        ) : (
+            <TicketList tickets={tickets} />
+        )}
+      </div>
+    </div>
+  );
+}
