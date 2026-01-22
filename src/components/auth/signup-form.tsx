@@ -84,7 +84,6 @@ export function SignupForm() {
       } else {
         setError("Ocorreu um erro ao criar a conta. Tente novamente.");
       }
-      console.error("Signup error:", error);
     } finally {
       setLoading(false);
     }
