@@ -58,54 +58,68 @@ export function NewTicketForm() {
   const fileRef = form.register("attachments");
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !db) {
+    if (!user || !db || !storage) {
       toast({
-        title: "Erro de autenticação",
-        description: "Você precisa estar logado para criar um chamado.",
+        title: "Erro de autenticação ou configuração",
+        description: "Você precisa estar logado e o Firebase deve estar configurado corretamente.",
         variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
+
     try {
-        let attachmentUrls: string[] = [];
-        if (values.attachments && values.attachments.length > 0) {
-            for (const file of Array.from(values.attachments)) {
-                const storageRef = ref(storage, `attachments/${user.uid}/${Date.now()}_${file.name}`);
-                const snapshot = await uploadBytes(storageRef, file);
-                const downloadUrl = await getDownloadURL(snapshot.ref);
-                attachmentUrls.push(downloadUrl);
-            }
+      // 1. Handle attachments upload first
+      let attachmentUrls: string[] = [];
+      if (values.attachments && values.attachments.length > 0) {
+        try {
+          for (const file of Array.from(values.attachments)) {
+            const storageRef = ref(storage, `attachments/${user.uid}/${Date.now()}_${file.name}`);
+            const snapshot = await uploadBytes(storageRef, file);
+            const downloadUrl = await getDownloadURL(snapshot.ref);
+            attachmentUrls.push(downloadUrl);
+          }
+        } catch (uploadError) {
+          console.error("Error uploading attachments: ", uploadError);
+          toast({
+            title: "Erro no upload do anexo",
+            description: "Não foi possível enviar seus arquivos. Tente novamente.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return; // Stop if upload fails
         }
+      }
 
-        const newTicketData = await runTransaction(db, async (transaction) => {
-            const counterRef = doc(db, 'counters', 'tickets');
-            const counterDoc = await transaction.get(counterRef);
-            
-            const newNumber = (counterDoc.data()?.lastNumber || 0) + 1;
-            
-            transaction.set(counterRef, { lastNumber: newNumber }, { merge: true });
+      // 2. Proceed with Firestore transaction
+      const newTicketData = await runTransaction(db, async (transaction) => {
+        const counterRef = doc(db, 'counters', 'tickets');
+        const counterDoc = await transaction.get(counterRef);
+        
+        const newNumber = (counterDoc.data()?.lastNumber || 0) + 1;
+        
+        transaction.set(counterRef, { lastNumber: newNumber }, { merge: true });
 
-            const newTicketRef = doc(collection(db, "users", user.uid, "tickets"));
-            
-            const ticketPayload = {
-              ticketNumber: newNumber,
-              title: values.title,
-              description: values.description,
-              priority: values.priority,
-              status: "open",
-              userId: user.uid,
-              assignedTo: null,
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-              attachments: attachmentUrls,
-            };
+        const newTicketRef = doc(collection(db, "users", user.uid, "tickets"));
+        
+        const ticketPayload = {
+          ticketNumber: newNumber,
+          title: values.title,
+          description: values.description,
+          priority: values.priority,
+          status: "open" as const,
+          userId: user.uid,
+          assignedTo: null,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          attachments: attachmentUrls,
+        };
 
-            transaction.set(newTicketRef, ticketPayload);
+        transaction.set(newTicketRef, ticketPayload);
 
-            return { id: newTicketRef.id, number: newNumber };
-        });
+        return { id: newTicketRef.id, number: newNumber };
+      });
 
       toast({
         title: `Chamado #${newTicketData.number} criado com sucesso!`,
@@ -113,14 +127,15 @@ export function NewTicketForm() {
       });
       router.push(`/tickets/${newTicketData.id}`);
 
-    } catch (error) {
-      setLoading(false);
+    } catch (transactionError) {
+      console.error("Error in Firestore transaction: ", transactionError);
       toast({
         title: "Erro ao criar chamado",
-        description: "Ocorreu um erro ao criar o número do chamado. Tente novamente.",
+        description: "Ocorreu um erro ao salvar o chamado no banco de dados. Tente novamente.",
         variant: "destructive",
       });
-      console.error("Error in transaction: ", error);
+    } finally {
+        setLoading(false);
     }
   }
 
