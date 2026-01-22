@@ -1,0 +1,224 @@
+/**
+ * Core Philosophy: This ruleset enforces a Role-Based Access Control (RBAC) model for a support ticket system.
+ * The default security posture is user-ownership, where users can only manage their own data. This is then
+ * extended by two elevated roles: 'ti' (support staff) and 'admin'. 'ti' users gain read-access to all tickets
+ * and comments to provide support, while 'admin' users have full read/write access across the entire system.
+ *
+ * Data Structure: The data is organized hierarchically under the `/users/{userId}` collection. This path-based
+ * ownership simplifies rules for tickets, comments, and ratings, making it easy to determine who owns a piece of data.
+ * All authorization logic is self-contained within a document or its path, avoiding costly cross-document `get()` calls
+ * in rules, with the standard exception of checking the authenticated user's own role from their profile.
+ *
+ * Key Security Decisions:
+ * - User Roles: A 'role' field ('user', 'ti', or 'admin') is stored directly on each document in the `/users` collection.
+ *   This is the single source of truth for authorization decisions.
+ * - User Listing: Listing all users is forbidden for regular users and support staff to prevent user enumeration.
+ *   Only 'admin' users can list all user profiles.
+ * - Privileged Access: 'ti' users have read-only access to all tickets and comments. 'admin' users have full
+ *   read and write access to all tickets, comments, and can manage user profiles.
+ * - Ownership: Regular users can only create, read, update, and delete their own tickets and associated data.
+ *
+ * Denormalization for Authorization:
+ * - The `role` is stored on the `/users/{userId}` document, making role lookups for the authenticated user efficient.
+ * - The `Ticket` document contains a `userId` field, and rules enforce that this matches the path on creation, ensuring
+ *   data integrity and simple ownership checks.
+ * - The `Comment` document contains a `userId` field to identify the author, allowing rules to grant update/delete
+ *   permissions only to the comment's original creator.
+ *
+ * Structural Segregation: The entire data model is based on user-owned data trees. There are no public collections.
+ * Access to any data requires authentication and authorization based on ownership or role.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    //-------------------------------------------------------------------------
+    // Helper Functions
+    //-------------------------------------------------------------------------
+
+    /**
+     * Returns true if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Returns true if the authenticated user's UID matches the provided userId.
+     * This is the primary function for checking document ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Retrieves the role of the currently authenticated user from their user profile.
+     * This is the standard, secure way to implement RBAC in Firestore.
+     */
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    /**
+     * Returns true if the authenticated user has the 'admin' role.
+     */
+    function isAdmin() {
+      return isSignedIn() && getRole() == 'admin';
+    }
+
+    /**
+     * Returns true if the authenticated user has the 'ti' (support staff) role.
+     */
+    function isTi() {
+      return isSignedIn() && getRole() == 'ti';
+    }
+
+    /**
+     * Returns true if the user is either a 'ti' or 'admin'.
+     */
+    function isSupportStaff() {
+      return isTi() || isAdmin();
+    }
+
+    //-------------------------------------------------------------------------
+    // Validation Helper Functions (Prototyping Mode)
+    // - These functions only validate fields critical for authorization and
+    //   relational integrity, not the full data shape.
+    //-------------------------------------------------------------------------
+
+    /**
+     * On user creation, ensures the document ID matches the user's UID and
+     * the role is correctly initialized to 'user'.
+     */
+    function hasValidUserDataOnCreate(userId) {
+      let data = request.resource.data;
+      return data.id == userId && data.role == 'user';
+    }
+
+    /**
+     * On user update, prevents critical, identity-related fields from being changed.
+     */
+    function hasImmutableUserFields() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return after.id == before.id && after.email == before.email && after.role == before.role && after.createdAt == before.createdAt;
+    }
+
+    /**
+     * On ticket creation, ensures the denormalized `userId` field in the
+     * document body matches the owner's UID from the path.
+     */
+    function hasValidTicketDataOnCreate(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * On ticket update, prevents the ownership link (`userId`) from being changed.
+     */
+    function hasImmutableTicketFields() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+    
+    /**
+     * On comment creation, ensures the `userId` is the commenter's UID and the
+     * `ticketId` matches the parent ticket in the path.
+     */
+    function hasValidCommentDataOnCreate(ticketId) {
+      let data = request.resource.data;
+      return data.userId == request.auth.uid && data.ticketId == ticketId;
+    }
+
+    /**
+     * On comment update, prevents the author and ticket links from being changed.
+     */
+    function hasImmutableCommentFields() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return after.userId == before.userId && after.ticketId == before.ticketId;
+    }
+    
+    /**
+     * On rating creation, ensures the `ticketId` matches the parent ticket path.
+     */
+    function hasValidRatingDataOnCreate(ticketId) {
+      return request.resource.data.ticketId == ticketId;
+    }
+
+    /**
+     * On rating update, prevents the `ticketId` from being changed.
+     */
+    function hasImmutableRatingFields() {
+      return request.resource.data.ticketId == resource.data.ticketId;
+    }
+
+    //-------------------------------------------------------------------------
+    // Collection Rules
+    //-------------------------------------------------------------------------
+
+    /**
+     * @description Controls access to user profile documents.
+     * @path /users/{userId}
+     * @allow (create) An unauthenticated user can create their own user document during signup.
+     * @allow (get) An authenticated user can read their own profile, and support staff can read any profile.
+     * @allow (update) A user can update their own profile, but admins can update any profile.
+     * @deny (list) Regular users cannot list all users in the system to prevent user enumeration.
+     * @deny (delete) Only admins can delete user accounts.
+     * @principle Enforces self-creation of user profiles and owner/role-based modification.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isSupportStaff();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && hasValidUserDataOnCreate(userId);
+      allow update: if resource != null && ((isOwner(userId) && hasImmutableUserFields()) || isAdmin());
+      allow delete: if resource != null && isAdmin();
+    }
+
+    /**
+     * @description Controls access to support tickets within a user's subcollection.
+     * @path /users/{userId}/tickets/{ticketId}
+     * @allow (create) A user can create a ticket for themselves.
+     * @allow (get, list) The ticket owner and any support staff can read tickets.
+     * @allow (update, delete) The ticket owner and admins can modify or delete tickets.
+     * @deny (create) A user cannot create a ticket for another user.
+     * @deny (update) A 'ti' user cannot modify another user's ticket.
+     * @principle Enforces user ownership for writes, with role-based overrides for reads and admin modifications.
+     */
+    match /users/{userId}/tickets/{ticketId} {
+      allow get, list: if isOwner(userId) || isSupportStaff();
+      allow create: if isOwner(userId) && hasValidTicketDataOnCreate(userId);
+      allow update: if resource != null && (isOwner(userId) || isAdmin()) && hasImmutableTicketFields();
+      allow delete: if resource != null && (isOwner(userId) || isAdmin());
+    }
+
+    /**
+     * @description Controls access to comments on a specific ticket.
+     * @path /users/{userId}/tickets/{ticketId}/comments/{commentId}
+     * @allow (create) The ticket owner or any support staff can add a comment to a ticket.
+     * @allow (get, list) The ticket owner and any support staff can read the comments.
+     * @allow (update, delete) Only the original author of a comment or an admin can modify/delete it.
+     * @deny (update) A user cannot edit a comment written by a support staff member.
+     * @principle Enforces shared-read access for ticket participants and author-only writes for comments.
+     */
+    match /users/{userId}/tickets/{ticketId}/comments/{commentId} {
+      allow get, list: if isOwner(userId) || isSupportStaff();
+      allow create: if (isOwner(userId) || isSupportStaff()) && hasValidCommentDataOnCreate(ticketId);
+      allow update: if resource != null && (isOwner(resource.data.userId) || isAdmin()) && hasImmutableCommentFields();
+      allow delete: if resource != null && (isOwner(resource.data.userId) || isAdmin());
+    }
+
+    /**
+     * @description Controls access to ratings on a specific ticket.
+     * @path /users/{userId}/tickets/{ticketId}/ratings/{ratingId}
+     * @allow (create, get, list, update, delete) Only the user who owns the ticket can manage its rating.
+     * @deny (get) Support staff cannot see the rating a user left for their ticket.
+     * @deny (create) A user cannot rate a ticket that does not belong to them.
+     * @principle Enforces strict ownership. Only the ticket creator can rate the service they received.
+     */
+    match /users/{userId}/tickets/{ticketId}/ratings/{ratingId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && hasValidRatingDataOnCreate(ticketId);
+      allow update: if resource != null && isOwner(userId) && hasImmutableRatingFields();
+      allow delete: if resource != null && isOwner(userId);
+    }
+  }
+}

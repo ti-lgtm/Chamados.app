@@ -1,0 +1,259 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role (user, ti, or admin).",
+          "format": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the user was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "role",
+        "createdAt"
+      ]
+    },
+    "Ticket": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Ticket",
+      "type": "object",
+      "description": "Represents a support ticket.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ticket."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the ticket."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the issue."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the ticket (open, in_progress, resolved)."
+        },
+        "priority": {
+          "type": "string",
+          "description": "The priority of the ticket (low, normal, high)."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. The user who created the ticket. (Relationship: User 1:N Ticket)"
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "Reference to User. The user assigned to the ticket, if any. (Relationship: User 1:N Ticket)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the ticket was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "status",
+        "priority",
+        "userId",
+        "createdAt"
+      ]
+    },
+    "Comment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Comment",
+      "type": "object",
+      "description": "Represents a comment on a ticket.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the comment."
+        },
+        "ticketId": {
+          "type": "string",
+          "description": "Reference to Ticket. The ticket the comment belongs to. (Relationship: Ticket 1:N Comment)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. The user who created the comment. (Relationship: User 1:N Comment)"
+        },
+        "message": {
+          "type": "string",
+          "description": "The content of the comment."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the comment was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ticketId",
+        "userId",
+        "message",
+        "createdAt"
+      ]
+    },
+    "Rating": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Rating",
+      "type": "object",
+      "description": "Represents a rating for a ticket.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the rating."
+        },
+        "ticketId": {
+          "type": "string",
+          "description": "Reference to Ticket. The ticket being rated. (Relationship: Ticket 1:N Rating)"
+        },
+        "rating": {
+          "type": "number",
+          "description": "The rating given (1 to 5).",
+          "format": "number"
+        },
+        "comment": {
+          "type": "string",
+          "description": "Optional comment associated with the rating."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the rating was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ticketId",
+        "rating",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. The 'userId' parameter is the Firebase Authentication UID. The document includes the user's role (user, ti, admin).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tickets/{ticketId}",
+        "definition": {
+          "entityName": "Ticket",
+          "schema": {
+            "$ref": "#/backend/entities/Ticket"
+          },
+          "description": "Stores tickets created by users. Uses path-based ownership. Includes denormalized 'userId' field for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user who created the ticket."
+            },
+            {
+              "name": "ticketId",
+              "description": "The unique identifier of the ticket."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tickets/{ticketId}/comments/{commentId}",
+        "definition": {
+          "entityName": "Comment",
+          "schema": {
+            "$ref": "#/backend/entities/Comment"
+          },
+          "description": "Stores comments associated with a ticket. Located within the user's tickets subcollection for hierarchical data organization and simplified security rules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user who owns the ticket."
+            },
+            {
+              "name": "ticketId",
+              "description": "The unique identifier of the ticket."
+            },
+            {
+              "name": "commentId",
+              "description": "The unique identifier of the comment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tickets/{ticketId}/ratings/{ratingId}",
+        "definition": {
+          "entityName": "Rating",
+          "schema": {
+            "$ref": "#/backend/entities/Rating"
+          },
+          "description": "Stores ratings associated with a ticket. Located within the user's tickets subcollection.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user who owns the ticket."
+            },
+            {
+              "name": "ticketId",
+              "description": "The unique identifier of the ticket."
+            },
+            {
+              "name": "ratingId",
+              "description": "The unique identifier of the rating."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support a ticket management system with user roles (user, ti, admin), tickets, comments, and ratings. It prioritizes authorization independence and simple security rules by adhering to the core design principles. The structure implements Role-Based Access Control (RBAC) with roles stored directly in the user document. It uses path-based ownership for tickets and their related data (comments, ratings). Authorization Independence is achieved because all authorization checks are done based on the `request.auth.uid` and data stored directly on the documents being accessed, thus avoiding any `get()` calls in security rules.\n\n**Authorization Independence:**\n\n*   **Users:** User roles are stored directly within the user document (`/users/{userId}`). This eliminates the need to fetch roles from a separate collection during authorization.\n*   **Tickets:** Each ticket is owned by a user (specified by `userId` field). Access control is based on whether the requesting user's UID matches the `userId` or whether the user has a `ti` or `admin` role.\n*   **Comments & Ratings:** Comments and ratings are stored as subcollections of tickets (`/users/{userId}/tickets/{ticketId}/comments/{commentId}` and `/users/{userId}/tickets/{ticketId}/ratings/{ratingId}`). Access to these is controlled through the parent ticket's ownership and user roles, eliminating `get()` calls.\n\n**QAPs Support:**\n\n*   Secure `list` operations are supported by segregating data based on ownership (path-based ownership for Tickets). The `list` operation is secured by security rules that ensure only the owner of the tickets, `ti` users, or `admin` users can access the tickets.\n\n**Justification of Paths:**\n\n*   `/users/{userId}`: Stores user information, including their role. The `userId` parameter ensures that operations are scoped to the user's own document, unless the user has `ti` or `admin` roles.\n*   `/users/{userId}/tickets/{ticketId}`:  Each ticket is stored as a subcollection of users. This enforces path-based ownership, making it easy to secure tickets based on the user who created them.\n*   `/users/{userId}/tickets/{ticketId}/comments/{commentId}`: Comments are stored as a subcollection of tickets.  This provides a clear hierarchy and allows for easy retrieval of comments associated with a specific ticket.\n*   `/users/{userId}/tickets/{ticketId}/ratings/{ratingId}`: Ratings are stored as a subcollection of tickets, similar to comments. This maintains the hierarchical structure and simplifies data retrieval."
+  }
+}
