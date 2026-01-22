@@ -56,7 +56,31 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+      
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+         const userData = {
+            id: user.uid,
+            name: user.displayName || values.email.split('@')[0],
+            email: user.email,
+            role: "user" as const,
+            createdAt: serverTimestamp(),
+        };
+
+        setDoc(userDocRef, userData).catch((serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'create',
+                requestResourceData: userData
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+      }
+
       toast({
         title: "Login bem-sucedido!",
         description: "Redirecionando para o painel.",
@@ -64,7 +88,6 @@ export function LoginForm() {
       router.push("/dashboard");
     } catch (error: any) {
       setError("E-mail ou senha inválidos. Por favor, tente novamente.");
-      console.error("Login error:", error);
     } finally {
       setLoading(false);
     }
@@ -108,7 +131,6 @@ export function LoginForm() {
       router.push("/dashboard");
     } catch (error: any) {
         setError("Falha ao fazer login com o Google. Tente novamente.");
-        console.error("Google sign in error:", error);
     } finally {
         setLoading(false);
     }
