@@ -13,7 +13,7 @@ import {
 } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import type { Ticket, AppUser } from "@/lib/types";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { TicketDetailsClient } from "@/components/tickets/ticket-details-client";
 import { Loader2 } from "lucide-react";
 
@@ -68,12 +68,15 @@ async function getTicketData(
   } as Ticket;
 }
 
-export default function TicketPage({ params }: { params: { id: string } }) {
+export default function TicketPage() {
+  const params = useParams<{ id: string }>();
   const firestore = useFirestore();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!params.id) return;
+    
     getTicketData(firestore, params.id)
       .then((ticketData) => {
         if (!ticketData) {
