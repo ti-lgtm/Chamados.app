@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, getDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useFirestore, useMemoFirebase } from "@/firebase";
 import type { AppUser, Comment as CommentType } from "@/lib/types";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -30,6 +30,7 @@ const commentSchema = z.object({
 const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
 export function Comments({ ticketId, currentUser }: CommentsProps) {
+    const firestore = useFirestore();
     const [comments, setComments] = useState<(CommentType & { user?: AppUser })[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,15 +40,19 @@ export function Comments({ ticketId, currentUser }: CommentsProps) {
         resolver: zodResolver(commentSchema),
         defaultValues: { message: "" },
     });
+    
+    const commentsQuery = useMemoFirebase(() => 
+        firestore ? query(collection(firestore, "comments"), where("ticketId", "==", ticketId), orderBy("createdAt", "asc")) : null
+    , [firestore, ticketId]);
 
     useEffect(() => {
-        const q = query(collection(db, "comments"), where("ticketId", "==", ticketId), orderBy("createdAt", "asc"));
+        if (!commentsQuery || !firestore) return;
 
-        const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+        const unsubscribe = onSnapshot(commentsQuery, async (querySnapshot) => {
             const commentsData = await Promise.all(
                 querySnapshot.docs.map(async (docSnap) => {
                     const comment = { id: docSnap.id, ...docSnap.data() } as CommentType;
-                    const userSnap = await getDoc(doc(db, "users", comment.userId));
+                    const userSnap = await getDoc(doc(firestore, "users", comment.userId));
                     const user = userSnap.exists() ? { uid: userSnap.id, ...userSnap.data() } as AppUser : undefined;
                     return { ...comment, user };
                 })
@@ -57,13 +62,13 @@ export function Comments({ ticketId, currentUser }: CommentsProps) {
         });
 
         return () => unsubscribe();
-    }, [ticketId]);
+    }, [commentsQuery, firestore]);
 
     async function onSubmit(values: z.infer<typeof commentSchema>) {
-        if (!currentUser) return;
+        if (!currentUser || !firestore) return;
         setIsSubmitting(true);
         try {
-            await addDoc(collection(db, "comments"), {
+            await addDoc(collection(firestore, "comments"), {
                 ticketId,
                 userId: currentUser.uid,
                 message: values.message,
@@ -106,7 +111,7 @@ export function Comments({ ticketId, currentUser }: CommentsProps) {
                                 <div className="flex items-center gap-2">
                                     <p className="font-semibold">{comment.user?.name}</p>
                                     <p className="text-xs text-muted-foreground">
-                                        {formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true, locale: ptBR })}
+                                        {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}
                                     </p>
                                 </div>
                                 <p className="text-sm text-foreground whitespace-pre-wrap">{comment.message}</p>

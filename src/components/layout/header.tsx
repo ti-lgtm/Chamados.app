@@ -28,16 +28,17 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { useAuth as useFirebaseAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 export function AppHeader() {
   const { user } = useAuth();
+  const firebaseAuth = useFirebaseAuth();
   const router = useRouter();
   const { toast } = useToast();
   
   const handleLogout = async () => {
-    await signOut(auth);
+    await signOut(firebaseAuth);
     toast({ title: "Você foi desconectado." });
     router.push("/login");
   };

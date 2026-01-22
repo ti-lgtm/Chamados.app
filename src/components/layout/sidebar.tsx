@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { useAuth as useFirebaseAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string; }) => {
@@ -49,11 +49,12 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 
 export function AppSidebar() {
   const { user } = useAuth();
+  const firebaseAuth = useFirebaseAuth();
   const router = useRouter();
   const { toast } = useToast();
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await signOut(firebaseAuth);
     toast({ title: "Você foi desconectado." });
     router.push("/login");
   };

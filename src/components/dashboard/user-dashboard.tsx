@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useFirestore, useMemoFirebase } from "@/firebase";
 import type { AppUser, Ticket } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { TicketList } from "@/components/tickets/ticket-list";
@@ -15,26 +15,32 @@ interface UserDashboardProps {
 }
 
 export function UserDashboard({ user }: UserDashboardProps) {
+  const firestore = useFirestore();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const ticketsQuery = useMemoFirebase(() => 
+    firestore && user.uid
+      ? query(
+          collection(firestore, "tickets"),
+          where("userId", "==", user.uid),
+          orderBy("createdAt", "desc")
+        )
+      : null,
+    [firestore, user.uid]
+  );
+
   useEffect(() => {
-    if (!user.uid) return;
+    if (!ticketsQuery) return;
 
-    const q = query(
-      collection(db, "tickets"),
-      where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onSnapshot(ticketsQuery, (querySnapshot) => {
       const userTickets = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket));
       setTickets(userTickets);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user.uid]);
+  }, [ticketsQuery]);
 
   return (
     <div className="space-y-6">

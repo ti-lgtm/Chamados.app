@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { collection, addDoc, query, where, onSnapshot, serverTimestamp, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useFirestore, useMemoFirebase } from "@/firebase";
 import type { AppUser, Rating } from "@/lib/types";
 import { Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ interface RatingSectionProps {
 }
 
 export function RatingSection({ ticketId, ticketCreatorId, currentUser }: RatingSectionProps) {
+    const firestore = useFirestore();
     const [rating, setRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
     const [comment, setComment] = useState("");
@@ -26,14 +27,19 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
 
-    useEffect(() => {
-        const q = query(
-            collection(db, "ratings"),
+    const ratingQuery = useMemoFirebase(() =>
+        firestore ? query(
+            collection(firestore, "ratings"),
             where("ticketId", "==", ticketId),
             where("userId", "==", ticketCreatorId),
             limit(1)
-        );
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        ) : null
+    , [firestore, ticketId, ticketCreatorId]);
+
+    useEffect(() => {
+        if (!ratingQuery) return;
+
+        const unsubscribe = onSnapshot(ratingQuery, (snapshot) => {
             if (!snapshot.empty) {
                 const ratingData = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Rating;
                 setExistingRating(ratingData);
@@ -42,18 +48,20 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
             setLoading(false);
         });
         return () => unsubscribe();
-    }, [ticketId, ticketCreatorId]);
+    }, [ratingQuery]);
 
     const handleSubmit = async () => {
         if (rating === 0) {
             toast({ title: "Por favor, selecione uma avaliação.", variant: "destructive" });
             return;
         }
+        if (!currentUser || !firestore) return;
+
         setIsSubmitting(true);
         try {
-            await addDoc(collection(db, "ratings"), {
+            await addDoc(collection(firestore, "ratings"), {
                 ticketId,
-                userId: currentUser!.uid,
+                userId: currentUser.uid,
                 rating,
                 comment,
                 createdAt: serverTimestamp(),

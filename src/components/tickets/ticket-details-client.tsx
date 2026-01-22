@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useFirestore, useMemoFirebase } from "@/firebase";
 import type { Ticket, AppUser } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 import { Badge } from "@/components/ui/badge";
@@ -35,22 +35,28 @@ const priorityMap: { [key: string]: { label: string; variant: "default" | "secon
 
 export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps) {
     const { user, loading: authLoading } = useAuth();
+    const firestore = useFirestore();
     const { toast } = useToast();
     const [ticket, setTicket] = useState<Ticket>(initialTicket);
     const [isUpdating, setIsUpdating] = useState(false);
     const [allUsers, setAllUsers] = useState<AppUser[]>([]);
 
+    const ticketRef = useMemoFirebase(() => 
+        firestore ? doc(firestore, "tickets", initialTicket.id) : null
+    , [firestore, initialTicket.id]);
+
     useEffect(() => {
-        const unsub = onSnapshot(doc(db, "tickets", initialTicket.id), (doc) => {
+        if (!ticketRef) return;
+        const unsub = onSnapshot(ticketRef, (doc) => {
             setTicket({ id: doc.id, ...doc.data() } as Ticket);
         });
         return () => unsub();
-    }, [initialTicket.id]);
+    }, [ticketRef]);
 
     const handleStatusChange = async (newStatus: "open" | "in_progress" | "resolved") => {
         setIsUpdating(true);
         try {
-            const ticketRef = doc(db, "tickets", ticket.id);
+            if (!ticketRef) return;
             await updateDoc(ticketRef, {
                 status: newStatus,
                 updatedAt: serverTimestamp(),
@@ -80,7 +86,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                              </Badge>
                         </div>
                         <CardDescription>
-                            Aberto em {format(ticket.createdAt.toDate(), "dd 'de' MMMM 'de' yyyy, 'às' HH:mm", { locale: ptBR })}
+                            Aberto em {ticket.createdAt ? format(ticket.createdAt.toDate(), "dd 'de' MMMM 'de' yyyy, 'às' HH:mm", { locale: ptBR }) : ''}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -130,7 +136,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         <div className="flex items-center">
                             <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
                             <strong>Última atualização:</strong>
-                            <span className="ml-2">{formatDistanceToNow(ticket.updatedAt.toDate(), { addSuffix: true, locale: ptBR })}</span>
+                            <span className="ml-2">{ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}</span>
                         </div>
                     </CardContent>
                     {canEdit && (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useFirestore, useMemoFirebase } from "@/firebase";
 import type { AppUser, Ticket } from "@/lib/types";
 import { TicketList } from "@/components/tickets/ticket-list";
 import { StatsCard } from "./stats-card";
@@ -14,6 +14,7 @@ interface TiDashboardProps {
 }
 
 export function TiDashboard({ user }: TiDashboardProps) {
+  const firestore = useFirestore();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -23,17 +24,21 @@ export function TiDashboard({ user }: TiDashboardProps) {
     resolved: tickets.filter(t => t.status === 'resolved').length,
   };
 
-  useEffect(() => {
-    const q = query(collection(db, "tickets"), orderBy("createdAt", "desc"));
+  const ticketsQuery = useMemoFirebase(() => 
+    firestore ? query(collection(firestore, "tickets"), orderBy("createdAt", "desc")) : null
+  , [firestore]);
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+  useEffect(() => {
+    if (!ticketsQuery) return;
+
+    const unsubscribe = onSnapshot(ticketsQuery, (querySnapshot) => {
       const allTickets = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket));
       setTickets(allTickets);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [ticketsQuery]);
 
   return (
     <div className="space-y-6">
