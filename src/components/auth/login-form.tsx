@@ -68,6 +68,7 @@ export function LoginForm() {
             name: user.displayName || values.email.split('@')[0],
             email: user.email,
             role: "user" as const,
+            status: "active" as const,
             createdAt: serverTimestamp(),
         };
 
@@ -110,6 +111,7 @@ export function LoginForm() {
             name: user.displayName,
             email: user.email,
             role: "user" as const,
+            status: "active" as const,
             createdAt: serverTimestamp(),
             avatarUrl: user.photoURL
         };

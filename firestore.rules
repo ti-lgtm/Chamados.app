@@ -12,6 +12,8 @@
  * Key Security Decisions:
  * - User Roles: A 'role' field ('user', 'ti', or 'admin') is stored directly on each document in the `/users` collection.
  *   This is the single source of truth for authorization decisions.
+ * - Suspension: A 'status' field ('active' or 'suspended') on the user document allows admins to disable accounts.
+ *   The global isSignedIn() function checks this status on every authenticated request.
  * - User Listing: Listing all users is forbidden for regular users and support staff to prevent user enumeration.
  *   Only 'admin' users can list all user profiles.
  * - Privileged Access: 'ti' users have read-only access to all tickets and comments. 'admin' users have full
@@ -19,7 +21,7 @@
  * - Ownership: Regular users can only create, read, update, and delete their own tickets and associated data.
  *
  * Denormalization for Authorization:
- * - The `role` is stored on the `/users/{userId}` document, making role lookups for the authenticated user efficient.
+ * - The `role` and `status` are stored on the `/users/{userId}` document, making role/status lookups for the authenticated user efficient.
  * - The `Ticket` document contains a `userId` field, and rules enforce that this matches the path on creation, ensuring
  *   data integrity and simple ownership checks.
  * - The `Comment` document contains a `userId` field to identify the author, allowing rules to grant update/delete
@@ -37,10 +39,14 @@ service cloud.firestore {
     //-------------------------------------------------------------------------
 
     /**
-     * Returns true if the user is authenticated.
+     * Returns true if the user is authenticated and their account is not suspended.
+     * On user creation, the document won't exist, so the check is bypassed.
      */
     function isSignedIn() {
-      return request.auth != null;
+      return request.auth != null && (
+        !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active'
+      );
     }
 
     /**
@@ -88,20 +94,20 @@ service cloud.firestore {
 
     /**
      * On user creation, ensures the document ID matches the user's UID and
-     * the role is correctly initialized to 'user'.
+     * the role is correctly initialized to 'user' and status to 'active'.
      */
     function hasValidUserDataOnCreate(userId) {
       let data = request.resource.data;
-      return data.id == userId && data.role == 'user';
+      return data.id == userId && data.role == 'user' && data.status == 'active';
     }
 
     /**
-     * On user update, prevents critical, identity-related fields from being changed.
+     * On user update, prevents critical, identity-related fields from being changed by the owner.
      */
     function hasImmutableUserFields() {
       let before = resource.data;
       let after = request.resource.data;
-      return after.id == before.id && after.email == before.email && after.role == before.role && after.createdAt == before.createdAt;
+      return after.id == before.id && after.email == before.email && after.role == before.role && after.createdAt == before.createdAt && after.status == before.status;
     }
 
     /**
@@ -158,9 +164,9 @@ service cloud.firestore {
     /**
      * @description Controls access to user profile documents.
      * @path /users/{userId}
-     * @allow (create) An unauthenticated user can create their own user document during signup.
+     * @allow (create) An unauthenticated user can create their own user document during signup. This rule uses request.auth != null instead of isSignedIn() to allow creation before the user doc exists for the suspension check.
      * @allow (get) An authenticated user can read their own profile, and support staff can read any profile.
-     * @allow (update) A user can update their own profile, but admins can update any profile.
+     * @allow (update) A user can update their own profile (with limitations), and admins can update any profile.
      * @deny (list) Regular users cannot list all users in the system to prevent user enumeration.
      * @deny (delete) Only admins can delete user accounts.
      * @principle Enforces self-creation of user profiles and owner/role-based modification.
@@ -168,7 +174,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || isSupportStaff();
       allow list: if isAdmin();
-      allow create: if isOwner(userId) && hasValidUserDataOnCreate(userId);
+      allow create: if request.auth != null && request.auth.uid == userId && hasValidUserDataOnCreate(userId);
       allow update: if resource != null && ((isOwner(userId) && hasImmutableUserFields()) || isAdmin());
       allow delete: if resource != null && isAdmin();
     }

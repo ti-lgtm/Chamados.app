@@ -24,6 +24,14 @@
           "description": "The user's role (user, ti, or admin).",
           "format": "string"
         },
+        "status": {
+          "type": "string",
+          "description": "The user's status (active or suspended).",
+          "enum": [
+            "active",
+            "suspended"
+          ]
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp of when the user was created.",
@@ -40,7 +48,8 @@
         "name",
         "email",
         "role",
-        "createdAt"
+        "createdAt",
+        "status"
       ]
     },
     "Ticket": {

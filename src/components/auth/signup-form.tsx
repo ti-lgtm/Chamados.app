@@ -64,6 +64,7 @@ export function SignupForm() {
         name: values.name,
         email: values.email,
         role: "user", // Default role
+        status: "active", // Default status
         createdAt: serverTimestamp(),
       };
 

@@ -7,6 +7,7 @@ export interface AppUser {
   name: string;
   email: string;
   role: UserRole;
+  status: 'active' | 'suspended';
   createdAt: Timestamp;
   avatarUrl?: string;
 }
