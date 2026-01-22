@@ -4,40 +4,27 @@ import { useEffect, useState } from "react";
 import {
   doc,
   getDoc,
-  getDocs,
-  collectionGroup,
-  query,
-  where,
-  limit,
-  documentId,
 } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import type { Ticket, AppUser } from "@/lib/types";
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useSearchParams } from "next/navigation";
 import { TicketDetailsClient } from "@/components/tickets/ticket-details-client";
 import { Loader2 } from "lucide-react";
 
 async function getTicketData(
   firestore: any,
-  ticketId: string
+  ticketId: string,
+  userId: string,
 ): Promise<Ticket | null> {
   if (!firestore) return null;
 
-  // Use a collection group query to find the ticket by its ID across all users
-  const ticketsCollectionGroup = collectionGroup(firestore, "tickets");
-  const q = query(
-    ticketsCollectionGroup,
-    where(documentId(), "==", ticketId),
-    limit(1)
-  );
+  const ticketRef = doc(firestore, "users", userId, "tickets", ticketId);
+  const ticketSnap = await getDoc(ticketRef);
 
-  const ticketSnapshots = await getDocs(q);
-
-  if (ticketSnapshots.empty) {
+  if (!ticketSnap.exists()) {
     return null;
   }
 
-  const ticketSnap = ticketSnapshots.docs[0];
   const ticketData = ticketSnap.data();
 
   // Fetch user data
@@ -70,14 +57,24 @@ async function getTicketData(
 
 export default function TicketPage() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const firestore = useFirestore();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!params.id) return;
+    const ticketId = params.id;
+    const userId = searchParams.get('userId');
+
+    if (!ticketId || !userId) {
+      setLoading(false);
+      if (ticketId) {
+        notFound();
+      }
+      return;
+    }
     
-    getTicketData(firestore, params.id)
+    getTicketData(firestore, ticketId, userId)
       .then((ticketData) => {
         if (!ticketData) {
           notFound();
@@ -91,7 +88,7 @@ export default function TicketPage() {
       .finally(() => {
         setLoading(false);
       });
-  }, [firestore, params.id]);
+  }, [firestore, params, searchParams]);
 
   if (loading) {
     return (
