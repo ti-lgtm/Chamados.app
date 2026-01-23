@@ -208,7 +208,7 @@ service cloud.firestore {
         return get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId;
       }
 
-      allow get, list: if isOwner(getTicketOwnerId());
+      allow get, list: if isOwner(getTicketOwnerId()) || isSupportStaff();
       allow create: if isOwner(getTicketOwnerId()) && hasValidRatingDataOnCreate(ticketId);
       allow update: if isOwner(getTicketOwnerId()) && hasImmutableRatingFields();
       allow delete: if isOwner(getTicketOwnerId());

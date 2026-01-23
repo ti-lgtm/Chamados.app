@@ -1,3 +1,4 @@
+
 /**
  * Core Philosophy: This ruleset enforces a Role-Based Access Control (RBAC) model for a support ticket system.
  * The default security posture is user-ownership, where users can only manage their own data. This is then
@@ -175,8 +176,8 @@ service cloud.firestore {
 
       // CREATE: A user can create a ticket for themselves. `create` rules can use `get()`.
       allow create: if isOwner(request.resource.data.userId);
-      // UPDATE: The owner or an admin can update a ticket. `update` rules can use `get()`.
-      allow update: if (isOwner(resource.data.userId) || isAdmin()) && hasImmutableTicketFields();
+      // UPDATE: Support staff (TI/Admin) can update a ticket.
+      allow update: if isSupportStaff() && hasImmutableTicketFields();
       // DELETE: The owner or an admin can delete a ticket. `delete` rules can use `get()`.
       allow delete: if isOwner(resource.data.userId) || isAdmin();
     }
@@ -207,7 +208,7 @@ service cloud.firestore {
         return get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId;
       }
 
-      allow get, list: if isOwner(getTicketOwnerId());
+      allow get, list: if isOwner(getTicketOwnerId()) || isSupportStaff();
       allow create: if isOwner(getTicketOwnerId()) && hasValidRatingDataOnCreate(ticketId);
       allow update: if isOwner(getTicketOwnerId()) && hasImmutableRatingFields();
       allow delete: if isOwner(getTicketOwnerId());
