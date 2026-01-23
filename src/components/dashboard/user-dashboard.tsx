@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useState, useEffect } from "react";
-import { collection, query, onSnapshot, orderBy, where } from "firebase/firestore";
-import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
-import type { AppUser, Ticket } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { TicketList } from "@/components/tickets/ticket-list";
-import { PlusCircle } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import type { AppUser, Ticket } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { TicketList } from '@/components/tickets/ticket-list';
+import { PlusCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface UserDashboardProps {
   user: AppUser;
@@ -19,14 +19,11 @@ export function UserDashboard({ user }: UserDashboardProps) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const ticketsQuery = useMemoFirebase(() => 
-    firestore && user.uid
-      ? query(
-          collection(firestore, "tickets"),
-          where("userId", "==", user.uid),
-          orderBy("createdAt", "desc")
-        )
-      : null,
+  const ticketsQuery = useMemoFirebase(
+    () =>
+      firestore && user.uid
+        ? query(collection(firestore, 'tickets'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'))
+        : null,
     [firestore, user.uid]
   );
 
@@ -36,19 +33,22 @@ export function UserDashboard({ user }: UserDashboardProps) {
       return;
     }
 
-    const unsubscribe = onSnapshot(ticketsQuery, (querySnapshot) => {
-      const userTickets = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket));
-      setTickets(userTickets);
-      setLoading(false);
-    },
-    (err) => {
+    const unsubscribe = onSnapshot(
+      ticketsQuery,
+      (querySnapshot) => {
+        const userTickets = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Ticket));
+        setTickets(userTickets);
+        setLoading(false);
+      },
+      (err) => {
         const contextualError = new FirestorePermissionError({
-            operation: 'list',
-            path: 'tickets'
+          operation: 'list',
+          path: 'tickets',
         });
         errorEmitter.emit('permission-error', contextualError);
         setLoading(false);
-    });
+      }
+    );
 
     return () => unsubscribe();
   }, [ticketsQuery]);
@@ -70,9 +70,9 @@ export function UserDashboard({ user }: UserDashboardProps) {
 
       {loading ? (
         <div className="space-y-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
         </div>
       ) : (
         <TicketList tickets={tickets} />

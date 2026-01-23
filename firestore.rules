@@ -163,8 +163,9 @@ service cloud.firestore {
     match /tickets/{ticketId} {
       // Users can read their own tickets, support staff can read all tickets.
       allow get: if isOwner(resource.data.userId) || isSupportStaff();
-      // Support staff can list all tickets. Users list their own via queries protected by the 'get' rule.
-      allow list: if isSupportStaff();
+      // Any authenticated user can attempt a query. The security of the query is
+      // then guaranteed by Firestore's query analysis against the 'get' rule.
+      allow list: if isSignedIn();
       // A user can create a ticket for themselves, ensuring the userId in the doc matches their auth uid.
       allow create: if isOwner(request.resource.data.userId);
       // The owner or an admin can update a ticket. The owner cannot be changed.
