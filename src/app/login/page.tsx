@@ -1,5 +1,5 @@
 import { LoginForm } from "@/components/auth/login-form";
-import { Home } from "lucide-react";
+import { AmlmfLogo } from "@/components/icons/amlmf-logo";
 
 export default function LoginPage() {
   return (
@@ -7,14 +7,14 @@ export default function LoginPage() {
        <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
             <div className="bg-primary p-3 rounded-full">
-                <Home className="h-8 w-8 text-primary-foreground" />
+                <AmlmfLogo className="h-8 w-8 text-primary-foreground" />
             </div>
         </div>
         <h1 className="text-3xl font-headline font-bold text-center mb-2 text-foreground">
-          Bem-vindo de volta!
+          Soluções AMLMF
         </h1>
         <p className="text-center text-muted-foreground mb-8">
-          Acesse sua conta para gerenciar seus chamados.
+          Acesse sua conta para gerenciar seus chamados e agendamentos.
         </p>
         <LoginForm />
       </div>

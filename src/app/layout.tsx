@@ -4,8 +4,8 @@ import { FirebaseClientProvider } from "@/firebase/client-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Chamados.app - Portal de Chamados de TI",
-  description: "Portal de Chamados para a área de TI",
+  title: "Soluções AMLMF",
+  description: "Portal de Agendamentos e Chamados de TI",
 };
 
 export default function RootLayout({

@@ -1,5 +1,5 @@
 import { SignupForm } from "@/components/auth/signup-form";
-import { Home } from "lucide-react";
+import { AmlmfLogo } from "@/components/icons/amlmf-logo";
 
 export default function SignupPage() {
   return (
@@ -7,11 +7,11 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <div className="bg-primary p-3 rounded-full">
-            <Home className="h-8 w-8 text-primary-foreground" />
+            <AmlmfLogo className="h-8 w-8 text-primary-foreground" />
           </div>
         </div>
         <h1 className="text-3xl font-headline font-bold text-center mb-2 text-foreground">
-          Crie sua conta
+          Crie sua conta em Soluções AMLMF
         </h1>
         <p className="text-center text-muted-foreground mb-8">
           Preencha os campos abaixo para começar.

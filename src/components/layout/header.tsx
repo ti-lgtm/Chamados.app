@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   PanelLeft,
-  Home,
   Ticket,
   PlusCircle,
   Users,
@@ -31,6 +30,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "firebase/auth";
 import { useAuth as useFirebaseAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { AmlmfLogo } from "../icons/amlmf-logo";
 
 export function AppHeader() {
   const { user } = useAuth();
@@ -63,8 +63,8 @@ export function AppHeader() {
               href="/schedules"
               className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
             >
-              <Home className="h-5 w-5 transition-all group-hover:scale-110" />
-              <span className="sr-only">Portal de Agendamentos</span>
+              <AmlmfLogo className="h-5 w-5 transition-all group-hover:scale-110" />
+              <span className="sr-only">Soluções AMLMF</span>
             </Link>
             <Link href="/schedules" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
               <CalendarDays className="h-5 w-5" />
