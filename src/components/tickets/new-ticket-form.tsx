@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { triggerTicketCreatedEmail } from '@/app/actions/email';
 
 const formSchema = z.object({
   title: z.string().min(5, { message: 'O título deve ter pelo menos 5 caracteres.' }),
@@ -108,6 +109,14 @@ export function NewTicketForm() {
         transaction.set(newTicketRef, ticketPayload);
 
         return { id: newTicketRef.id, number: newNumber };
+      });
+
+      // 3. Trigger email notification (fire and forget)
+      triggerTicketCreatedEmail({
+        id: newTicketData.id,
+        ticketNumber: newTicketData.number,
+        title: values.title,
+        userId: user.uid,
       });
 
       toast({

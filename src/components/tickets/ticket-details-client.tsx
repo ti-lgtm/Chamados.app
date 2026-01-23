@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -16,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
 import { Loader2, User, Clock, Shield, Tag, Paperclip } from "lucide-react";
+import { triggerTicketResolvedEmail } from "@/app/actions/email";
 
 interface TicketDetailsClientProps {
     initialTicket: Ticket;
@@ -81,6 +81,10 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         updateDoc(ticketRef, updateData)
         .then(() => {
             toast({ title: "Status do chamado atualizado com sucesso!" });
+            if (newStatus === 'resolved') {
+                // Fire and forget email action
+                triggerTicketResolvedEmail(ticket.id);
+            }
         })
         .catch(error => {
             toast({ title: "Erro ao atualizar status", variant: "destructive" });

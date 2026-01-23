@@ -17,6 +17,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Loader2, Send } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
+import { triggerNewCommentEmail } from "@/app/actions/email";
 
 interface CommentsProps {
     ticketId: string;
@@ -84,6 +85,12 @@ export function Comments({ ticketId, currentUser }: CommentsProps) {
         addDoc(commentsCollectionRef, commentData)
             .then(() => {
                 form.reset();
+                // Fire and forget email action
+                triggerNewCommentEmail(ticketId, {
+                    userId: currentUser.uid,
+                    userName: currentUser.name,
+                    message: values.message,
+                });
             })
             .catch((error) => {
                 toast({ title: "Erro ao enviar comentário", variant: "destructive" });
