@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, serverTimestamp, runTransaction, doc } from 'firebase/firestore';
+import { collection, serverTimestamp, runTransaction, doc, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { useFirestore, useStorage, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, useStorage, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
@@ -30,7 +30,8 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { triggerTicketCreatedEmail } from '@/app/actions/email';
+import { triggerTicketCreatedEmail, triggerTicketCreatedSupportEmail } from '@/app/actions/email';
+import type { AppUser } from '@/lib/types';
 
 const formSchema = z.object({
   title: z.string().min(5, { message: 'O título deve ter pelo menos 5 caracteres.' }),
@@ -46,6 +47,13 @@ export function NewTicketForm() {
   const db = useFirestore();
   const storage = useStorage();
   const [loading, setLoading] = useState(false);
+
+  const supportUsersQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, 'users'), where('role', 'in', ['ti', 'admin']));
+  }, [db]);
+
+  const { data: supportUsers } = useCollection<AppUser>(supportUsersQuery);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -113,13 +121,26 @@ export function NewTicketForm() {
         return { id: newTicketRef.id, payload: ticketPayload };
       });
 
-      // 3. Trigger email notification (fire and forget)
+      // 3. Trigger email notification for user
       triggerTicketCreatedEmail({
         ticketNumber: newTicketData.payload.ticketNumber,
         title: newTicketData.payload.title,
         userName: newTicketData.payload.userName,
         userEmail: newTicketData.payload.userEmail,
       });
+
+      // 4. Trigger email notification for support team
+      if (supportUsers && supportUsers.length > 0) {
+        const supportEmails = supportUsers.map(su => su.email).filter((email): email is string => !!email);
+        if(supportEmails.length > 0) {
+            triggerTicketCreatedSupportEmail({
+                ticketNumber: newTicketData.payload.ticketNumber,
+                title: newTicketData.payload.title,
+                creatorName: newTicketData.payload.userName,
+                supportEmails: supportEmails,
+            });
+        }
+      }
 
       toast({
         title: `Chamado #${newTicketData.payload.ticketNumber} criado com sucesso!`,

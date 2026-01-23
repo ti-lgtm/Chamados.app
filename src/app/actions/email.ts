@@ -26,6 +26,36 @@ export async function triggerTicketCreatedEmail(payload: TicketCreatedPayload) {
   }
 }
 
+interface TicketCreatedSupportPayload {
+  ticketNumber: number;
+  title: string;
+  creatorName: string;
+  supportEmails: string[];
+}
+
+export async function triggerTicketCreatedSupportEmail(payload: TicketCreatedSupportPayload) {
+    if (payload.supportEmails.length === 0) return;
+    try {
+        await sendEmail({
+            to: payload.supportEmails,
+            subject: `Novo Chamado Aberto: #${payload.ticketNumber} por ${payload.creatorName}`,
+            html_body: `
+                <h1>Novo Chamado no Portal</h1>
+                <p>Um novo chamado foi aberto e precisa de atenção.</p>
+                <ul>
+                    <li><strong>Criado por:</strong> ${payload.creatorName}</li>
+                    <li><strong>Número:</strong> #${payload.ticketNumber}</li>
+                    <li><strong>Título:</strong> ${payload.title}</li>
+                </ul>
+                <p>Acesse o portal para ver os detalhes e atribuir o chamado.</p>
+                <p>Atenciosamente,<br/>Sistema de Notificações AMLMF</p>
+            `,
+        });
+    } catch (error) {
+        console.error("Error in triggerTicketCreatedSupportEmail:", error);
+    }
+}
+
 interface NewCommentPayload {
     recipientEmail: string;
     recipientName: string;
