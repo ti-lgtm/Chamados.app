@@ -20,9 +20,12 @@ export interface Ticket {
   status: 'open' | 'in_progress' | 'resolved';
   priority: 'low' | 'normal' | 'high';
   userId: string;
+  userName: string;
+  userEmail: string;
   user?: AppUser;
   assignedTo: string | null;
   assignedUserName?: string | null;
+  assignedUserEmail?: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   attachments?: string[];

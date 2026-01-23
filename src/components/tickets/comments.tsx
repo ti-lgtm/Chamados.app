@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
-import type { AppUser, Comment as CommentType } from "@/lib/types";
+import type { AppUser, Comment as CommentType, Ticket } from "@/lib/types";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +20,7 @@ import { Skeleton } from "../ui/skeleton";
 import { triggerNewCommentEmail } from "@/app/actions/email";
 
 interface CommentsProps {
-    ticketId: string;
+    ticket: Ticket;
     currentUser: AppUser | null;
 }
 
@@ -30,12 +30,13 @@ const commentSchema = z.object({
 
 const getInitials = (name: string) => name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '';
 
-export function Comments({ ticketId, currentUser }: CommentsProps) {
+export function Comments({ ticket, currentUser }: CommentsProps) {
     const firestore = useFirestore();
     const [comments, setComments] = useState<CommentType[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
+    const ticketId = ticket.id;
 
     const form = useForm<z.infer<typeof commentSchema>>({
         resolver: zodResolver(commentSchema),
@@ -85,12 +86,29 @@ export function Comments({ ticketId, currentUser }: CommentsProps) {
         addDoc(commentsCollectionRef, commentData)
             .then(() => {
                 form.reset();
-                // Fire and forget email action
-                triggerNewCommentEmail(ticketId, {
-                    userId: currentUser.uid,
-                    userName: currentUser.name,
-                    message: values.message,
-                });
+                
+                let recipientEmail: string | undefined | null = null;
+                let recipientName: string | undefined | null = null;
+
+                // If commenter is the ticket creator, notify assigned support user
+                if (currentUser.uid === ticket.userId) {
+                    recipientEmail = ticket.assignedUserEmail;
+                    recipientName = ticket.assignedUserName;
+                } else { // Otherwise, notify the ticket creator
+                    recipientEmail = ticket.userEmail;
+                    recipientName = ticket.userName;
+                }
+
+                if (recipientEmail && recipientName) {
+                    triggerNewCommentEmail({
+                        recipientEmail,
+                        recipientName,
+                        ticketNumber: ticket.ticketNumber,
+                        ticketTitle: ticket.title,
+                        commenterName: currentUser.name,
+                        commentMessage: values.message,
+                    });
+                }
             })
             .catch((error) => {
                 toast({ title: "Erro ao enviar comentário", variant: "destructive" });

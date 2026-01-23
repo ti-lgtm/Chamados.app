@@ -100,6 +100,8 @@ export function NewTicketForm() {
           priority: values.priority,
           status: 'open' as const,
           userId: user.uid,
+          userName: user.name,
+          userEmail: user.email,
           assignedTo: null,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -108,19 +110,19 @@ export function NewTicketForm() {
 
         transaction.set(newTicketRef, ticketPayload);
 
-        return { id: newTicketRef.id, number: newNumber };
+        return { id: newTicketRef.id, payload: ticketPayload };
       });
 
       // 3. Trigger email notification (fire and forget)
       triggerTicketCreatedEmail({
-        id: newTicketData.id,
-        ticketNumber: newTicketData.number,
-        title: values.title,
-        userId: user.uid,
+        ticketNumber: newTicketData.payload.ticketNumber,
+        title: newTicketData.payload.title,
+        userName: newTicketData.payload.userName,
+        userEmail: newTicketData.payload.userEmail,
       });
 
       toast({
-        title: `Chamado #${newTicketData.number} criado com sucesso!`,
+        title: `Chamado #${newTicketData.payload.ticketNumber} criado com sucesso!`,
         description: 'Sua solicitação foi enviada para a equipe de TI.',
       });
       router.push(`/tickets/${newTicketData.id}`);

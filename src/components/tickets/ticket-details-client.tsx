@@ -83,7 +83,12 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             toast({ title: "Status do chamado atualizado com sucesso!" });
             if (newStatus === 'resolved') {
                 // Fire and forget email action
-                triggerTicketResolvedEmail(ticket.id);
+                triggerTicketResolvedEmail({
+                    ticketNumber: ticket.ticketNumber,
+                    ticketTitle: ticket.title,
+                    userName: ticket.userName,
+                    userEmail: ticket.userEmail,
+                });
             }
         })
         .catch(error => {
@@ -110,6 +115,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         const updateData = {
             assignedTo: finalAssignedTo,
             assignedUserName: assignedUserData ? assignedUserData.name : null,
+            assignedUserEmail: assignedUserData ? assignedUserData.email : null,
             updatedAt: serverTimestamp(),
         };
 
@@ -170,7 +176,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         )}
                     </CardContent>
                 </Card>
-                <Comments ticketId={ticket.id} currentUser={user} />
+                <Comments ticket={ticket} currentUser={user} />
             </div>
 
             <div className="lg:col-span-1 space-y-6">
@@ -182,7 +188,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         <div className="flex items-center">
                             <User className="h-4 w-4 mr-2 text-muted-foreground" />
                             <strong>Solicitante:</strong>
-                            <span className="ml-2">{initialTicket.user?.name || 'Desconhecido'}</span>
+                            <span className="ml-2">{ticket.userName || 'Desconhecido'}</span>
                         </div>
                         <div className="flex items-center">
                             <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
