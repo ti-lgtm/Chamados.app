@@ -65,12 +65,12 @@ export function UserDashboard({ user }: UserDashboardProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-headline font-bold">Seus Chamados</h1>
           <p className="text-muted-foreground">Veja e gerencie os chamados que você abriu.</p>
         </div>
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/tickets/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             Novo Chamado
@@ -79,11 +79,11 @@ export function UserDashboard({ user }: UserDashboardProps) {
       </div>
 
       <div className="space-y-4">
-        <Tabs defaultValue="all" onValueChange={setStatusFilter}>
-            <TabsList>
+        <Tabs defaultValue="all" onValueChange={setStatusFilter} className="w-full sm:w-auto">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
                 <TabsTrigger value="all">Todos</TabsTrigger>
                 <TabsTrigger value="open">Abertos</TabsTrigger>
-                <TabsTrigger value="in_progress">Em Atendimento</TabsTrigger>
+                <TabsTrigger value="in_progress">Em Atend.</TabsTrigger>
                 <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
             </TabsList>
         </Tabs>

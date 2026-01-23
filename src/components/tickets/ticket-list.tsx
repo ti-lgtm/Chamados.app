@@ -30,7 +30,7 @@ export function TicketList({ tickets }: TicketListProps) {
             <div className="text-3xl">🎟️</div>
             <h3 className="mt-4 text-lg font-semibold font-headline">Nenhum chamado encontrado</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-                Parece que não há nenhum chamado para exibir aqui.
+                Parece que não há nenhum chamado para exibir com o filtro selecionado.
             </p>
         </div>
     );
@@ -41,11 +41,16 @@ export function TicketList({ tickets }: TicketListProps) {
       {tickets.map((ticket) => (
         <Card key={ticket.id}>
           <CardHeader>
-            <div className="flex justify-between items-start">
-              <CardTitle className="font-headline text-lg hover:text-primary">
-                <Link href={`/tickets/${ticket.id}`}>{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</Link>
-              </CardTitle>
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                <div className="order-2 sm:order-1">
+                    <CardTitle className="font-headline text-lg hover:text-primary">
+                        <Link href={`/tickets/${ticket.id}`}>{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</Link>
+                    </CardTitle>
+                    <CardDescription>
+                        Criado {formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR })}
+                    </CardDescription>
+                </div>
+              <div className="flex gap-2 order-1 sm:order-2 self-end sm:self-auto flex-shrink-0">
                 <Badge variant={priorityMap[ticket.priority]?.variant || 'default'}>
                     {priorityMap[ticket.priority]?.label || ticket.priority}
                 </Badge>
@@ -54,9 +59,6 @@ export function TicketList({ tickets }: TicketListProps) {
                 </Badge>
               </div>
             </div>
-            <CardDescription>
-                Criado {formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR })}
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="line-clamp-2 text-sm text-muted-foreground">{ticket.description}</p>

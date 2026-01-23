@@ -53,7 +53,7 @@ export default function SchedulesPage() {
                             <X className="h-5 w-5" />
                             <span className="sr-only">Fechar agendamento</span>
                         </Button>
-                        <div className="w-full h-[70vh]">
+                        <div className="w-full h-[60vh] lg:h-[70vh]">
                             <iframe
                                 src={selectedUrl}
                                 className="h-full w-full border-0 rounded-lg"
@@ -62,7 +62,7 @@ export default function SchedulesPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {rooms.map((room) => (
                             <Card key={room.name} className="flex flex-col">
                                 <CardHeader>
@@ -86,7 +86,7 @@ export default function SchedulesPage() {
                 <CardDescription>Visualize todos os agendamentos confirmados.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="w-full h-[70vh]">
+                <div className="w-full h-[60vh] lg:h-[70vh]">
                     <iframe
                         src={googleCalendarUrl}
                         className="h-full w-full border-0 rounded-lg"

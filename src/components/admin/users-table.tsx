@@ -1,4 +1,3 @@
-
 'use client';
 import type { AppUser } from "@/lib/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -32,10 +31,10 @@ export function UsersTable({ users }: { users: WithId<AppUser>[] }) {
                 <TableHeader>
                     <TableRow>
                         <TableHead>Usuário</TableHead>
-                        <TableHead>Email</TableHead>
+                        <TableHead className="hidden md:table-cell">Email</TableHead>
                         <TableHead>Função</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Criado em</TableHead>
+                        <TableHead className="hidden sm:table-cell">Status</TableHead>
+                        <TableHead className="hidden lg:table-cell">Criado em</TableHead>
                         <TableHead className="w-[80px] text-right">Ações</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -53,22 +52,25 @@ export function UsersTable({ users }: { users: WithId<AppUser>[] }) {
                                         <AvatarImage src={user.avatarUrl} alt={user.name}/>
                                         <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                                     </Avatar>
-                                    <span className="truncate">{user.name}</span>
+                                     <div className="flex flex-col">
+                                        <span className="font-semibold truncate">{user.name}</span>
+                                        <span className="text-xs text-muted-foreground md:hidden">{user.email}</span>
+                                    </div>
                                 </div>
                             </TableCell>
-                            <TableCell>{user.email}</TableCell>
+                            <TableCell className="hidden md:table-cell">{user.email}</TableCell>
                             <TableCell>
                                 <Badge variant={roleMap[user.role]?.variant || 'default'}>
                                     {roleMap[user.role]?.label || user.role}
                                 </Badge>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="hidden sm:table-cell">
                                 <div className="flex items-center gap-2">
                                     <span className={`h-2 w-2 rounded-full ${statusMap[user.status]?.className || 'bg-gray-400'}`} />
                                     <span>{statusMap[user.status]?.label || user.status}</span>
                                 </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="hidden lg:table-cell">
                                 {user.createdAt ? format(user.createdAt.toDate(), "dd/MM/yyyy") : ''}
                             </TableCell>
                             <TableCell className="text-right">

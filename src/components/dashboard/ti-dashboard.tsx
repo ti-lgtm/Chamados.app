@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import type { AppUser, Ticket } from '@/lib/types';
 import { TicketList } from '@/components/tickets/ticket-list';
@@ -26,18 +26,10 @@ export function TiDashboard({ user }: TiDashboardProps) {
     resolved: allTickets.filter((t) => t.status === 'resolved').length,
   }), [allTickets]);
 
-  const isSupport = user.role === 'ti' || user.role === 'admin';
-
   const ticketsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-
-    if (isSupport) {
-      // TI and Admin users can see all tickets
-      return query(collection(firestore, 'tickets'));
-    }
-    // Regular users are scoped to their own tickets.
-    return query(collection(firestore, 'tickets'), where('userId', '==', user.uid));
-  }, [firestore, user, isSupport]);
+    if (!firestore) return null;
+    return query(collection(firestore, 'tickets'));
+  }, [firestore]);
 
 
   useEffect(() => {
@@ -76,16 +68,16 @@ export function TiDashboard({ user }: TiDashboardProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-headline font-bold">Painel de Controle TI</h1>
-        <p className="text-muted-foreground">
-          {isSupport
-            ? 'Visão geral de todos os chamados do sistema.'
-            : 'Visão geral dos seus chamados criados.'}
-        </p>
-      </div>
+      { user.role === 'ti' && (
+        <div>
+            <h1 className="text-2xl font-headline font-bold">Painel de Controle TI</h1>
+            <p className="text-muted-foreground">
+                Visão geral de todos os chamados do sistema.
+            </p>
+        </div>
+      )}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatsCard title="Abertos" value={loading ? <Skeleton className="h-8 w-12" /> : stats.open} icon={Circle} />
         <StatsCard
           title="Em Atendimento"
@@ -100,15 +92,15 @@ export function TiDashboard({ user }: TiDashboardProps) {
       </div>
 
       <div>
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
             <h2 className="text-xl font-headline font-semibold">
-            {isSupport ? 'Todos os Chamados' : 'Meus Chamados Criados'}
+                Todos os Chamados
             </h2>
-             <Tabs defaultValue="all" onValueChange={setStatusFilter}>
-                <TabsList>
+             <Tabs defaultValue="all" onValueChange={setStatusFilter} className="w-full sm:w-auto">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
                     <TabsTrigger value="all">Todos</TabsTrigger>
                     <TabsTrigger value="open">Abertos</TabsTrigger>
-                    <TabsTrigger value="in_progress">Em Atendimento</TabsTrigger>
+                    <TabsTrigger value="in_progress">Em Atend.</TabsTrigger>
                     <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
                 </TabsList>
             </Tabs>
