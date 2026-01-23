@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import type { AppUser, Ticket } from '@/lib/types';
 import { TicketList } from '@/components/tickets/ticket-list';
@@ -30,7 +30,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const ticketsQuery = useMemoFirebase(
     () =>
       firestore && user.uid
-        ? query(collection(firestore, 'tickets'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'))
+        ? query(collection(firestore, 'tickets'), where('userId', '==', user.uid))
         : null,
     [firestore, user.uid]
   );
@@ -45,6 +45,8 @@ export function TiDashboard({ user }: TiDashboardProps) {
       ticketsQuery,
       (querySnapshot) => {
         const allTickets = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Ticket));
+        // Sort tickets by creation date, newest first.
+        allTickets.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
         setTickets(allTickets);
         setLoading(false);
       },

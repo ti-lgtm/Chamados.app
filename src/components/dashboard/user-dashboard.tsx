@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import type { AppUser, Ticket } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
   const ticketsQuery = useMemoFirebase(
     () =>
       firestore && user.uid
-        ? query(collection(firestore, 'tickets'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'))
+        ? query(collection(firestore, 'tickets'), where('userId', '==', user.uid))
         : null,
     [firestore, user.uid]
   );
@@ -37,6 +37,8 @@ export function UserDashboard({ user }: UserDashboardProps) {
       ticketsQuery,
       (querySnapshot) => {
         const userTickets = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Ticket));
+        // Sort tickets by creation date, newest first.
+        userTickets.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
         setTickets(userTickets);
         setLoading(false);
       },
