@@ -22,7 +22,7 @@ export interface Ticket {
   userId: string;
   user?: AppUser;
   assignedTo: string | null;
-  assignedUser?: AppUser | null;
+  assignedUserName?: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   attachments?: string[];

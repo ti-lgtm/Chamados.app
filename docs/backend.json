@@ -90,6 +90,10 @@
           "type": "string",
           "description": "Reference to User. The user assigned to the ticket, if any. (Relationship: User 1:N Ticket)"
         },
+        "assignedUserName": {
+          "type": "string",
+          "description": "Denormalized name of the user the ticket is assigned to."
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp of when the ticket was created.",

@@ -7,9 +7,11 @@ import {
 } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import type { Ticket, AppUser } from "@/lib/types";
-import { notFound, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { TicketDetailsClient } from "@/components/tickets/ticket-details-client";
 import { Loader2 } from "lucide-react";
+import { notFound } from "next/navigation";
+
 
 async function getTicketData(
   firestore: any,
@@ -36,21 +38,10 @@ async function getTicketData(
       : undefined;
   }
 
-  // Fetch assigned user data
-  let assignedUser = null;
-  if (ticketData.assignedTo) {
-    const assignedUserRef = doc(firestore, "users", ticketData.assignedTo);
-    const assignedUserSnap = await getDoc(assignedUserRef);
-    assignedUser = assignedUserSnap.exists()
-      ? ({ uid: assignedUserSnap.id, ...assignedUserSnap.data() } as AppUser)
-      : null;
-  }
-
   return {
     id: ticketSnap.id,
     ...ticketData,
     user,
-    assignedUser,
   } as Ticket;
 }
 
@@ -83,7 +74,7 @@ export default function TicketPage() {
       .finally(() => {
         setLoading(false);
       });
-  }, [firestore, params]);
+  }, [firestore, params.id]);
 
   if (loading) {
     return (

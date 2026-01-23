@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where, getDoc } from "firebase/firestore";
-import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, useCollection, WithId } from "@/firebase";
+import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where } from "firebase/firestore";
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, useCollection } from "@/firebase";
 import type { Ticket, AppUser } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { format, formatDistanceToNow } from "date-fns";
@@ -12,7 +12,6 @@ import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
@@ -39,7 +38,6 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     const firestore = useFirestore();
     const { toast } = useToast();
     const [ticket, setTicket] = useState<Ticket>(initialTicket);
-    const [assignedUser, setAssignedUser] = useState<AppUser | null>(initialTicket.assignedUser || null);
     const [isUpdating, setIsUpdating] = useState(false);
     const canEdit = user?.role === 'ti' || user?.role === 'admin';
 
@@ -70,24 +68,6 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         });
         return () => unsub();
     }, [ticketRef]);
-
-    useEffect(() => {
-        if (firestore && ticket.assignedTo) {
-            if (assignedUser?.uid === ticket.assignedTo) return;
-
-            const userRef = doc(firestore, 'users', ticket.assignedTo);
-            const unsub = onSnapshot(userRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    setAssignedUser({ uid: docSnap.id, ...docSnap.data() } as AppUser);
-                } else {
-                    setAssignedUser(null);
-                }
-            });
-            return () => unsub();
-        } else {
-            setAssignedUser(null);
-        }
-    }, [firestore, ticket.assignedTo, assignedUser?.uid]);
 
 
     const handleStatusChange = async (newStatus: "open" | "in_progress" | "resolved") => {
@@ -121,8 +101,11 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         setIsUpdating(true);
         const finalAssignedTo = newAssignedTo === 'null' ? null : newAssignedTo;
         
+        const assignedUserData = supportUsers?.find(su => su.id === finalAssignedTo);
+        
         const updateData = {
             assignedTo: finalAssignedTo,
+            assignedUserName: assignedUserData ? assignedUserData.name : null,
             updatedAt: serverTimestamp(),
         };
 
@@ -196,7 +179,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         <div className="flex items-center">
                             <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
                             <strong>Atribuído a:</strong>
-                            <span className="ml-2">{assignedUser?.name || 'Ninguém'}</span>
+                            <span className="ml-2">{ticket.assignedUserName || 'Ninguém'}</span>
                         </div>
                         <div className="flex items-center">
                             <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
