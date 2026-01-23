@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { ArrowRight, X } from 'lucide-react';
 
 const rooms = [
@@ -26,7 +24,6 @@ const googleCalendarUrl = 'https://calendar.google.com/calendar/u/0/embed?src=c_
 
 export default function SchedulesPage() {
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
-  const [view, setView] = useState<'rooms' | 'calendar'>('rooms');
 
   const handleSelectRoom = (url: string) => {
     setSelectedUrl(url);
@@ -34,24 +31,11 @@ export default function SchedulesPage() {
 
   return (
     <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-                <h1 className="text-2xl font-headline font-bold">Portal de Agendamentos</h1>
-                <p className="text-muted-foreground">Agende uma sala ou visualize a agenda geral.</p>
-            </div>
-             <RadioGroup defaultValue="rooms" onValueChange={(value) => setView(value as 'rooms' | 'calendar')} className="flex items-center space-x-4 border rounded-lg p-2 bg-card">
-                <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="rooms" id="r1" />
-                    <Label htmlFor="r1">Agendar Sala</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="calendar" id="r2" />
-                    <Label htmlFor="r2">Ver Agenda</Label>
-                </div>
-            </RadioGroup>
+        <div>
+            <h1 className="text-2xl font-headline font-bold">Portal de Agendamentos</h1>
+            <p className="text-muted-foreground">Agende uma sala e visualize a agenda geral abaixo.</p>
         </div>
 
-      {view === 'rooms' && (
         <Card>
             <CardHeader>
                 <CardTitle>Agendamento de Salas</CardTitle>
@@ -95,9 +79,7 @@ export default function SchedulesPage() {
                 )}
             </CardContent>
         </Card>
-      )}
 
-      {view === 'calendar' && (
         <Card>
             <CardHeader>
                 <CardTitle>Agenda Geral das Salas</CardTitle>
@@ -113,7 +95,6 @@ export default function SchedulesPage() {
                 </div>
             </CardContent>
         </Card>
-      )}
     </div>
   );
 }
