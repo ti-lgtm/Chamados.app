@@ -71,7 +71,10 @@ export function AppSidebar() {
           </Link>
           <NavLink href="/schedules" icon={CalendarDays} label="Agendamentos" />
           <NavLink href="/dashboard" icon={Ticket} label="Chamados" />
-          <NavLink href="/tickets/new" icon={PlusCircle} label="Novo Chamado" />
+          
+          {(user?.role === 'admin' || user?.role === 'ti') && (
+             <NavLink href="/tickets/new" icon={PlusCircle} label="Novo Chamado" />
+          )}
           
           {user?.role === 'admin' && (
              <NavLink href="/admin/users" icon={Users} label="Gerenciar Usuários" />
