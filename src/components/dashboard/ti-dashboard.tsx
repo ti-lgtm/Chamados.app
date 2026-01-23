@@ -24,16 +24,19 @@ export function TiDashboard({ user }: TiDashboardProps) {
     resolved: tickets.filter((t) => t.status === 'resolved').length,
   };
 
-  // NOTE: Due to Firestore security rule limitations, we cannot query all tickets
-  // at once for admins without using custom claims. To prevent the app from crashing,
-  // the TI/Admin dashboard will currently only show tickets created by the logged-in user.
-  const ticketsQuery = useMemoFirebase(
-    () =>
-      firestore && user.uid
-        ? query(collection(firestore, 'tickets'), where('userId', '==', user.uid))
-        : null,
-    [firestore, user.uid]
-  );
+  const isSupport = user.role === 'ti' || user.role === 'admin';
+
+  const ticketsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+
+    if (isSupport) {
+      // TI and Admin users can see all tickets
+      return query(collection(firestore, 'tickets'));
+    }
+    // Regular users are scoped to their own tickets.
+    return query(collection(firestore, 'tickets'), where('userId', '==', user.uid));
+  }, [firestore, user, isSupport]);
+
 
   useEffect(() => {
     if (!ticketsQuery) {
@@ -46,7 +49,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
       (querySnapshot) => {
         const allTickets = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Ticket));
         // Sort tickets by creation date, newest first.
-        allTickets.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+        allTickets.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
         setTickets(allTickets);
         setLoading(false);
       },
@@ -67,7 +70,11 @@ export function TiDashboard({ user }: TiDashboardProps) {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-headline font-bold">Painel de Controle TI</h1>
-        <p className="text-muted-foreground">Visão geral dos seus chamados criados.</p>
+        <p className="text-muted-foreground">
+          {isSupport
+            ? 'Visão geral de todos os chamados do sistema.'
+            : 'Visão geral dos seus chamados criados.'}
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -85,7 +92,9 @@ export function TiDashboard({ user }: TiDashboardProps) {
       </div>
 
       <div>
-        <h2 className="text-xl font-headline font-semibold mb-4">Meus Chamados Criados</h2>
+        <h2 className="text-xl font-headline font-semibold mb-4">
+          {isSupport ? 'Todos os Chamados' : 'Meus Chamados Criados'}
+        </h2>
         {loading ? (
           <div className="space-y-4">
             <Skeleton className="h-24 w-full" />

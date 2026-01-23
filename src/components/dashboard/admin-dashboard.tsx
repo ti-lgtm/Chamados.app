@@ -16,7 +16,7 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-headline font-bold">Painel de Administrador</h1>
-          <p className="text-muted-foreground">Gerencie usuários e visualize seus chamados criados.</p>
+          <p className="text-muted-foreground">Gerencie usuários e visualize todos os chamados do sistema.</p>
         </div>
         <Button asChild variant="outline">
           <Link href="/admin/users">

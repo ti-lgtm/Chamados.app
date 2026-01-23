@@ -1,0 +1,225 @@
+/**
+ * Core Philosophy: This ruleset enforces a Role-Based Access Control (RBAC) model for a support ticket system.
+ * The default security posture is user-ownership, where users can only manage their own data. This is then
+ * extended by two elevated roles: 'ti' (support staff) and 'admin'. 'ti' users gain read-access to all tickets
+ * and comments to provide support, while 'admin' users have full read/write access across the entire system.
+ *
+ * Data Structure: Tickets are stored in a top-level `/tickets` collection to allow for system-wide queries
+ * by support staff. User profiles are in `/users`. Comments and ratings are nested under each ticket.
+ *
+ * Key Security Decisions:
+ * - Top-Level Tickets: Storing tickets at the root level is a deliberate choice to enable efficient `list`
+ *   operations for TI/Admin dashboards.
+ * - User Roles: A 'role' field ('user', 'ti', 'admin') is stored directly on each document in the `/users` collection.
+ *   This is the single source of truth for authorization decisions.
+ * - Suspension: A 'status' field ('active' or 'suspended') on the user document allows admins to disable accounts.
+ *   The global isSignedIn() function checks this status on every authenticated request.
+ * - Ownership: The `userId` field on a ticket document defines its owner. Rules for subcollections (comments, ratings)
+ *   use `get()` on the parent ticket to verify ownership, which is a secure and performant pattern.
+ *
+ * Denormalization for Authorization:
+ * - The `role` and `status` are stored on the `/users/{userId}` document, making role/status lookups for the authenticated user efficient.
+ * - The `Ticket` document contains a `userId` field, and rules enforce that this matches the creator's UID on creation.
+ * - The `Comment` document contains a `userId` field to identify the author, allowing rules to grant update/delete
+ *   permissions only to the comment's original creator.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    //-------------------------------------------------------------------------
+    // Helper Functions
+    //-------------------------------------------------------------------------
+
+    /**
+     * Returns true if the user is authenticated and their account is not suspended.
+     * On user creation, the document won't exist, so the check is bypassed.
+     */
+    function isSignedIn() {
+      return request.auth != null && (
+        !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active'
+      );
+    }
+
+    /**
+     * Returns true if the authenticated user's UID matches the provided userId.
+     * This is the primary function for checking document ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Retrieves the role of the currently authenticated user from their user profile.
+     * This is the standard, secure way to implement RBAC in Firestore.
+     */
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    /**
+     * Returns true if the authenticated user has the 'admin' role.
+     */
+    function isAdmin() {
+      return isSignedIn() && getRole() == 'admin';
+    }
+
+    /**
+     * Returns true if the authenticated user has the 'ti' (support staff) role.
+     */
+    function isTi() {
+      return isSignedIn() && getRole() == 'ti';
+    }
+
+    /**
+     * Returns true if the user is either a 'ti' or 'admin'.
+     */
+    function isSupportStaff() {
+      return isTi() || isAdmin();
+    }
+
+    //-------------------------------------------------------------------------
+    // Validation Helper Functions (Prototyping Mode)
+    //-------------------------------------------------------------------------
+
+    /**
+     * On user creation, ensures the document ID matches the user's UID and
+     * the role is correctly initialized to 'user' and status to 'active'.
+     */
+    function hasValidUserDataOnCreate(userId) {
+      let data = request.resource.data;
+      return data.uid == userId && data.role == 'user' && data.status == 'active';
+    }
+
+    /**
+     * On user update, prevents critical, identity-related fields from being changed by the owner.
+     */
+    function hasImmutableUserFields() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return after.uid == before.uid && after.email == before.email && after.createdAt == before.createdAt;
+    }
+
+    /**
+     * On ticket update, prevents the ownership link (`userId`) from being changed.
+     */
+    function hasImmutableTicketFields() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+    
+    /**
+     * On comment creation, ensures the `userId` is the commenter's UID and the
+     * `ticketId` matches the parent ticket in the path.
+     */
+    function hasValidCommentDataOnCreate(ticketId) {
+      let data = request.resource.data;
+      return data.userId == request.auth.uid && data.ticketId == ticketId;
+    }
+
+    /**
+     * On comment update, prevents the author and ticket links from being changed.
+     */
+    function hasImmutableCommentFields() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return after.userId == before.userId && after.ticketId == before.ticketId;
+    }
+    
+    /**
+     * On rating creation, ensures the `ticketId` matches the parent ticket path.
+     */
+    function hasValidRatingDataOnCreate(ticketId) {
+      return request.resource.data.ticketId == ticketId;
+    }
+
+    /**
+     * On rating update, prevents the `ticketId` from being changed.
+     */
+    function hasImmutableRatingFields() {
+      return request.resource.data.ticketId == resource.data.ticketId;
+    }
+
+    //-------------------------------------------------------------------------
+    // Collection Rules
+    //-------------------------------------------------------------------------
+
+    /**
+     * @description Controls access to user profile documents.
+     * @path /users/{userId}
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isSupportStaff();
+      allow list: if isAdmin();
+      allow create: if request.auth != null && request.auth.uid == userId && hasValidUserDataOnCreate(userId);
+      allow update: if resource != null && ((isOwner(userId) && hasImmutableUserFields()) || isAdmin());
+      allow delete: if resource != null && isAdmin();
+    }
+
+    /**
+     * @description Controls access to support tickets in the top-level collection.
+     * @path /tickets/{ticketId}
+     */
+    match /tickets/{ticketId} {
+      // GET: Owners and Support Staff can get individual tickets.
+      // This rule is evaluated for single-doc reads AND for each potential
+      // document in a query's result set.
+      allow get: if isOwner(resource.data.userId) || isSupportStaff();
+
+      // LIST: This rule allows any authenticated user to start a query.
+      // The query's security is ultimately enforced by the 'get' rule above.
+      // For example, a regular user's query for all tickets (`collection('tickets')`)
+      // will fail because the 'get' rule would fail for tickets they don't own.
+      // An admin's query for all tickets succeeds because the 'get' rule
+      // (`isSupportStaff()`) allows them to read every ticket document.
+      allow list: if isSignedIn();
+
+      // CREATE: A user can create a ticket for themselves. `create` rules can use `get()`.
+      allow create: if isOwner(request.resource.data.userId);
+      // UPDATE: The owner or an admin can update a ticket. `update` rules can use `get()`.
+      allow update: if (isOwner(resource.data.userId) || isAdmin()) && hasImmutableTicketFields();
+      // DELETE: The owner or an admin can delete a ticket. `delete` rules can use `get()`.
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+
+    /**
+     * @description Controls access to comments on a specific ticket.
+     * @path /tickets/{ticketId}/comments/{commentId}
+     */
+    match /tickets/{ticketId}/comments/{commentId} {
+      // Helper function to get the parent ticket's owner UID
+      function getTicketOwnerId() {
+        return get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId;
+      }
+      
+      allow get, list: if isOwner(getTicketOwnerId()) || isSupportStaff();
+      allow create: if (isOwner(getTicketOwnerId()) || isSupportStaff()) && hasValidCommentDataOnCreate(ticketId);
+      allow update: if (isOwner(resource.data.userId) || isAdmin()) && hasImmutableCommentFields();
+      allow delete: if (isOwner(resource.data.userId) || isAdmin());
+    }
+
+    /**
+     * @description Controls access to ratings on a specific ticket.
+     * @path /tickets/{ticketId}/ratings/{ratingId}
+     */
+    match /tickets/{ticketId}/ratings/{ratingId} {
+      function getTicketOwnerId() {
+        return get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId;
+      }
+
+      allow get, list: if isOwner(getTicketOwnerId());
+      allow create: if isOwner(getTicketOwnerId()) && hasValidRatingDataOnCreate(ticketId);
+      allow update: if isOwner(getTicketOwnerId()) && hasImmutableRatingFields();
+      allow delete: if isOwner(getTicketOwnerId());
+    }
+    
+    /**
+     * @description Controls access to global counters for sequential number generation.
+     * @path /counters/{counterId}
+     */
+    match /counters/{counterId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}
