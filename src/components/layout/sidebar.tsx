@@ -16,6 +16,7 @@ import {
   LogOut,
   Settings,
   LifeBuoy,
+  CalendarDays,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "firebase/auth";
@@ -24,7 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string; }) => {
     const pathname = usePathname();
-    const isActive = pathname === href;
+    const isActive = pathname.startsWith(href);
 
     return (
          <Tooltip>
@@ -64,13 +65,14 @@ export function AppSidebar() {
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-card sm:flex">
         <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
           <Link
-            href="/dashboard"
+            href="/schedules"
             className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
           >
             <Ticket className="h-4 w-4 transition-all group-hover:scale-110" />
-            <span className="sr-only">Portal de Chamados</span>
+            <span className="sr-only">Portal de Agendamentos</span>
           </Link>
-          <NavLink href="/dashboard" icon={Home} label="Dashboard" />
+          <NavLink href="/schedules" icon={CalendarDays} label="Agendamentos" />
+          <NavLink href="/dashboard" icon={Home} label="Chamados" />
           <NavLink href="/tickets/new" icon={PlusCircle} label="Novo Chamado" />
           
           {user?.role === 'admin' && (

@@ -10,6 +10,7 @@ import {
   Users,
   LogOut,
   User as UserIcon,
+  CalendarDays,
 } from "lucide-react";
 import {
   Sheet,
@@ -59,15 +60,19 @@ export function AppHeader() {
         <SheetContent side="left" className="sm:max-w-xs">
           <nav className="grid gap-6 text-lg font-medium">
             <Link
-              href="/dashboard"
+              href="/schedules"
               className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
             >
               <Ticket className="h-5 w-5 transition-all group-hover:scale-110" />
-              <span className="sr-only">Portal de Chamados</span>
+              <span className="sr-only">Portal de Agendamentos</span>
+            </Link>
+            <Link href="/schedules" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
+              <CalendarDays className="h-5 w-5" />
+              Agendamentos
             </Link>
             <Link href="/dashboard" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
               <Home className="h-5 w-5" />
-              Dashboard
+              Chamados
             </Link>
             <Link href="/tickets/new" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
               <PlusCircle className="h-5 w-5" />
