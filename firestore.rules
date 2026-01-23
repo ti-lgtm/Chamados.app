@@ -162,22 +162,21 @@ service cloud.firestore {
      */
     match /tickets/{ticketId} {
       // GET: Owners and Support Staff can get individual tickets.
-      // The 'get()' call inside isSupportStaff() is valid for single-document reads.
+      // 'get' rules can use helper functions that read other documents (like getRole).
       allow get: if isOwner(resource.data.userId) || isSupportStaff();
 
-      // LIST: This rule is used to secure queries.
-      // It allows a query if Firestore can prove that for every potential document,
-      // the user is the owner. This works with client-side queries like
-      // `.where('userId', '==', auth.uid)`.
-      // It does NOT use get() so it's valid for query evaluation. This means
-      // support staff cannot list ALL tickets with a single query.
-      allow list: if isOwner(resource.data.userId);
+      // LIST: This rule is used to secure queries. It is intentionally simple and
+      // does NOT use helper functions like isOwner() because those functions use `get()`,
+      // which is disallowed in `list` rules. This rule ensures that a client query
+      // MUST include `where('userId', '==', request.auth.uid)` to succeed.
+      // NOTE: This rule prevents TI/Admins from listing all tickets in the system.
+      allow list: if request.auth.uid == resource.data.userId;
 
-      // A user can create a ticket for themselves, ensuring the userId in the doc matches their auth uid.
+      // CREATE: A user can create a ticket for themselves. `create` rules can use `get()`.
       allow create: if isOwner(request.resource.data.userId);
-      // The owner or an admin can update a ticket. The owner cannot be changed.
+      // UPDATE: The owner or an admin can update a ticket. `update` rules can use `get()`.
       allow update: if (isOwner(resource.data.userId) || isAdmin()) && hasImmutableTicketFields();
-      // The owner or an admin can delete a ticket.
+      // DELETE: The owner or an admin can delete a ticket. `delete` rules can use `get()`.
       allow delete: if isOwner(resource.data.userId) || isAdmin();
     }
 
