@@ -32,7 +32,8 @@ export interface Comment {
   id: string;
   ticketId: string;
   userId: string;
-  user?: AppUser;
+  userName: string;
+  userAvatarUrl?: string;
   message: string;
   createdAt: Timestamp;
 }

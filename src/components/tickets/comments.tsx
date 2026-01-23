@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, getDoc, doc } from "firebase/firestore";
+import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import type { AppUser, Comment as CommentType } from "@/lib/types";
 import { useForm } from "react-hook-form";
@@ -27,11 +27,11 @@ const commentSchema = z.object({
     message: z.string().min(1, "A mensagem não pode estar vazia.").max(1000, "A mensagem é muito longa."),
 });
 
-const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+const getInitials = (name: string) => name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '';
 
 export function Comments({ ticketId, currentUser }: CommentsProps) {
     const firestore = useFirestore();
-    const [comments, setComments] = useState<(CommentType & { user?: AppUser })[]>([]);
+    const [comments, setComments] = useState<CommentType[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
@@ -46,17 +46,12 @@ export function Comments({ ticketId, currentUser }: CommentsProps) {
     , [firestore, ticketId]);
 
     useEffect(() => {
-        if (!commentsQuery || !firestore) return;
+        if (!commentsQuery) return;
 
-        const unsubscribe = onSnapshot(commentsQuery, async (querySnapshot) => {
-            const commentsData = await Promise.all(
-                querySnapshot.docs.map(async (docSnap) => {
-                    const comment = { id: docSnap.id, ...docSnap.data() } as CommentType;
-                    const userSnap = await getDoc(doc(firestore, "users", comment.userId));
-                    const user = userSnap.exists() ? { uid: userSnap.id, ...userSnap.data() } as AppUser : undefined;
-                    return { ...comment, user };
-                })
-            );
+        const unsubscribe = onSnapshot(commentsQuery, (querySnapshot) => {
+            const commentsData = querySnapshot.docs.map(docSnap => {
+                return { id: docSnap.id, ...docSnap.data() } as CommentType;
+            });
             setComments(commentsData);
             setLoading(false);
         },
@@ -70,7 +65,7 @@ export function Comments({ ticketId, currentUser }: CommentsProps) {
         });
 
         return () => unsubscribe();
-    }, [commentsQuery, firestore, ticketId]);
+    }, [commentsQuery, ticketId]);
 
     async function onSubmit(values: z.infer<typeof commentSchema>) {
         if (!currentUser || !firestore) return;
@@ -78,6 +73,8 @@ export function Comments({ ticketId, currentUser }: CommentsProps) {
         const commentData = {
             ticketId,
             userId: currentUser.uid,
+            userName: currentUser.name,
+            userAvatarUrl: currentUser.avatarUrl || '',
             message: values.message,
             createdAt: serverTimestamp(),
         };
@@ -124,12 +121,12 @@ export function Comments({ ticketId, currentUser }: CommentsProps) {
                     {!loading && comments.map((comment) => (
                         <div key={comment.id} className="flex items-start space-x-4">
                             <Avatar>
-                                <AvatarImage src={comment.user?.avatarUrl} />
-                                <AvatarFallback>{comment.user ? getInitials(comment.user.name) : '?'}</AvatarFallback>
+                                <AvatarImage src={comment.userAvatarUrl} />
+                                <AvatarFallback>{comment.userName ? getInitials(comment.userName) : '?'}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                    <p className="font-semibold">{comment.user?.name}</p>
+                                    <p className="font-semibold">{comment.userName}</p>
                                     <p className="text-xs text-muted-foreground">
                                         {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}
                                     </p>
