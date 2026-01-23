@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { collection, query, onSnapshot, orderBy, where } from "firebase/firestore";
-import { useFirestore, useMemoFirebase } from "@/firebase";
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import type { AppUser, Ticket } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { TicketList } from "@/components/tickets/ticket-list";
@@ -31,12 +31,23 @@ export function UserDashboard({ user }: UserDashboardProps) {
   );
 
   useEffect(() => {
-    if (!ticketsQuery) return;
+    if (!ticketsQuery) {
+      setLoading(false);
+      return;
+    }
 
     const unsubscribe = onSnapshot(ticketsQuery, (querySnapshot) => {
       const userTickets = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket));
       setTickets(userTickets);
       setLoading(false);
+    },
+    (err) => {
+        const contextualError = new FirestorePermissionError({
+            operation: 'list',
+            path: 'tickets'
+        });
+        errorEmitter.emit('permission-error', contextualError);
+        setLoading(false);
     });
 
     return () => unsubscribe();
