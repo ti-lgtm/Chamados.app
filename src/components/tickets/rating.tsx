@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -27,6 +28,9 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
 
+    const isCreator = currentUser?.uid === ticketCreatorId;
+    const isSupport = currentUser?.role === 'ti' || currentUser?.role === 'admin';
+
     const ratingQuery = useMemoFirebase(() =>
         firestore ? query(
             collection(firestore, "tickets", ticketId, "ratings"),
@@ -35,7 +39,10 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
     , [firestore, ticketId]);
 
     useEffect(() => {
-        if (!ratingQuery) return;
+        if (!ratingQuery) {
+            setLoading(false);
+            return;
+        }
 
         const unsubscribe = onSnapshot(ratingQuery, (snapshot) => {
             if (!snapshot.empty) {
@@ -97,19 +104,23 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
         return <Card><CardContent className="p-6"><div className="flex justify-center"><Loader2 className="animate-spin" /></div></CardContent></Card>;
     }
 
-    if (currentUser?.uid !== ticketCreatorId) {
-        return null; // Only creator can rate
-    }
+    // Render nothing if not creator or support.
+    // Also, if no rating exists, only show the form to the creator.
+    if (!isCreator && !isSupport) return null;
+    if (!existingRating && !isCreator) return null;
+
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="font-headline">Avalie o Atendimento</CardTitle>
+                <CardTitle className="font-headline">
+                    {existingRating ? "Avaliação do Atendimento" : "Avalie o Atendimento"}
+                </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 {existingRating ? (
                     <div>
-                        <p className="text-sm text-muted-foreground mb-2">Sua avaliação:</p>
+                        <p className="text-sm text-muted-foreground mb-2">{isCreator ? "Sua avaliação:" : "Avaliação do cliente:"}</p>
                         <div className="flex items-center space-x-1">
                             {[1, 2, 3, 4, 5].map((star) => (
                                 <Star key={star} className={cn("h-6 w-6", existingRating.rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />

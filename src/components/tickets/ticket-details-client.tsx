@@ -126,6 +126,10 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             setIsUpdating(false);
         });
     };
+    
+    const assignedUser = supportUsers?.find(u => u.id === ticket.assignedTo);
+    const assignedNameToDisplay = ticket.assignedUserName || assignedUser?.name || 'Ninguém';
+
 
     if (authLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
@@ -179,7 +183,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         <div className="flex items-center">
                             <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
                             <strong>Atribuído a:</strong>
-                            <span className="ml-2">{ticket.assignedUserName || 'Ninguém'}</span>
+                            <span className="ml-2">{assignedNameToDisplay}</span>
                         </div>
                         <div className="flex items-center">
                             <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
