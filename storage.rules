@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Files are uploaded to attachments/{userId}/{timestamp}_{filename}.
+    // This ruleset ensures that:
+    // 1. Users can only create files in their own designated folder.
+    // 2. Only the user who uploaded the file OR support staff (ti, admin) can read it.
+    // 3. Nobody can update/overwrite a file once it's uploaded.
+    // 4. Only the owner can delete their own files.
+    match /attachments/{userId}/{fileName} {
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // A user can read their own files.
+      // A support staff member (ti or admin) can also read any user's files.
+      // This is necessary for them to view ticket attachments.
+      allow read: if request.auth != null && 
+                    (request.auth.uid == userId || 
+                     get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['ti', 'admin']);
+
+      // Only the file owner can delete it. This might be useful for a future feature.
+      allow delete: if request.auth != null && request.auth.uid == userId;
+      
+      // Disallow updates to prevent overwriting existing files.
+      allow update: if false;
+    }
+  }
+}
