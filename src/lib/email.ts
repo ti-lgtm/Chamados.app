@@ -1,5 +1,5 @@
 const SMTP2GO_API_KEY = process.env.SMTP2GO_API_KEY;
-const SENDER_EMAIL = "Soluções AMLMF <noreply@solucoesamlmf.com>";
+const SENDER_EMAIL = "Soluções AMLMF <tiamlmf@hotmail.com>";
 
 interface EmailPayload {
   to: string[];
