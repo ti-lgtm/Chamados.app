@@ -7,18 +7,17 @@ import {
 } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import type { Ticket, AppUser } from "@/lib/types";
-import { notFound, useParams, useSearchParams } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { TicketDetailsClient } from "@/components/tickets/ticket-details-client";
 import { Loader2 } from "lucide-react";
 
 async function getTicketData(
   firestore: any,
   ticketId: string,
-  userId: string,
 ): Promise<Ticket | null> {
   if (!firestore) return null;
 
-  const ticketRef = doc(firestore, "users", userId, "tickets", ticketId);
+  const ticketRef = doc(firestore, "tickets", ticketId);
   const ticketSnap = await getDoc(ticketRef);
 
   if (!ticketSnap.exists()) {
@@ -57,24 +56,20 @@ async function getTicketData(
 
 export default function TicketPage() {
   const params = useParams<{ id: string }>();
-  const searchParams = useSearchParams();
   const firestore = useFirestore();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const ticketId = params.id;
-    const userId = searchParams.get('userId');
-
-    if (!ticketId || !userId) {
+    
+    if (!ticketId) {
       setLoading(false);
-      if (ticketId) {
-        notFound();
-      }
+      notFound();
       return;
     }
     
-    getTicketData(firestore, ticketId, userId)
+    getTicketData(firestore, ticketId)
       .then((ticketData) => {
         if (!ticketData) {
           notFound();
@@ -88,7 +83,7 @@ export default function TicketPage() {
       .finally(() => {
         setLoading(false);
       });
-  }, [firestore, params, searchParams]);
+  }, [firestore, params]);
 
   if (loading) {
     return (

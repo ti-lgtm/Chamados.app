@@ -73,7 +73,6 @@ export function NewTicketForm() {
       // 1. Handle attachments upload first
       let attachmentUrls: string[] = [];
       if (values.attachments && values.attachments.length > 0) {
-        // Use Promise.all to upload files in parallel for better performance
         const uploadPromises = Array.from(values.attachments).map(async (file) => {
           const storageRef = ref(storage, `attachments/${user.uid}/${Date.now()}_${file.name}`);
           await uploadBytes(storageRef, file);
@@ -91,7 +90,7 @@ export function NewTicketForm() {
         
         transaction.set(counterRef, { lastNumber: newNumber }, { merge: true });
 
-        const newTicketRef = doc(collection(db, "users", user.uid, "tickets"));
+        const newTicketRef = doc(collection(db, "tickets"));
         
         const ticketPayload = {
           ticketNumber: newNumber,
@@ -120,10 +119,8 @@ export function NewTicketForm() {
     } catch (error: any) {
       console.error('Erro ao criar chamado:', error);
       
-      // Default error message
       let description = 'Ocorreu um erro inesperado ao criar seu chamado. Tente novamente.';
       
-      // Check for specific Firebase Storage errors
       if (error.code) {
         switch (error.code) {
           case 'storage/unauthorized':
@@ -144,7 +141,6 @@ export function NewTicketForm() {
         variant: 'destructive',
       });
 
-      // Also emit a permission error for potential security rule issues in the transaction
       if (error instanceof FirestorePermissionError) {
           errorEmitter.emit('permission-error', error);
       }

@@ -220,18 +220,14 @@
         }
       },
       {
-        "path": "/users/{userId}/tickets/{ticketId}",
+        "path": "/tickets/{ticketId}",
         "definition": {
           "entityName": "Ticket",
           "schema": {
             "$ref": "#/backend/entities/Ticket"
           },
-          "description": "Stores tickets created by users. Uses path-based ownership. Includes denormalized 'userId' field for authorization independence.",
+          "description": "Stores all support tickets in a top-level collection to allow for easier querying by support staff and admins. Each ticket contains a `userId` field to link it to its creator.",
           "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Authentication UID of the user who created the ticket."
-            },
             {
               "name": "ticketId",
               "description": "The unique identifier of the ticket."
@@ -240,18 +236,14 @@
         }
       },
       {
-        "path": "/users/{userId}/tickets/{ticketId}/comments/{commentId}",
+        "path": "/tickets/{ticketId}/comments/{commentId}",
         "definition": {
           "entityName": "Comment",
           "schema": {
             "$ref": "#/backend/entities/Comment"
           },
-          "description": "Stores comments associated with a ticket. Located within the user's tickets subcollection for hierarchical data organization and simplified security rules.",
+          "description": "Stores comments associated with a ticket.",
           "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Authentication UID of the user who owns the ticket."
-            },
             {
               "name": "ticketId",
               "description": "The unique identifier of the ticket."
@@ -264,18 +256,14 @@
         }
       },
       {
-        "path": "/users/{userId}/tickets/{ticketId}/ratings/{ratingId}",
+        "path": "/tickets/{ticketId}/ratings/{ratingId}",
         "definition": {
           "entityName": "Rating",
           "schema": {
             "$ref": "#/backend/entities/Rating"
           },
-          "description": "Stores ratings associated with a ticket. Located within the user's tickets subcollection.",
+          "description": "Stores ratings associated with a ticket.",
           "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Authentication UID of the user who owns the ticket."
-            },
             {
               "name": "ticketId",
               "description": "The unique identifier of the ticket."
@@ -304,6 +292,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support a ticket management system with user roles (user, ti, admin), tickets, comments, and ratings. It prioritizes authorization independence and simple security rules by adhering to the core design principles. The structure implements Role-Based Access Control (RBAC) with roles stored directly in the user document. It uses path-based ownership for tickets and their related data (comments, ratings). Authorization Independence is achieved because all authorization checks are done based on the `request.auth.uid` and data stored directly on the documents being accessed, thus avoiding any `get()` calls in security rules.\n\n**Authorization Independence:**\n\n*   **Users:** User roles are stored directly within the user document (`/users/{userId}`). This eliminates the need to fetch roles from a separate collection during authorization.\n*   **Tickets:** Each ticket is owned by a user (specified by `userId` field). Access control is based on whether the requesting user's UID matches the `userId` or whether the user has a `ti` or `admin` role.\n*   **Comments & Ratings:** Comments and ratings are stored as subcollections of tickets (`/users/{userId}/tickets/{ticketId}/comments/{commentId}` and `/users/{userId}/tickets/{ticketId}/ratings/{ratingId}`). Access to these is controlled through the parent ticket's ownership and user roles, eliminating `get()` calls.\n\n**QAPs Support:**\n\n*   Secure `list` operations are supported by segregating data based on ownership (path-based ownership for Tickets). The `list` operation is secured by security rules that ensure only the owner of the tickets, `ti` users, or `admin` users can access the tickets.\n\n**Justification of Paths:**\n\n*   `/users/{userId}`: Stores user information, including their role. The `userId` parameter ensures that operations are scoped to the user's own document, unless the user has `ti` or `admin` roles.\n*   `/users/{userId}/tickets/{ticketId}`:  Each ticket is stored as a subcollection of users. This enforces path-based ownership, making it easy to secure tickets based on the user who created them.\n*   `/users/{userId}/tickets/{ticketId}/comments/{commentId}`: Comments are stored as a subcollection of tickets.  This provides a clear hierarchy and allows for easy retrieval of comments associated with a specific ticket.\n*   `/users/{userId}/tickets/{ticketId}/ratings/{ratingId}`: Ratings are stored as a subcollection of tickets, similar to comments. This maintains the hierarchical structure and simplifies data retrieval."
+    "reasoning": "The Firestore structure is designed to support a ticket management system with user roles (user, ti, admin). It has been refactored to use a top-level `tickets` collection to allow `ti` and `admin` users to query all tickets, which is a common requirement for support dashboards and not efficiently supported by collection group queries under the previous model due to security rule limitations.\n\n**Authorization Independence:**\n\n*   **Users:** User roles are stored directly within the user document (`/users/{userId}`). This remains the single source of truth for a user's role and status.\n*   **Tickets:** Tickets are in a top-level collection. Each ticket contains a `userId` field to denote ownership. This allows security rules to grant access based on whether the requester's UID matches the `userId` field (ownership) or if the requester has an elevated role (`ti`, `admin`).\n*   **Comments & Ratings:** These are stored in subcollections under each ticket (`/tickets/{ticketId}/...`). Their security rules rely on fetching the parent ticket document to check its `userId` field, ensuring only the ticket owner or support staff can interact with them. This `get()` call is efficient and secure as it's scoped to a single document within the same collection path hierarchy.\n\n**QAPs Support:**\n\n*   Secure `list` operations are now fully supported. `ti` and `admin` roles can list the entire `/tickets` collection. Regular users cannot list the entire collection but can perform a secure, targeted query (`where('userId', '==', auth.uid)`) which is protected by `get` rules that enforce ownership on each document read.\n\n**Justification of Paths:**\n\n*   `/users/{userId}`: Stores user information, including their role and status. Essential for RBAC.\n*   `/tickets/{ticketId}`: A top-level collection for all tickets. This is the key change that enables efficient querying for support staff and admins. The `userId` field within each ticket document maintains the ownership link.\n*   `/tickets/{ticketId}/comments/{commentId}`: Comments are stored as a subcollection of tickets. This provides a clear hierarchy and allows for easy retrieval of comments associated with a specific ticket.\n*   `/tickets/{ticketId}/ratings/{ratingId}`: Ratings are stored as a subcollection of tickets, similar to comments."
   }
 }

@@ -41,8 +41,8 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     const [isUpdating, setIsUpdating] = useState(false);
 
     const ticketRef = useMemoFirebase(() => 
-        firestore ? doc(firestore, "users", initialTicket.userId, "tickets", initialTicket.id) : null
-    , [firestore, initialTicket.userId, initialTicket.id]);
+        firestore ? doc(firestore, "tickets", initialTicket.id) : null
+    , [firestore, initialTicket.id]);
 
     useEffect(() => {
         if (!ticketRef) return;
@@ -124,7 +124,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         )}
                     </CardContent>
                 </Card>
-                <Comments ticketId={ticket.id} ticketCreatorId={ticket.userId} currentUser={user} />
+                <Comments ticketId={ticket.id} currentUser={user} />
             </div>
 
             <div className="lg:col-span-1 space-y-6">

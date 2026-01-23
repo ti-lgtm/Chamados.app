@@ -29,10 +29,10 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
 
     const ratingQuery = useMemoFirebase(() =>
         firestore ? query(
-            collection(firestore, "users", ticketCreatorId, "tickets", ticketId, "ratings"),
+            collection(firestore, "tickets", ticketId, "ratings"),
             limit(1)
         ) : null
-    , [firestore, ticketId, ticketCreatorId]);
+    , [firestore, ticketId]);
 
     useEffect(() => {
         if (!ratingQuery) return;
@@ -48,13 +48,13 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
         (err) => {
             const contextualError = new FirestorePermissionError({
                 operation: 'list',
-                path: `users/${ticketCreatorId}/tickets/${ticketId}/ratings`
+                path: `tickets/${ticketId}/ratings`
             });
             errorEmitter.emit('permission-error', contextualError);
             setLoading(false);
         });
         return () => unsubscribe();
-    }, [ratingQuery, ticketCreatorId, ticketId]);
+    }, [ratingQuery, ticketId]);
 
     const handleSubmit = async () => {
         if (rating === 0) {
@@ -73,7 +73,7 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
             createdAt: serverTimestamp(),
         };
 
-        const ratingCollectionRef = collection(firestore, "users", ticketCreatorId, "tickets", ticketId, "ratings");
+        const ratingCollectionRef = collection(firestore, "tickets", ticketId, "ratings");
 
         addDoc(ratingCollectionRef, ratingData)
             .then(() => {
@@ -83,7 +83,7 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
                 toast({ title: "Erro ao enviar avaliação", variant: "destructive" });
                 const contextualError = new FirestorePermissionError({
                     operation: 'create',
-                    path: `users/${ticketCreatorId}/tickets/${ticketId}/ratings`,
+                    path: `tickets/${ticketId}/ratings`,
                     requestResourceData: ratingData
                 });
                 errorEmitter.emit('permission-error', contextualError);

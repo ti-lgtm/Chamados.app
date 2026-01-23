@@ -20,7 +20,6 @@ import { Skeleton } from "../ui/skeleton";
 
 interface CommentsProps {
     ticketId: string;
-    ticketCreatorId: string;
     currentUser: AppUser | null;
 }
 
@@ -30,7 +29,7 @@ const commentSchema = z.object({
 
 const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
-export function Comments({ ticketId, ticketCreatorId, currentUser }: CommentsProps) {
+export function Comments({ ticketId, currentUser }: CommentsProps) {
     const firestore = useFirestore();
     const [comments, setComments] = useState<(CommentType & { user?: AppUser })[]>([]);
     const [loading, setLoading] = useState(true);
@@ -43,8 +42,8 @@ export function Comments({ ticketId, ticketCreatorId, currentUser }: CommentsPro
     });
     
     const commentsQuery = useMemoFirebase(() => 
-        firestore ? query(collection(firestore, "users", ticketCreatorId, "tickets", ticketId, "comments"), orderBy("createdAt", "asc")) : null
-    , [firestore, ticketCreatorId, ticketId]);
+        firestore ? query(collection(firestore, "tickets", ticketId, "comments"), orderBy("createdAt", "asc")) : null
+    , [firestore, ticketId]);
 
     useEffect(() => {
         if (!commentsQuery || !firestore) return;
@@ -64,14 +63,14 @@ export function Comments({ ticketId, ticketCreatorId, currentUser }: CommentsPro
         (err) => {
             const contextualError = new FirestorePermissionError({
                 operation: 'list',
-                path: `users/${ticketCreatorId}/tickets/${ticketId}/comments`
+                path: `tickets/${ticketId}/comments`
             });
             errorEmitter.emit('permission-error', contextualError);
             setLoading(false);
         });
 
         return () => unsubscribe();
-    }, [commentsQuery, firestore, ticketCreatorId, ticketId]);
+    }, [commentsQuery, firestore, ticketId]);
 
     async function onSubmit(values: z.infer<typeof commentSchema>) {
         if (!currentUser || !firestore) return;
@@ -83,7 +82,7 @@ export function Comments({ ticketId, ticketCreatorId, currentUser }: CommentsPro
             createdAt: serverTimestamp(),
         };
 
-        const commentsCollectionRef = collection(firestore, "users", ticketCreatorId, "tickets", ticketId, "comments");
+        const commentsCollectionRef = collection(firestore, "tickets", ticketId, "comments");
 
         addDoc(commentsCollectionRef, commentData)
             .then(() => {
@@ -93,7 +92,7 @@ export function Comments({ ticketId, ticketCreatorId, currentUser }: CommentsPro
                 toast({ title: "Erro ao enviar comentário", variant: "destructive" });
                 const contextualError = new FirestorePermissionError({
                     operation: 'create',
-                    path: `users/${ticketCreatorId}/tickets/${ticketId}/comments`,
+                    path: `tickets/${ticketId}/comments`,
                     requestResourceData: commentData
                 });
                 errorEmitter.emit('permission-error', contextualError);

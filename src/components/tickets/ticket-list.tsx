@@ -43,7 +43,7 @@ export function TicketList({ tickets }: TicketListProps) {
           <CardHeader>
             <div className="flex justify-between items-start">
               <CardTitle className="font-headline text-lg hover:text-primary">
-                <Link href={`/tickets/${ticket.id}?userId=${ticket.userId}`}>{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</Link>
+                <Link href={`/tickets/${ticket.id}`}>{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</Link>
               </CardTitle>
               <div className="flex gap-2">
                 <Badge variant={priorityMap[ticket.priority]?.variant || 'default'}>
@@ -63,7 +63,7 @@ export function TicketList({ tickets }: TicketListProps) {
           </CardContent>
           <CardFooter>
             <Button asChild variant="secondary" size="sm">
-              <Link href={`/tickets/${ticket.id}?userId=${ticket.userId}`}>Ver Detalhes</Link>
+              <Link href={`/tickets/${ticket.id}`}>Ver Detalhes</Link>
             </Button>
           </CardFooter>
         </Card>

@@ -25,14 +25,8 @@ export function TiDashboard({ user }: TiDashboardProps) {
   };
 
   const ticketsQuery = useMemoFirebase(() => 
-    // The collectionGroup query was causing a permission error because Firestore
-    // security rules for queries (list operations) have limitations on using `get()`
-    // to check other documents for permissions (like checking a user's role).
-    // To prevent the app from crashing, this query is temporarily changed to
-    // fetch the current user's tickets, which will likely be an empty list for TI/Admin users.
-    // A proper fix requires architectural changes like using Firebase Custom Claims.
-    firestore && user.uid ? query(collection(firestore, "users", user.uid, "tickets"), orderBy("createdAt", "desc")) : null
-  , [firestore, user.uid]);
+    firestore ? query(collection(firestore, "tickets"), orderBy("createdAt", "desc")) : null
+  , [firestore]);
 
   useEffect(() => {
     if (!ticketsQuery) {
@@ -48,14 +42,14 @@ export function TiDashboard({ user }: TiDashboardProps) {
     (err) => {
         const contextualError = new FirestorePermissionError({
             operation: 'list',
-            path: `users/${user.uid}/tickets`
+            path: 'tickets'
         });
         errorEmitter.emit('permission-error', contextualError);
         setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [ticketsQuery, user.uid]);
+  }, [ticketsQuery]);
 
   return (
     <div className="space-y-6">
