@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import type { AppUser, Ticket } from '@/lib/types';
 import { TicketList } from '@/components/tickets/ticket-list';
@@ -24,9 +24,15 @@ export function TiDashboard({ user }: TiDashboardProps) {
     resolved: tickets.filter((t) => t.status === 'resolved').length,
   };
 
+  // NOTE: Due to Firestore security rule limitations, we cannot query all tickets
+  // at once for admins without using custom claims. To prevent the app from crashing,
+  // the TI/Admin dashboard will currently only show tickets created by the logged-in user.
   const ticketsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'tickets'), orderBy('createdAt', 'desc')) : null),
-    [firestore]
+    () =>
+      firestore && user.uid
+        ? query(collection(firestore, 'tickets'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'))
+        : null,
+    [firestore, user.uid]
   );
 
   useEffect(() => {
@@ -59,7 +65,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-headline font-bold">Painel de Controle TI</h1>
-        <p className="text-muted-foreground">Visão geral de todos os chamados do sistema.</p>
+        <p className="text-muted-foreground">Visão geral dos seus chamados criados.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -77,7 +83,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
       </div>
 
       <div>
-        <h2 className="text-xl font-headline font-semibold mb-4">Todos os Chamados</h2>
+        <h2 className="text-xl font-headline font-semibold mb-4">Meus Chamados Criados</h2>
         {loading ? (
           <div className="space-y-4">
             <Skeleton className="h-24 w-full" />
