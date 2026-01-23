@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
-import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where, getDoc } from "firebase/firestore";
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, useCollection, WithId } from "@/firebase";
 import type { Ticket, AppUser } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { format, formatDistanceToNow } from "date-fns";
@@ -38,7 +39,16 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     const firestore = useFirestore();
     const { toast } = useToast();
     const [ticket, setTicket] = useState<Ticket>(initialTicket);
+    const [assignedUser, setAssignedUser] = useState<AppUser | null>(initialTicket.assignedUser || null);
     const [isUpdating, setIsUpdating] = useState(false);
+    const canEdit = user?.role === 'ti' || user?.role === 'admin';
+
+    const supportUsersQuery = useMemoFirebase(() => {
+        if (!firestore || !canEdit) return null;
+        return query(collection(firestore, 'users'), where('role', 'in', ['ti', 'admin']));
+    }, [firestore, canEdit]);
+
+    const { data: supportUsers, isLoading: supportUsersLoading } = useCollection<AppUser>(supportUsersQuery);
 
     const ticketRef = useMemoFirebase(() => 
         firestore ? doc(firestore, "tickets", initialTicket.id) : null
@@ -60,6 +70,25 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         });
         return () => unsub();
     }, [ticketRef]);
+
+    useEffect(() => {
+        if (firestore && ticket.assignedTo) {
+            if (assignedUser?.uid === ticket.assignedTo) return;
+
+            const userRef = doc(firestore, 'users', ticket.assignedTo);
+            const unsub = onSnapshot(userRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    setAssignedUser({ uid: docSnap.id, ...docSnap.data() } as AppUser);
+                } else {
+                    setAssignedUser(null);
+                }
+            });
+            return () => unsub();
+        } else {
+            setAssignedUser(null);
+        }
+    }, [firestore, ticket.assignedTo, assignedUser?.uid]);
+
 
     const handleStatusChange = async (newStatus: "open" | "in_progress" | "resolved") => {
         if (!ticketRef) return;
@@ -87,7 +116,33 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         });
     };
 
-    const canEdit = user?.role === 'ti' || user?.role === 'admin';
+    const handleAssignmentChange = async (newAssignedTo: string) => {
+        if (!ticketRef) return;
+        setIsUpdating(true);
+        const finalAssignedTo = newAssignedTo === 'null' ? null : newAssignedTo;
+        
+        const updateData = {
+            assignedTo: finalAssignedTo,
+            updatedAt: serverTimestamp(),
+        };
+
+        updateDoc(ticketRef, updateData)
+        .then(() => {
+            toast({ title: "Chamado atribuído com sucesso!" });
+        })
+        .catch(error => {
+            toast({ title: "Erro ao atribuir chamado", variant: "destructive" });
+             const contextualError = new FirestorePermissionError({
+                operation: 'update',
+                path: ticketRef.path,
+                requestResourceData: updateData,
+            });
+            errorEmitter.emit('permission-error', contextualError);
+        })
+        .finally(() => {
+            setIsUpdating(false);
+        });
+    };
 
     if (authLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
@@ -141,7 +196,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         <div className="flex items-center">
                             <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
                             <strong>Atribuído a:</strong>
-                            <span className="ml-2">{initialTicket.assignedUser?.name || 'Ninguém'}</span>
+                            <span className="ml-2">{assignedUser?.name || 'Ninguém'}</span>
                         </div>
                         <div className="flex items-center">
                             <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -157,7 +212,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         </div>
                     </CardContent>
                     {canEdit && (
-                         <CardFooter>
+                         <CardFooter className="flex-col items-start gap-4">
                              <div className="w-full space-y-2">
                                 <p className="text-sm font-medium">Alterar Status</p>
                                 <Select onValueChange={(value) => handleStatusChange(value as any)} defaultValue={ticket.status} disabled={isUpdating}>
@@ -168,6 +223,20 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                         <SelectItem value="open">Aberto</SelectItem>
                                         <SelectItem value="in_progress">Em Atendimento</SelectItem>
                                         <SelectItem value="resolved">Resolvido</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                             </div>
+                             <div className="w-full space-y-2">
+                                <p className="text-sm font-medium">Atribuir a</p>
+                                 <Select onValueChange={handleAssignmentChange} value={ticket.assignedTo || undefined} disabled={isUpdating || supportUsersLoading}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecione um responsável" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="null">Ninguém</SelectItem>
+                                        {supportUsers?.map(su => (
+                                            <SelectItem key={su.id} value={su.id}>{su.name}</SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                              </div>
