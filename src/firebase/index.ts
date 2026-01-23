@@ -22,7 +22,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
     firebaseApp,
     auth: getAuth(firebaseApp),
     firestore: getFirestore(firebaseApp),
-    storage: getStorage(firebaseApp),
+    storage: getStorage(firebaseApp, `gs://${firebaseConfig.storageBucket}`),
   };
 }
 
