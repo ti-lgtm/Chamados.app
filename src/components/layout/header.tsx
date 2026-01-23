@@ -63,7 +63,7 @@ export function AppHeader() {
               href="/schedules"
               className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
             >
-              <Ticket className="h-5 w-5 transition-all group-hover:scale-110" />
+              <Home className="h-5 w-5 transition-all group-hover:scale-110" />
               <span className="sr-only">Portal de Agendamentos</span>
             </Link>
             <Link href="/schedules" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
@@ -71,7 +71,7 @@ export function AppHeader() {
               Agendamentos
             </Link>
             <Link href="/dashboard" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-              <Home className="h-5 w-5" />
+              <Ticket className="h-5 w-5" />
               Chamados
             </Link>
             <Link href="/tickets/new" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
