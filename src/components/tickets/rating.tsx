@@ -49,6 +49,8 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
                 const ratingData = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Rating;
                 setExistingRating(ratingData);
                 setRating(ratingData.rating);
+            } else {
+                setExistingRating(null);
             }
             setLoading(false);
         },
@@ -104,21 +106,14 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
         return <Card><CardContent className="p-6"><div className="flex justify-center"><Loader2 className="animate-spin" /></div></CardContent></Card>;
     }
 
-    // Render nothing if not creator or support.
-    // Also, if no rating exists, only show the form to the creator.
-    if (!isCreator && !isSupport) return null;
-    if (!existingRating && !isCreator) return null;
-
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="font-headline">
-                    {existingRating ? "Avaliação do Atendimento" : "Avalie o Atendimento"}
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {existingRating ? (
+    // Case 1: A rating exists. Show it to the creator or support staff.
+    if (existingRating && (isCreator || isSupport)) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Avaliação do Atendimento</CardTitle>
+                </CardHeader>
+                <CardContent>
                     <div>
                         <p className="text-sm text-muted-foreground mb-2">{isCreator ? "Sua avaliação:" : "Avaliação do cliente:"}</p>
                         <div className="flex items-center space-x-1">
@@ -126,10 +121,22 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
                                 <Star key={star} className={cn("h-6 w-6", existingRating.rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
                             ))}
                         </div>
-                        {existingRating.comment && <p className="mt-2 text-sm italic">"{existingRating.comment}"</p>}
+                        {existingRating.comment && <p className="mt-4 text-sm italic bg-muted/50 p-3 rounded-md">"{existingRating.comment}"</p>}
                     </div>
-                ) : (
-                    <>
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    // Case 2: No rating exists. Only show the form to the creator.
+    if (!existingRating && isCreator) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Avalie o Atendimento</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <>
                         <div className="flex items-center justify-center space-x-1">
                             {[1, 2, 3, 4, 5].map((star) => (
                                 <Star
@@ -154,8 +161,11 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
                             Enviar Avaliação
                         </Button>
                     </>
-                )}
-            </CardContent>
-        </Card>
-    );
+                </CardContent>
+            </Card>
+        );
+    }
+
+    // In all other cases (e.g., support staff when no rating exists), render nothing.
+    return null;
 }

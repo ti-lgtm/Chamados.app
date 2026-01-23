@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import type { AppUser, Ticket } from '@/lib/types';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { TicketList } from '@/components/tickets/ticket-list';
 import { PlusCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface UserDashboardProps {
   user: AppUser;
@@ -16,8 +17,9 @@ interface UserDashboardProps {
 
 export function UserDashboard({ user }: UserDashboardProps) {
   const firestore = useFirestore();
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const ticketsQuery = useMemoFirebase(
     () =>
@@ -37,9 +39,8 @@ export function UserDashboard({ user }: UserDashboardProps) {
       ticketsQuery,
       (querySnapshot) => {
         const userTickets = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Ticket));
-        // Sort tickets by creation date, newest first.
-        userTickets.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-        setTickets(userTickets);
+        userTickets.sort((a, b) => (b.createdAt.toMillis() || 0) - (a.createdAt.toMillis() || 0));
+        setAllTickets(userTickets);
         setLoading(false);
       },
       (err) => {
@@ -54,6 +55,13 @@ export function UserDashboard({ user }: UserDashboardProps) {
 
     return () => unsubscribe();
   }, [ticketsQuery]);
+
+  const filteredTickets = useMemo(() => {
+    if (statusFilter === 'all') {
+      return allTickets;
+    }
+    return allTickets.filter(ticket => ticket.status === statusFilter);
+  }, [allTickets, statusFilter]);
 
   return (
     <div className="space-y-6">
@@ -70,15 +78,26 @@ export function UserDashboard({ user }: UserDashboardProps) {
         </Button>
       </div>
 
-      {loading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-        </div>
-      ) : (
-        <TicketList tickets={tickets} />
-      )}
+      <div className="space-y-4">
+        <Tabs defaultValue="all" onValueChange={setStatusFilter}>
+            <TabsList>
+                <TabsTrigger value="all">Todos</TabsTrigger>
+                <TabsTrigger value="open">Abertos</TabsTrigger>
+                <TabsTrigger value="in_progress">Em Atendimento</TabsTrigger>
+                <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
+            </TabsList>
+        </Tabs>
+
+        {loading ? (
+            <div className="space-y-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            </div>
+        ) : (
+            <TicketList tickets={filteredTickets} />
+        )}
+      </div>
     </div>
   );
 }
