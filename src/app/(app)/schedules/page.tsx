@@ -7,15 +7,15 @@ import { ArrowRight, X } from 'lucide-react';
 
 const rooms = [
   {
-    name: 'INTEGRIDADE',
+    name: '1 - INTEGRIDADE',
     url: 'https://koalendar.com/e/INTEGRIDADE',
   },
   {
-    name: 'VALORIZAÇÃO DAS PESSOAS',
+    name: '2 - VALORIZAÇÃO DAS PESSOAS',
     url: 'https://koalendar.com/e/VALORIZACAO-DAS-PESSOAS',
   },
   {
-    name: 'INOVAÇÃO',
+    name: '3 - INOVAÇÃO',
     url: 'https://koalendar.com/e/sala-4-koamoaHf',
   },
 ];
