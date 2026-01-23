@@ -79,15 +79,15 @@ export function NewTicketForm() {
     setLoading(true);
 
     try {
-      // 1. Handle attachments upload first
-      let attachmentUrls: string[] = [];
+      // 1. Handle attachments upload sequentially for reliability
+      const attachmentUrls: string[] = [];
       if (values.attachments && values.attachments.length > 0) {
-        const uploadPromises = Array.from(values.attachments).map(async (file) => {
-          const storageRef = ref(storage, `attachments/${user.uid}/${Date.now()}_${file.name}`);
-          await uploadBytes(storageRef, file);
-          return getDownloadURL(storageRef);
-        });
-        attachmentUrls = await Promise.all(uploadPromises);
+        for (const file of Array.from(values.attachments)) {
+            const storageRef = ref(storage, `attachments/${user.uid}/${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            const downloadUrl = await getDownloadURL(storageRef);
+            attachmentUrls.push(downloadUrl);
+        }
       }
 
       // 2. Proceed with Firestore transaction to create the ticket
@@ -111,6 +111,8 @@ export function NewTicketForm() {
           userName: user.name,
           userEmail: user.email,
           assignedTo: null,
+          assignedUserName: null,
+          assignedUserEmail: null,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           attachments: attachmentUrls,
