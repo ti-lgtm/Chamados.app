@@ -17,13 +17,3 @@ export const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
-
-// This function checks if the essential Firebase config variables are loaded.
-// It helps in debugging configuration issues.
-export function checkFirebaseConfig() {
-    if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.storageBucket) {
-        console.error(
-            "Firebase config error: One or more Firebase environment variables are not defined. Please check your .env.local file and your Vercel project settings. Required variables: NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_PROJECT_ID, NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET."
-        );
-    }
-}
