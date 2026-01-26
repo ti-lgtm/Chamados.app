@@ -6,7 +6,7 @@ service firebase.storage {
     // Rule for user-specific attachments.
     // The path is /attachments/{userId}/{allPaths=**}
     match /attachments/{userId}/{allPaths=**} {
-      // Allow reading files; this is needed for the browser's initial check.
+      // Allow reading files; this is needed for the browser's initial check (preflight OPTIONS request).
       allow read;
 
       // Allow writing (upload, update, delete) only if the user is authenticated
