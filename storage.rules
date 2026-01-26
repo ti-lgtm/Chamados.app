@@ -2,11 +2,16 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // ATENÇÃO: Regras abertas para depuração.
-    // Isso permite que qualquer pessoa leia e escreva em qualquer lugar.
-    // Esta regra é insegura e deve ser substituída após o teste.
-    match /{allPaths=**} {
-      allow read, write;
+    // Regra para a pasta de anexos
+    match /attachments/{userId}/{allPaths=**} {
+      // Permite que um usuário autenticado crie (faça upload) na sua própria pasta
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // Permite que o dono do arquivo ou um membro da equipe de suporte (ti, admin) leia o arquivo
+      allow read: if request.auth != null && (request.auth.uid == userId || get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['ti', 'admin']);
+
+      // Permite que apenas o dono do arquivo o exclua
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
