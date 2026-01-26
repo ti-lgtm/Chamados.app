@@ -3,10 +3,16 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allows public read and write access to all files.
-    // WARNING: This is insecure and for diagnostic purposes only.
-    match /{allPaths=**} {
-      allow read, write;
+    // Rule for user-specific attachments.
+    // The path is /attachments/{userId}/{allPaths=**}
+    match /attachments/{userId}/{allPaths=**} {
+      // Allow reading files; this is needed for the browser's initial check.
+      allow read;
+
+      // Allow writing (upload, update, delete) only if the user is authenticated
+      // AND their UID matches the {userId} in the path. This ensures users can only
+      // write to their own folder.
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
