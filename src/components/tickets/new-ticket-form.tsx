@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { collection, serverTimestamp, runTransaction, doc, query, where } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useFirestore, useStorage, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -79,15 +79,37 @@ export function NewTicketForm() {
     setLoading(true);
 
     try {
-      // 1. Handle attachments upload sequentially for reliability
+      // 1. Handle attachments upload using uploadBytesResumable
       const attachmentUrls: string[] = [];
       if (values.attachments && values.attachments.length > 0) {
-        for (const file of Array.from(values.attachments)) {
+         const uploadPromises = Array.from(values.attachments).map(file => {
+          return new Promise<string>((resolve, reject) => {
             const storageRef = ref(storage, `attachments/${user.uid}/${Date.now()}_${file.name}`);
-            await uploadBytes(storageRef, file);
-            const downloadUrl = await getDownloadURL(storageRef);
-            attachmentUrls.push(downloadUrl);
-        }
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on(
+              'state_changed',
+              (snapshot) => { /* Optional: Progress tracking */ },
+              (error) => {
+                console.error('Upload failed for a file:', error);
+                reject(error); // Reject the promise on error
+              },
+              async () => {
+                try {
+                  const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                  resolve(downloadURL); // Resolve the promise with the URL
+                } catch (error) {
+                  console.error('Failed to get download URL:', error);
+                  reject(error);
+                }
+              }
+            );
+          });
+        });
+
+        // Wait for all uploads to complete
+        const urls = await Promise.all(uploadPromises);
+        attachmentUrls.push(...urls);
       }
 
       // 2. Proceed with Firestore transaction to create the ticket
