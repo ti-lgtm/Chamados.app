@@ -3,10 +3,12 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // ATENÇÃO: Regra insegura temporária para diagnóstico.
-    // Permite que qualquer pessoa leia e escreva em seu storage.
-    match /{allPaths=**} {
-      allow read, write;
+    // Regra de Diagnóstico:
+    // Permite que qualquer usuário autenticado escreva na pasta 'attachments'.
+    // A leitura é pública para não interferir com CORS ou exibição de links.
+    match /attachments/{allPaths=**} {
+      allow read;
+      allow write: if request.auth != null;
     }
   }
 }
