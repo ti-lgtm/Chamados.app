@@ -24,7 +24,6 @@ const ConfigError = () => (
                 <ul className="list-disc list-inside">
                     <li>NEXT_PUBLIC_FIREBASE_API_KEY</li>
                     <li>NEXT_PUBLIC_FIREBASE_PROJECT_ID</li>
-                    <li>NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET</li>
                 </ul>
             </div>
         </div>
@@ -37,7 +36,7 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // This effect runs only on the client, so process.env is available
-    if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.storageBucket) {
+    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
         setIsConfigured(false);
     } else {
         setIsConfigured(true);
@@ -63,7 +62,6 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
       firebaseApp={firebaseServices?.firebaseApp}
       auth={firebaseServices?.auth}
       firestore={firebaseServices?.firestore}
-      storage={firebaseServices?.storage}
     >
       {children}
     </FirebaseProvider>

@@ -5,10 +5,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { collection, serverTimestamp, runTransaction, doc, query, where } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { useFirestore, useStorage, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import { uploadAttachments } from '@/app/actions/upload';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +45,6 @@ export function NewTicketForm() {
   const router = useRouter();
   const { toast } = useToast();
   const db = useFirestore();
-  const storage = useStorage();
   const [loading, setLoading] = useState(false);
 
   const supportUsersQuery = useMemoFirebase(() => {
@@ -67,7 +66,7 @@ export function NewTicketForm() {
   const fileRef = form.register('attachments');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !db || !storage) {
+    if (!user || !db) {
       toast({
         title: 'Erro de autenticação ou configuração',
         description: 'Você precisa estar logado e o Firebase deve estar configurado corretamente.',
@@ -79,37 +78,14 @@ export function NewTicketForm() {
     setLoading(true);
 
     try {
-      // 1. Handle attachments upload using uploadBytesResumable
-      const attachmentUrls: string[] = [];
+      // 1. Handle attachments upload using Vercel Blob
+      let attachmentUrls: string[] = [];
       if (values.attachments && values.attachments.length > 0) {
-         const uploadPromises = Array.from(values.attachments).map(file => {
-          return new Promise<string>((resolve, reject) => {
-            const storageRef = ref(storage, `attachments/${user.uid}/${Date.now()}_${file.name}`);
-            const uploadTask = uploadBytesResumable(storageRef, file);
-
-            uploadTask.on(
-              'state_changed',
-              (snapshot) => { /* Optional: Progress tracking */ },
-              (error) => {
-                console.error('Upload failed for a file:', error);
-                reject(error); // Reject the promise on error
-              },
-              async () => {
-                try {
-                  const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                  resolve(downloadURL); // Resolve the promise with the URL
-                } catch (error) {
-                  console.error('Failed to get download URL:', error);
-                  reject(error);
-                }
-              }
-            );
-          });
+        const formData = new FormData();
+        Array.from(values.attachments).forEach(file => {
+          formData.append('attachments', file);
         });
-
-        // Wait for all uploads to complete
-        const urls = await Promise.all(uploadPromises);
-        attachmentUrls.push(...urls);
+        attachmentUrls = await uploadAttachments(formData);
       }
 
       // 2. Proceed with Firestore transaction to create the ticket
@@ -176,20 +152,6 @@ export function NewTicketForm() {
       console.error('Erro ao criar chamado:', error);
       
       let description = 'Ocorreu um erro inesperado ao criar seu chamado. Tente novamente.';
-      
-      if (error.code) {
-        switch (error.code) {
-          case 'storage/unauthorized':
-            description = 'Você não tem permissão para enviar arquivos. Contate o administrador.';
-            break;
-          case 'storage/canceled':
-            description = 'O upload do anexo foi cancelado.';
-            break;
-          case 'storage/unknown':
-            description = 'Ocorreu um erro desconhecido no upload. Tente novamente.';
-            break;
-        }
-      }
 
       toast({
         title: 'Erro ao criar chamado',

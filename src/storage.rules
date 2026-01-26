@@ -3,10 +3,9 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // REGRA DE DIAGNÓSTICO INSEGURA: Permite acesso total a qualquer pessoa.
-    // Esta regra é apenas para um teste final.
+    // Deny all access as Vercel Blob is now used for storage.
     match /{allPaths=**} {
-      allow read, write;
+      allow read, write: if false;
     }
   }
 }
