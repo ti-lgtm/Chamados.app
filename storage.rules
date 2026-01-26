@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service firebase.storage {
@@ -10,9 +11,10 @@ service firebase.storage {
       // pelas regras do Firestore, que controlam quem pode ver os URLs dos anexos.
       allow read;
 
-      // Permite que um usuário autenticado crie (upload), atualize ou exclua
-      // arquivos apenas em sua própria pasta.
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // PERMISSÃO TEMPORÁRIA PARA DIAGNÓSTICO:
+      // Permite que qualquer usuário autenticado escreva.
+      // A regra original era: `allow write: if request.auth != null && request.auth.uid == userId;`
+      allow write: if request.auth != null;
     }
   }
 }
