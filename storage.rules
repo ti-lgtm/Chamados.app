@@ -4,8 +4,13 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /attachments/{userId}/{allPaths=**} {
+      // Allow public read for things like viewing attachments via a link if needed,
+      // and to ensure CORS preflight checks (which are unauthenticated) pass.
       allow read;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // Explicitly allow 'create' for new uploads. The user must be authenticated,
+      // and their UID must match the {userId} in the path.
+      allow create: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
