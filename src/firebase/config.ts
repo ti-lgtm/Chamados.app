@@ -21,7 +21,5 @@ export const firebaseConfig = {
 };
 
 export function checkFirebaseConfig() {
-    if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.storageBucket) {
-        // This check is now handled visually in FirebaseClientProvider.
-    }
+    // This check is now handled visually in FirebaseClientProvider.
 }
