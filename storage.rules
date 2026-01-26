@@ -3,18 +3,10 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Regra para a pasta de anexos
-    match /attachments/{userId}/{allPaths=**} {
-      // Permite a leitura pública. Isso é essencial para que a verificação
-      // de preflight (OPTIONS) do navegador passe, pois ela é feita sem autenticação.
-      // A segurança real do acesso aos arquivos para os usuários é garantida
-      // pelas regras do Firestore, que controlam quem pode ver os URLs dos anexos.
-      allow read;
-
-      // PERMISSÃO TEMPORÁRIA PARA DIAGNÓSTICO:
-      // Permite que qualquer usuário autenticado escreva.
-      // A regra original era: `allow write: if request.auth != null && request.auth.uid == userId;`
-      allow write: if request.auth != null;
+    // Allows public read and write access to all files.
+    // WARNING: This is insecure and for diagnostic purposes only.
+    match /{allPaths=**} {
+      allow read, write;
     }
   }
 }
