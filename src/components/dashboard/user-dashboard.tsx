@@ -70,14 +70,12 @@ export function UserDashboard({ user }: UserDashboardProps) {
           <h1 className="text-2xl font-headline font-bold">Seus Chamados</h1>
           <p className="text-muted-foreground">Veja e gerencie os chamados que você abriu.</p>
         </div>
-        {(user.role === 'admin' || user.role === 'ti') && (
-            <Button asChild className="w-full sm:w-auto">
-            <Link href="/tickets/new">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Novo Chamado
-            </Link>
-            </Button>
-        )}
+        <Button asChild className="w-full sm:w-auto">
+          <Link href="/tickets/new">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Novo Chamado
+          </Link>
+        </Button>
       </div>
 
       <div className="space-y-4">
