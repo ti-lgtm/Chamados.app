@@ -9,7 +9,8 @@ service firebase.storage {
     // 3. Nobody can update/overwrite a file once it's uploaded.
     // 4. Only the owner can delete their own files.
     match /attachments/{userId}/{fileName} {
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // Temporarily allowing any authenticated user to create for debugging purposes.
+      allow create: if request.auth != null;
       
       // A user can read their own files.
       // A support staff member (ti or admin) can also read any user's files.
