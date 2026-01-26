@@ -2,11 +2,11 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // ATENÇÃO: Regras simplificadas para depuração.
-    // Isso permite que qualquer usuário logado leia e escreva em qualquer lugar.
-    // Devemos restaurar regras mais seguras após a correção.
+    // ATENÇÃO: Regras abertas para depuração.
+    // Isso permite que qualquer pessoa leia e escreva em qualquer lugar.
+    // Esta regra é insegura e deve ser substituída após o teste.
     match /{allPaths=**} {
-      allow read, write: if request.auth != null;
+      allow read, write;
     }
   }
 }
