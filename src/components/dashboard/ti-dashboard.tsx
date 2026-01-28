@@ -18,7 +18,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const firestore = useFirestore();
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('open');
 
   const stats = useMemo(() => ({
     open: allTickets.filter((t) => t.status === 'open').length,
@@ -96,7 +96,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
             <h2 className="text-xl font-headline font-semibold">
                 Todos os Chamados
             </h2>
-             <Tabs defaultValue="all" onValueChange={setStatusFilter} className="w-full sm:w-auto">
+             <Tabs defaultValue="open" onValueChange={setStatusFilter} className="w-full sm:w-auto">
                 <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
                     <TabsTrigger value="all">Todos</TabsTrigger>
                     <TabsTrigger value="open">Abertos</TabsTrigger>

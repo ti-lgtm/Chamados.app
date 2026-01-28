@@ -19,7 +19,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
   const firestore = useFirestore();
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('open');
 
   const ticketsQuery = useMemoFirebase(
     () =>
@@ -79,7 +79,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
       </div>
 
       <div className="space-y-4">
-        <Tabs defaultValue="all" onValueChange={setStatusFilter} className="w-full sm:w-auto">
+        <Tabs defaultValue="open" onValueChange={setStatusFilter} className="w-full sm:w-auto">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
                 <TabsTrigger value="all">Todos</TabsTrigger>
                 <TabsTrigger value="open">Abertos</TabsTrigger>
