@@ -39,6 +39,7 @@ export interface Comment {
   userAvatarUrl?: string;
   message: string;
   createdAt: Timestamp;
+  attachments?: string[];
 }
 
 export interface Rating {

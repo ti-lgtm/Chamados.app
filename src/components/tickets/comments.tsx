@@ -11,13 +11,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Paperclip } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
 import { triggerNewCommentEmail } from "@/app/actions/email";
+import { uploadAttachments } from "@/app/actions/upload";
+import { Input } from "../ui/input";
 
 interface CommentsProps {
     ticket: Ticket;
@@ -25,8 +27,13 @@ interface CommentsProps {
 }
 
 const commentSchema = z.object({
-    message: z.string().min(1, "A mensagem não pode estar vazia.").max(1000, "A mensagem é muito longa."),
+    message: z.string().max(1000, "A mensagem é muito longa.").optional(),
+    attachments: z.custom<FileList>().optional(),
+}).refine(data => !!data.message || (data.attachments && data.attachments.length > 0), {
+    message: "Você deve enviar uma mensagem ou um anexo.",
+    path: ["message"],
 });
+
 
 const getInitials = (name: string) => name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '';
 
@@ -40,8 +47,10 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
 
     const form = useForm<z.infer<typeof commentSchema>>({
         resolver: zodResolver(commentSchema),
-        defaultValues: { message: "" },
+        defaultValues: { message: "", attachments: undefined },
     });
+
+    const fileRef = form.register('attachments');
     
     const commentsQuery = useMemoFirebase(() => 
         firestore ? query(collection(firestore, "tickets", ticketId, "comments"), orderBy("createdAt", "asc")) : null
@@ -72,41 +81,59 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
     async function onSubmit(values: z.infer<typeof commentSchema>) {
         if (!currentUser || !firestore) return;
         setIsSubmitting(true);
+
+        let attachmentUrls: string[] = [];
+        try {
+            if (values.attachments && values.attachments.length > 0) {
+                const formData = new FormData();
+                Array.from(values.attachments).forEach(file => {
+                    formData.append('attachments', file);
+                });
+                attachmentUrls = await uploadAttachments(formData);
+            }
+        } catch (uploadError) {
+            console.error("Upload error:", uploadError);
+            toast({ title: "Erro ao fazer upload dos anexos", variant: "destructive" });
+            setIsSubmitting(false);
+            return;
+        }
+
         const commentData = {
             ticketId,
             userId: currentUser.uid,
             userName: currentUser.name,
             userAvatarUrl: currentUser.avatarUrl || '',
-            message: values.message,
+            message: values.message || "",
             createdAt: serverTimestamp(),
+            attachments: attachmentUrls,
         };
 
         const commentsCollectionRef = collection(firestore, "tickets", ticketId, "comments");
 
         addDoc(commentsCollectionRef, commentData)
             .then(() => {
-                form.reset();
+                form.reset({ message: "", attachments: undefined });
                 
                 let recipientEmail: string | undefined | null = null;
                 let recipientName: string | undefined | null = null;
 
-                // If commenter is the ticket creator, notify assigned support user
                 if (currentUser.uid === ticket.userId) {
                     recipientEmail = ticket.assignedUserEmail;
                     recipientName = ticket.assignedUserName;
-                } else { // Otherwise, notify the ticket creator
+                } else { 
                     recipientEmail = ticket.userEmail;
                     recipientName = ticket.userName;
                 }
 
                 if (recipientEmail && recipientName) {
+                    const emailMessage = values.message || (attachmentUrls.length > 0 ? "Um novo anexo foi adicionado." : "Nova atividade no chamado.");
                     triggerNewCommentEmail({
                         recipientEmail,
                         recipientName,
                         ticketNumber: ticket.ticketNumber,
                         ticketTitle: ticket.title,
                         commenterName: currentUser.name,
-                        commentMessage: values.message,
+                        commentMessage: emailMessage,
                     });
                 }
             })
@@ -156,7 +183,27 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
                                         {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}
                                     </p>
                                 </div>
-                                <p className="text-sm text-foreground whitespace-pre-wrap">{comment.message}</p>
+                                {comment.message && <p className="text-sm text-foreground whitespace-pre-wrap">{comment.message}</p>}
+                                {comment.attachments && comment.attachments.length > 0 && (
+                                    <div className="mt-2 space-y-2">
+                                        {comment.attachments.map((url, index) => {
+                                            const fileName = url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`;
+                                            const decodedFileName = decodeURIComponent(fileName);
+                                            return (
+                                                <a 
+                                                    key={index} 
+                                                    href={url} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary hover:underline"
+                                                >
+                                                    <Paperclip className="h-4 w-4 flex-shrink-0" />
+                                                    <span className="truncate">{decodedFileName.substring(decodedFileName.indexOf('_') + 1)}</span>
+                                                </a>
+                                            )
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}
@@ -178,6 +225,19 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
                                             <FormControl>
                                                 <Textarea placeholder="Adicionar um comentário..." {...field} rows={3} />
                                             </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="attachments"
+                                    render={() => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <Input type="file" multiple {...fileRef} className="text-sm" />
+                                            </FormControl>
+                                            <FormMessage/>
                                         </FormItem>
                                     )}
                                 />
