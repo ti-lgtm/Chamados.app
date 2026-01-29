@@ -122,18 +122,25 @@ export function LoginForm() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
+      if (!user.email) {
+        setError("Não foi possível obter o e-mail da sua conta Google. Tente outro método de login.");
+        await signOut(auth);
+        setLoading(false);
+        return;
+      }
+
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
         const userData = {
             uid: user.uid,
-            name: user.displayName,
+            name: user.displayName || user.email.split('@')[0],
             email: user.email,
             role: "user" as const,
             status: "active" as const,
             createdAt: serverTimestamp(),
-            avatarUrl: user.photoURL
+            avatarUrl: user.photoURL || null
         };
 
         try {
@@ -160,8 +167,11 @@ export function LoginForm() {
     } catch (error: any) {
         if (error.code === 'auth/popup-closed-by-user') {
             // Don't show an error if the user just closes the popup.
+        } else if (error.code === 'auth/account-exists-with-different-credential') {
+             setError("Uma conta já existe com este e-mail, mas com um método de login diferente. Por favor, faça login usando o método original.");
         } else {
-             setError("Falha ao fazer login com o Google. Tente novamente.");
+             console.error("Google Sign-In Error:", error);
+             setError("Falha ao fazer login com o Google. Verifique se os pop-ups estão habilitados e tente novamente.");
         }
     } finally {
         setLoading(false);
