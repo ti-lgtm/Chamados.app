@@ -169,7 +169,10 @@ export function LoginForm() {
             // Don't show an error if the user just closes the popup.
         } else if (error.code === 'auth/account-exists-with-different-credential') {
              setError("Uma conta já existe com este e-mail, mas com um método de login diferente. Por favor, faça login usando o método original.");
-        } else {
+        } else if (error.code === 'auth/unauthorized-domain') {
+            setError("Este domínio não está autorizado para fazer login. Adicione-o na lista de 'Domínios autorizados' nas configurações de Autenticação do seu projeto Firebase.");
+        }
+        else {
              console.error("Google Sign-In Error:", error);
              setError("Falha ao fazer login com o Google. Verifique se os pop-ups estão habilitados e tente novamente.");
         }
