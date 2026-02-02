@@ -110,6 +110,11 @@
           "type": "string",
           "description": "Timestamp of when the ticket was created.",
           "format": "date-time"
+        },
+        "deadline": {
+          "type": "string",
+          "description": "Timestamp for when the ticket is due.",
+          "format": "date-time"
         }
       },
       "required": [
@@ -211,6 +216,51 @@
       "required": [
         "lastNumber"
       ]
+    },
+    "InternalNote": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Internal Note",
+      "type": "object",
+      "description": "Represents a private note on a ticket, visible only to support staff.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the note."
+        },
+        "ticketId": {
+          "type": "string",
+          "description": "Reference to Ticket."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who created the note."
+        },
+        "userName": {
+          "type": "string",
+          "description": "Denormalized name of the user."
+        },
+        "userAvatarUrl": {
+          "type": "string",
+          "description": "Denormalized avatar of the user."
+        },
+        "message": {
+          "type": "string",
+          "description": "The content of the note."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation."
+        }
+      },
+      "required": [
+        "id",
+        "ticketId",
+        "userId",
+        "userName",
+        "message",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -305,6 +355,26 @@
             {
               "name": "counterId",
               "description": "The name of the counter (e.g., 'tickets')."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/tickets/{ticketId}/internal_notes/{noteId}",
+        "definition": {
+          "entityName": "InternalNote",
+          "schema": {
+            "$ref": "#/backend/entities/InternalNote"
+          },
+          "description": "Stores private notes on a ticket, visible only to support staff (TI/Admin).",
+          "params": [
+            {
+              "name": "ticketId",
+              "description": "The unique identifier of the ticket."
+            },
+            {
+              "name": "noteId",
+              "description": "The unique identifier of the internal note."
             }
           ]
         }

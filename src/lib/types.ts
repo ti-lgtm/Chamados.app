@@ -29,6 +29,7 @@ export interface Ticket {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   attachments?: string[];
+  deadline?: Timestamp;
 }
 
 export interface Comment {
@@ -48,5 +49,15 @@ export interface Rating {
   userId: string;
   rating: number;
   comment?: string;
+  createdAt: Timestamp;
+}
+
+export interface InternalNote {
+  id: string;
+  ticketId: string;
+  userId: string;
+  userName: string;
+  userAvatarUrl?: string;
+  message: string;
   createdAt: Timestamp;
 }

@@ -14,8 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, CalendarClock } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
+import { DeadlineIndicator } from "./deadline-indicator";
+import { InternalNotes } from "./internal-notes";
 
 interface TicketDetailsClientProps {
     initialTicket: Ticket;
@@ -207,6 +209,15 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                             <strong>Última atualização:</strong>
                             <span className="ml-2">{ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}</span>
                         </div>
+                         {ticket.deadline && ticket.status !== 'resolved' && (
+                            <div className="space-y-2 pt-2">
+                                <div className="flex items-center font-medium">
+                                    <CalendarClock className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    <span>Prazo de Resolução</span>
+                                </div>
+                                <DeadlineIndicator createdAt={ticket.createdAt} deadline={ticket.deadline} status={ticket.status} />
+                            </div>
+                        )}
                     </CardContent>
                     {canEdit && (
                          <CardFooter className="flex-col items-start gap-4">
@@ -240,6 +251,8 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                          </CardFooter>
                     )}
                 </Card>
+
+                {canEdit && user && <InternalNotes ticketId={ticket.id} currentUser={user} />}
 
                 {ticket.status === 'resolved' && (
                     <RatingSection ticketId={ticket.id} ticketCreatorId={ticket.userId} currentUser={user} />

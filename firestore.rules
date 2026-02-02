@@ -215,6 +215,15 @@ service cloud.firestore {
     }
     
     /**
+     * @description Controls access to internal notes on a specific ticket.
+     * @path /tickets/{ticketId}/internal_notes/{noteId}
+     */
+    match /tickets/{ticketId}/internal_notes/{noteId} {
+      // Only support staff (TI/Admin) can perform any action on internal notes.
+      allow read, write: if isSupportStaff();
+    }
+
+    /**
      * @description Controls access to global counters for sequential number generation.
      * @path /counters/{counterId}
      */

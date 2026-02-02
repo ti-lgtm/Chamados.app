@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DeadlineIndicator } from "./deadline-indicator";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -62,6 +63,12 @@ export function TicketList({ tickets }: TicketListProps) {
           </CardHeader>
           <CardContent>
             <p className="line-clamp-2 text-sm text-muted-foreground">{ticket.description}</p>
+             {ticket.deadline && ticket.createdAt && ticket.status !== 'resolved' && (
+                <div className="mt-4 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">PRAZO</p>
+                    <DeadlineIndicator createdAt={ticket.createdAt} deadline={ticket.deadline} status={ticket.status} />
+                </div>
+            )}
           </CardContent>
           <CardFooter>
             <Button asChild variant="secondary" size="sm">

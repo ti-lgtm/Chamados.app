@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, serverTimestamp, runTransaction, doc, query, where } from 'firebase/firestore';
+import { collection, serverTimestamp, runTransaction, doc, query, where, Timestamp } from 'firebase/firestore';
 import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -39,6 +39,19 @@ const formSchema = z.object({
   priority: z.enum(['low', 'normal', 'high'], { required_error: 'A prioridade é obrigatória.' }),
   attachments: z.custom<FileList>().optional(),
 });
+
+function addBusinessDays(startDate: Date, days: number): Date {
+  let date = new Date(startDate);
+  let added = 0;
+  while (added < days) {
+    date.setDate(date.getDate() + 1);
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0=Sunday, 6=Saturday
+      added++;
+    }
+  }
+  return date;
+}
 
 export function NewTicketForm() {
   const { user } = useAuth();
@@ -98,6 +111,8 @@ export function NewTicketForm() {
         transaction.set(counterRef, { lastNumber: newNumber }, { merge: true });
 
         const newTicketRef = doc(collection(db, "tickets"));
+
+        const deadlineDate = addBusinessDays(new Date(), 4);
         
         const ticketPayload = {
           ticketNumber: newNumber,
@@ -114,6 +129,7 @@ export function NewTicketForm() {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           attachments: attachmentUrls,
+          deadline: Timestamp.fromDate(deadlineDate),
         };
 
         transaction.set(newTicketRef, ticketPayload);
