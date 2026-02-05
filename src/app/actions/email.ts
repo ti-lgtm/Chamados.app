@@ -91,6 +91,7 @@ interface TicketResolvedPayload {
     userName: string;
     ticketNumber: number;
     ticketTitle: string;
+    ticketUrl: string;
 }
 
 export async function triggerTicketResolvedEmail(payload: TicketResolvedPayload) {
@@ -102,7 +103,9 @@ export async function triggerTicketResolvedEmail(payload: TicketResolvedPayload)
             <h1>Olá ${payload.userName},</h1>
             <p>Boas notícias! Seu chamado <strong>#${payload.ticketNumber} - "${payload.ticketTitle}"</strong> foi marcado como resolvido pela nossa equipe.</p>
             <p>Se o problema persistir ou se você tiver outra dúvida, sinta-se à vontade para abrir um novo chamado.</p>
-            <p>Agradeceríamos muito se você pudesse dedicar um momento para <strong>avaliar o atendimento</strong> recebido diretamente na página do chamado em nosso portal.</p>
+            <p>Agradeceríamos muito se você pudesse dedicar um momento para <strong>avaliar o atendimento</strong> recebido diretamente na página do chamado em nosso portal, clicando no link abaixo:</p>
+            <p><a href="${payload.ticketUrl}" style="display: inline-block; padding: 12px 24px; font-size: 16px; color: #ffffff; background-color: #F97316; text-decoration: none; border-radius: 5px; font-weight: bold;">Avaliar Atendimento</a></p>
+            <p style="font-size: 12px; color: #666;">Se o botão não funcionar, copie e cole este link em seu navegador: ${payload.ticketUrl}</p>
             <p>Atenciosamente,<br/>Equipe de Suporte Soluções AMLMF</p>
         `,
     });

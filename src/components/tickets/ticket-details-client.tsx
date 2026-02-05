@@ -84,12 +84,14 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         .then(() => {
             toast({ title: "Status do chamado atualizado com sucesso!" });
             if (newStatus === 'resolved') {
+                const ticketUrl = `${window.location.origin}/tickets/${ticket.id}`;
                 // Fire and forget email action
                 triggerTicketResolvedEmail({
                     ticketNumber: ticket.ticketNumber,
                     ticketTitle: ticket.title,
                     userName: ticket.userName,
                     userEmail: ticket.userEmail,
+                    ticketUrl: ticketUrl,
                 });
             }
         })
@@ -166,13 +168,22 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                             <div className="mt-6">
                                 <h4 className="font-semibold mb-2 flex items-center gap-2"><Paperclip className="h-4 w-4"/> Anexos</h4>
                                 <ul className="list-disc list-inside space-y-1">
-                                    {ticket.attachments.map((url, index) => (
-                                        <li key={index}>
-                                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                                Anexo {index + 1}
-                                            </a>
-                                        </li>
-                                    ))}
+                                    {ticket.attachments.map((url, index) => {
+                                        const fileName = url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`;
+                                        const decodedFileName = decodeURIComponent(fileName);
+                                        return (
+                                            <li key={index}>
+                                                <a 
+                                                    href={url} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="text-primary hover:underline"
+                                                >
+                                                    <span className="truncate">{decodedFileName.substring(decodedFileName.indexOf('_') + 1)}</span>
+                                                </a>
+                                            </li>
+                                        )
+                                    })}
                                 </ul>
                             </div>
                         )}
