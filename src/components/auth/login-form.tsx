@@ -263,7 +263,7 @@ export function LoginForm() {
             <span className="bg-background px-2 text-muted-foreground">Ou continue com</span>
         </div>
       </div>
-      <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+      <Button className="w-full bg-[#DB4437] text-white hover:bg-[#C33D2E]" onClick={handleGoogleSignIn} disabled={loading}>
         <GoogleIcon className="mr-2 h-4 w-4" />
         Google
       </Button>
