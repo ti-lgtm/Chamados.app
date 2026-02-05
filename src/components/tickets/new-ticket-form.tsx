@@ -35,6 +35,8 @@ import type { AppUser } from '@/lib/types';
 
 const formSchema = z.object({
   title: z.string().min(5, { message: 'O título deve ter pelo menos 5 caracteres.' }),
+  company: z.string().min(2, { message: 'O nome da empresa é obrigatório.' }),
+  department: z.string().min(2, { message: 'O nome do setor é obrigatório.' }),
   description: z.string().min(10, { message: 'A descrição deve ter pelo menos 10 caracteres.' }),
   priority: z.enum(['low', 'normal', 'high'], { required_error: 'A prioridade é obrigatória.' }),
   attachments: z.custom<FileList>().optional(),
@@ -71,6 +73,8 @@ export function NewTicketForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
+      company: '',
+      department: '',
       description: '',
       priority: 'normal',
     },
@@ -117,6 +121,8 @@ export function NewTicketForm() {
         const ticketPayload = {
           ticketNumber: newNumber,
           title: values.title,
+          company: values.company,
+          department: values.department,
           description: values.description,
           priority: values.priority,
           status: 'open' as const,
@@ -200,6 +206,34 @@ export function NewTicketForm() {
             </FormItem>
           )}
         />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <FormField
+            control={form.control}
+            name="company"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Empresa</FormLabel>
+                <FormControl>
+                  <Input placeholder="Nome da sua empresa" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="department"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Setor</FormLabel>
+                <FormControl>
+                  <Input placeholder="Seu setor ou departamento" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
           control={form.control}
           name="description"
@@ -261,3 +295,5 @@ export function NewTicketForm() {
     </Form>
   );
 }
+
+    

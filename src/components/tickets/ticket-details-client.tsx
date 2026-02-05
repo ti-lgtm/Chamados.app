@@ -14,10 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, CalendarClock } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, CalendarClock, Building, Briefcase, CheckCircle } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
+import { Button } from "../ui/button";
 
 interface TicketDetailsClientProps {
     initialTicket: Ticket;
@@ -203,6 +204,16 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                             <strong>Solicitante:</strong>
                             <span className="ml-2">{ticket.userName || 'Desconhecido'}</span>
                         </div>
+                         <div className="flex items-center">
+                            <Building className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <strong>Empresa:</strong>
+                            <span className="ml-2">{ticket.company || 'Não informado'}</span>
+                        </div>
+                        <div className="flex items-center">
+                            <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <strong>Setor:</strong>
+                            <span className="ml-2">{ticket.department || 'Não informado'}</span>
+                        </div>
                         <div className="flex items-center">
                             <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
                             <strong>Atribuído a:</strong>
@@ -234,20 +245,19 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                          <CardFooter className="flex-col items-start gap-4">
                              <div className="w-full space-y-2">
                                 <p className="text-sm font-medium">Alterar Status</p>
-                                <Select onValueChange={(value) => handleStatusChange(value as any)} defaultValue={ticket.status} disabled={isUpdating}>
+                                <Select onValueChange={(value) => handleStatusChange(value as any)} value={ticket.status} disabled={isUpdating || ticket.status === 'resolved'}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="open">Aberto</SelectItem>
                                         <SelectItem value="in_progress">Em Atendimento</SelectItem>
-                                        <SelectItem value="resolved">Resolvido</SelectItem>
                                     </SelectContent>
                                 </Select>
                              </div>
                              <div className="w-full space-y-2">
                                 <p className="text-sm font-medium">Atribuir a</p>
-                                 <Select onValueChange={handleAssignmentChange} value={ticket.assignedTo || undefined} disabled={isUpdating || supportUsersLoading}>
+                                 <Select onValueChange={handleAssignmentChange} value={ticket.assignedTo || 'null'} disabled={isUpdating || supportUsersLoading}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecione um responsável" />
                                     </SelectTrigger>
@@ -259,6 +269,16 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                     </SelectContent>
                                 </Select>
                              </div>
+                              {ticket.status !== 'resolved' && (
+                                <Button 
+                                    className="w-full" 
+                                    onClick={() => handleStatusChange('resolved')}
+                                    disabled={isUpdating}
+                                >
+                                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                    Marcar como Resolvido
+                                </Button>
+                            )}
                          </CardFooter>
                     )}
                 </Card>
@@ -272,3 +292,5 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         </div>
     );
 }
+
+    

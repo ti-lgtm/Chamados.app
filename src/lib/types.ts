@@ -16,6 +16,8 @@ export interface Ticket {
   id: string;
   ticketNumber: number;
   title: string;
+  company: string;
+  department: string;
   description: string;
   status: 'open' | 'in_progress' | 'resolved';
   priority: 'low' | 'normal' | 'high';
@@ -61,3 +63,5 @@ export interface InternalNote {
   message: string;
   createdAt: Timestamp;
 }
+
+    
