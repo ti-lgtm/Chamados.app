@@ -46,7 +46,7 @@ export default function SchedulesPage() {
                 </div>
                 <Button
                     variant="outline"
-                    onClick={() => window.location.href = '/schedules'}
+                    onClick={() => setSelectedRoom(null)}
                     className="flex-shrink-0"
                 >
                     <ArrowLeft />
