@@ -5,93 +5,123 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowRight, X } from 'lucide-react';
 
-const rooms = [
+type Room = {
+  name: string;
+  koalendarUrl: string;
+  googleCalendarUrl: string;
+};
+
+const rooms: Room[] = [
   {
     name: '1 - INTEGRIDADE',
-    url: 'https://koalendar.com/e/INTEGRIDADE',
+    koalendarUrl: 'https://koalendar.com/e/integridade',
+    googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.1.integridade%40gmail.com&ctz=America%2FFortaleza',
   },
   {
     name: '2 - VALORIZAÇÃO DAS PESSOAS',
-    url: 'https://koalendar.com/e/VALORIZACAO-DAS-PESSOAS',
+    koalendarUrl: 'https://koalendar.com/e/VALORIZACAO-DAS-PESSOAS',
+    googleCalendarUrl: '',
   },
   {
     name: '3 - INOVAÇÃO',
-    url: 'https://koalendar.com/e/sala-4-koamoaHf',
+    koalendarUrl: 'https://koalendar.com/e/sala-4-koamoaHf',
+    googleCalendarUrl: '',
   },
 ];
 
-const googleCalendarUrl = 'https://calendar.google.com/calendar/u/0/embed?src=c_d7d0142ba2b9c6191c56c79835625073e4e268a40c041512bee5e3940841522d@group.calendar.google.com';
-
 export default function SchedulesPage() {
-  const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 
-  const handleSelectRoom = (url: string) => {
-    setSelectedUrl(url);
+  const handleSelectRoom = (room: Room) => {
+    setSelectedRoom(room);
   };
+
+  if (selectedRoom) {
+    return (
+        <div className="space-y-6">
+             <div className="flex justify-between items-start">
+                <div>
+                    <h1 className="text-2xl font-headline font-bold">{selectedRoom.name}</h1>
+                    <p className="text-muted-foreground">Use os painéis abaixo para agendar e visualizar a agenda da sala.</p>
+                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full flex-shrink-0"
+                    onClick={() => setSelectedRoom(null)}
+                >
+                    <X className="h-6 w-6" />
+                    <span className="sr-only">Voltar para seleção de salas</span>
+                </Button>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="flex flex-col">
+                    <CardHeader>
+                        <CardTitle>1. Agendar Sala</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                         <div className="w-full h-[70vh] rounded-lg overflow-hidden border">
+                            <iframe
+                                src={selectedRoom.koalendarUrl}
+                                className="h-full w-full"
+                                title={`Agendamento ${selectedRoom.name}`}
+                                frameBorder="0"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="flex flex-col">
+                    <CardHeader>
+                        <CardTitle>2. Visualizar Agenda</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                        {selectedRoom.googleCalendarUrl ? (
+                            <div className="w-full h-[70vh] rounded-lg overflow-hidden border">
+                                <iframe
+                                src={selectedRoom.googleCalendarUrl}
+                                className="h-full w-full"
+                                title={`Agenda ${selectedRoom.name}`}
+                                frameBorder="0"
+                                />
+                            </div>
+                        ) : (
+                            <div className="w-full h-[70vh] flex items-center justify-center bg-muted rounded-lg border">
+                                <p className="text-muted-foreground">Agenda desta sala não disponível.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
         <div>
             <h1 className="text-2xl font-headline font-bold">Portal de Agendamentos</h1>
-            <p className="text-muted-foreground">Agende uma sala e visualize a agenda geral abaixo.</p>
+            <p className="text-muted-foreground">Selecione uma sala para agendar e visualizar a agenda.</p>
         </div>
 
         <Card>
             <CardHeader>
-                <CardTitle>Agendamento de Salas</CardTitle>
+                <CardTitle>Salas Disponíveis</CardTitle>
                 <CardDescription>Selecione uma sala para ver a disponibilidade e fazer seu agendamento.</CardDescription>
             </CardHeader>
             <CardContent>
-                {selectedUrl ? (
-                    <div className="relative pt-8">
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="absolute top-0 right-0 z-10 rounded-full"
-                            onClick={() => setSelectedUrl(null)}
-                        >
-                            <X className="h-5 w-5" />
-                            <span className="sr-only">Fechar agendamento</span>
-                        </Button>
-                        <div className="w-full h-[60vh] lg:h-[70vh]">
-                            <iframe
-                                src={selectedUrl}
-                                className="h-full w-full border-0 rounded-lg"
-                                title="Agendamento Koalendar"
-                            />
-                        </div>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {rooms.map((room) => (
-                            <Card key={room.name} className="flex flex-col">
-                                <CardHeader>
-                                    <CardTitle className="text-lg font-headline">{room.name}</CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex-grow flex items-end">
-                                    <Button onClick={() => handleSelectRoom(room.url)} className="w-full">
-                                        Agendar <ArrowRight className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle>Agenda Geral das Salas</CardTitle>
-                <CardDescription>Visualize todos os agendamentos confirmados.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="w-full h-[60vh] lg:h-[70vh]">
-                    <iframe
-                        src={googleCalendarUrl}
-                        className="h-full w-full border-0 rounded-lg"
-                        title="Agenda do Google"
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {rooms.map((room) => (
+                        <Card key={room.name} className="flex flex-col">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-headline">{room.name}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-grow flex items-end">
+                            <Button onClick={() => handleSelectRoom(room)} className="w-full">
+                                Ver Agenda e Agendar <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </CardContent>
+                        </Card>
+                    ))}
                 </div>
             </CardContent>
         </Card>
