@@ -13,17 +13,17 @@ type Room = {
 
 const rooms: Room[] = [
   {
-    name: '1 - INTEGRIDADE',
+    name: 'INTEGRIDADE',
     koalendarUrl: 'https://koalendar.com/e/integridade',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.1.integridade%40gmail.com&ctz=America%2FFortaleza',
   },
   {
-    name: '2 - VALORIZAÇÃO DAS PESSOAS',
-    koalendarUrl: 'https://koalendar.com/e/VALORIZACAO-DAS-PESSOAS',
-    googleCalendarUrl: '',
+    name: 'VALORIZAÇÃO DAS PESSOAS',
+    koalendarUrl: 'https://koalendar.com/e/valorizacao-das-pessoas',
+    googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.2.valorizacaodaspessoas%40gmail.com&ctz=America%2FFortaleza',
   },
   {
-    name: '3 - INOVAÇÃO',
+    name: 'INOVAÇÃO',
     koalendarUrl: 'https://koalendar.com/e/sala-4-koamoaHf',
     googleCalendarUrl: '',
   },
