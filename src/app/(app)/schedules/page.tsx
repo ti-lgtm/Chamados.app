@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -24,8 +25,8 @@ const rooms: Room[] = [
   },
   {
     name: 'INOVAÇÃO',
-    koalendarUrl: 'https://koalendar.com/e/sala-4-koamoaHf',
-    googleCalendarUrl: '',
+    koalendarUrl: 'https://koalendar.com/e/inovacao',
+    googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.3.inovacao%40gmail.com&ctz=America%2FFortaleza',
   },
 ];
 
