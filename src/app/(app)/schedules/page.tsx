@@ -54,10 +54,10 @@ export default function SchedulesPage() {
                     <span className="sr-only">Voltar para seleção de salas</span>
                 </Button>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
                 <Card className="flex flex-col">
                     <CardHeader>
-                        <CardTitle>1. Agendar Sala</CardTitle>
+                        <CardTitle>Agendar Sala</CardTitle>
                     </CardHeader>
                     <CardContent className="flex-grow">
                          <div className="w-full h-[70vh] rounded-lg overflow-hidden border">
@@ -72,7 +72,7 @@ export default function SchedulesPage() {
                 </Card>
                 <Card className="flex flex-col">
                     <CardHeader>
-                        <CardTitle>2. Visualizar Agenda</CardTitle>
+                        <CardTitle>Visualizar Agenda</CardTitle>
                     </CardHeader>
                     <CardContent className="flex-grow">
                         {selectedRoom.googleCalendarUrl ? (
