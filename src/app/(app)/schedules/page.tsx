@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 type Room = {
   name: string;
@@ -46,13 +45,12 @@ export default function SchedulesPage() {
                     <p className="text-muted-foreground">Use os painéis abaixo para agendar e visualizar a agenda da sala.</p>
                 </div>
                 <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full flex-shrink-0"
-                    onClick={() => setSelectedRoom(null)}
+                    variant="outline"
+                    onClick={() => window.location.href = '/schedules'}
+                    className="flex-shrink-0"
                 >
-                    <X className="h-6 w-6" />
-                    <span className="sr-only">Voltar para seleção de salas</span>
+                    <ArrowLeft />
+                    Voltar
                 </Button>
             </div>
             <div className="grid grid-cols-1 gap-6">
