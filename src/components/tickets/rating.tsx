@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, addDoc, query, onSnapshot, serverTimestamp, limit } from "firebase/firestore";
+import { collection, query, onSnapshot, serverTimestamp, limit, runTransaction, doc } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import type { AppUser, Rating } from "@/lib/types";
 import { Star, Loader2 } from "lucide-react";
@@ -74,32 +74,37 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
 
         setIsSubmitting(true);
 
-        const ratingData = {
-            ticketId,
-            userId: currentUser.uid,
-            rating,
-            comment,
-            createdAt: serverTimestamp(),
-        };
-
-        const ratingCollectionRef = collection(firestore, "tickets", ticketId, "ratings");
-
-        addDoc(ratingCollectionRef, ratingData)
-            .then(() => {
-                toast({ title: "Avaliação enviada com sucesso!" });
-            })
-            .catch((error) => {
-                toast({ title: "Erro ao enviar avaliação", variant: "destructive" });
-                const contextualError = new FirestorePermissionError({
-                    operation: 'create',
-                    path: `tickets/${ticketId}/ratings`,
-                    requestResourceData: ratingData
-                });
-                errorEmitter.emit('permission-error', contextualError);
-            })
-            .finally(() => {
-                setIsSubmitting(false);
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const ticketRef = doc(firestore, "tickets", ticketId);
+                const ratingCollectionRef = collection(firestore, "tickets", ticketId, "ratings");
+                const newRatingDocRef = doc(ratingCollectionRef); // Auto-generate ID
+    
+                const ratingData = {
+                    ticketId,
+                    userId: currentUser.uid,
+                    rating,
+                    comment,
+                    createdAt: serverTimestamp(),
+                };
+                
+                transaction.set(newRatingDocRef, ratingData);
+                transaction.update(ticketRef, { rating: rating });
             });
+            
+            toast({ title: "Avaliação enviada com sucesso!" });
+    
+        } catch (error) {
+            toast({ title: "Erro ao enviar avaliação", variant: "destructive" });
+            const contextualError = new FirestorePermissionError({
+                operation: 'write', // Generic operation for transaction
+                path: `tickets/${ticketId}`,
+                requestResourceData: { rating: rating }
+            });
+            errorEmitter.emit('permission-error', contextualError);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (loading) {

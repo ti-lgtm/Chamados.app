@@ -32,6 +32,7 @@ export interface Ticket {
   updatedAt: Timestamp;
   attachments?: string[];
   deadline?: Timestamp;
+  rating?: number;
 }
 
 export interface Comment {
@@ -63,5 +64,3 @@ export interface InternalNote {
   message: string;
   createdAt: Timestamp;
 }
-
-    

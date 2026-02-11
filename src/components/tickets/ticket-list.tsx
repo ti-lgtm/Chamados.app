@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DeadlineIndicator } from "./deadline-indicator";
+import { Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -70,10 +72,20 @@ export function TicketList({ tickets }: TicketListProps) {
                 </div>
             )}
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex justify-between items-center">
             <Button asChild variant="secondary" size="sm">
               <Link href={`/tickets/${ticket.id}`}>Ver Detalhes</Link>
             </Button>
+            {ticket.status === 'resolved' && typeof ticket.rating === 'number' && (
+                <div className="flex items-center gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={cn(
+                            "h-4 w-4",
+                            i < (ticket.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'
+                        )} />
+                    ))}
+                </div>
+            )}
           </CardFooter>
         </Card>
       ))}

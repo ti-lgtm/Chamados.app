@@ -123,6 +123,10 @@
           "type": "string",
           "description": "Timestamp for when the ticket is due.",
           "format": "date-time"
+        },
+        "rating": {
+          "type": "number",
+          "description": "The rating given to the ticket after resolution (1 to 5)."
         }
       },
       "required": [
@@ -393,5 +397,3 @@
     "reasoning": "The Firestore structure is designed to support a ticket management system with user roles (user, ti, admin). It has been refactored to use a top-level `tickets` collection to allow `ti` and `admin` users to query all tickets, which is a common requirement for support dashboards and not efficiently supported by collection group queries under the previous model due to security rule limitations.\n\n**Authorization Independence:**\n\n*   **Users:** User roles are stored directly within the user document (`/users/{userId}`). This remains the single source of truth for a user's role and status.\n*   **Tickets:** Tickets are in a top-level collection. Each ticket contains a `userId` field to denote ownership. This allows security rules to grant access based on whether the requester's UID matches the `userId` field (ownership) or if the requester has an elevated role (`ti`, `admin`).\n*   **Comments & Ratings:** These are stored in subcollections under each ticket (`/tickets/{ticketId}/...`). Their security rules rely on fetching the parent ticket document to check its `userId` field, ensuring only the ticket owner or support staff can interact with them. This `get()` call is efficient and secure as it's scoped to a single document within the same collection path hierarchy.\n\n**QAPs Support:**\n\n*   Secure `list` operations are now fully supported. `ti` and `admin` roles can list the entire `/tickets` collection. Regular users cannot list the entire collection but can perform a secure, targeted query (`where('userId', '==', auth.uid)`) which is protected by `get` rules that enforce ownership on each document read.\n\n**Justification of Paths:**\n\n*   `/users/{userId}`: Stores user information, including their role and status. Essential for RBAC.\n*   `/tickets/{ticketId}`: A top-level collection for all tickets. This is the key change that enables efficient querying for support staff and admins. The `userId` field within each ticket document maintains the ownership link.\n*   `/tickets/{ticketId}/comments/{commentId}`: Comments are stored as a subcollection of tickets. This provides a clear hierarchy and allows for easy retrieval of comments associated with a specific ticket.\n*   `/tickets/{ticketId}/ratings/{ratingId}`: Ratings are stored as a subcollection of tickets, similar to comments."
   }
 }
-
-    
