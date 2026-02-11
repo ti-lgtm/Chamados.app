@@ -35,23 +35,49 @@ export default function SchedulesPage() {
   const handleSelectRoom = (room: Room) => {
     setSelectedRoom(room);
   };
+  
+  const handleNextRoom = () => {
+    if (!selectedRoom) return;
+    const currentIndex = rooms.findIndex(r => r.name === selectedRoom.name);
+    if (currentIndex < rooms.length - 1) {
+      setSelectedRoom(rooms[currentIndex + 1]);
+    }
+  };
+
+  const handlePrevRoom = () => {
+    if (!selectedRoom) return;
+    const currentIndex = rooms.findIndex(r => r.name === selectedRoom.name);
+    if (currentIndex > 0) {
+      setSelectedRoom(rooms[currentIndex - 1]);
+    }
+  };
 
   if (selectedRoom) {
+    const currentIndex = rooms.findIndex(r => r.name === selectedRoom.name);
     return (
         <div className="space-y-6">
-             <div className="flex justify-between items-start">
+             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-headline font-bold">{selectedRoom.name}</h1>
                     <p className="text-muted-foreground">Use os painéis abaixo para agendar e visualizar a agenda da sala.</p>
                 </div>
-                <Button
-                    variant="outline"
-                    onClick={() => setSelectedRoom(null)}
-                    className="flex-shrink-0"
-                >
-                    <ArrowLeft />
-                    Voltar
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={handlePrevRoom} disabled={currentIndex <= 0}>
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="sr-only">Sala Anterior</span>
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={handleNextRoom} disabled={currentIndex >= rooms.length - 1}>
+                        <ArrowRight className="h-4 w-4" />
+                        <span className="sr-only">Próxima Sala</span>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => setSelectedRoom(null)}
+                        className="flex-shrink-0 ml-4"
+                    >
+                        Voltar à lista
+                    </Button>
+                </div>
             </div>
             <div className="grid grid-cols-1 gap-6">
                 <Card className="flex flex-col">
