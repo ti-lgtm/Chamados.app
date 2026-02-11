@@ -10,6 +10,7 @@ import {
   LogOut,
   User as UserIcon,
   CalendarDays,
+  BarChart,
 } from "lucide-react";
 import {
   Sheet,
@@ -78,6 +79,12 @@ export function AppHeader() {
                 <PlusCircle className="h-5 w-5" />
                 Novo Chamado
             </Link>
+            {(user?.role === 'admin' || user?.role === 'ti') && (
+              <Link href="/statistics" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
+                <BarChart className="h-5 w-5" />
+                Estatísticas
+              </Link>
+            )}
             {user?.role === 'admin' && (
               <Link href="/admin/users" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
                 <Users className="h-5 w-5" />

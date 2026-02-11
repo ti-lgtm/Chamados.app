@@ -14,6 +14,7 @@ import {
   Users,
   LogOut,
   CalendarDays,
+  BarChart,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "firebase/auth";
@@ -73,6 +74,10 @@ export function AppSidebar() {
           <NavLink href="/dashboard" icon={Ticket} label="Chamados" />
           <NavLink href="/tickets/new" icon={PlusCircle} label="Novo Chamado" />
           
+          {(user?.role === 'admin' || user?.role === 'ti') && (
+             <NavLink href="/statistics" icon={BarChart} label="Estatísticas" />
+          )}
+
           {user?.role === 'admin' && (
              <NavLink href="/admin/users" icon={Users} label="Gerenciar Usuários" />
           )}
