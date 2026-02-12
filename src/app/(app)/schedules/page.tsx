@@ -19,7 +19,7 @@ const rooms: Room[] = [
   },
   {
     name: 'VALORIZAÇÃO DAS PESSOAS',
-    koalendarUrl: 'https://koalendar.com/e/valorizacao-das-pessoas',
+    koalendarUrl: 'https://koalendar.com/e/2valorizacao-das-pessoas',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.2.valorizacaodaspessoas%40gmail.com&ctz=America%2FFortaleza',
   },
   {
