@@ -7,7 +7,7 @@ import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError }
 import type { AppUser, Ticket } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { TicketList } from '@/components/tickets/ticket-list';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -63,6 +63,13 @@ export function UserDashboard({ user }: UserDashboardProps) {
     return allTickets.filter(ticket => ticket.status === statusFilter);
   }, [allTickets, statusFilter]);
 
+  const oldestUnratedTicket = useMemo(() => {
+    const unrated = allTickets
+      .filter(ticket => ticket.status === 'resolved' && !ticket.rating)
+      .sort((a, b) => (a.createdAt.toMillis() || 0) - (b.createdAt.toMillis() || 0));
+    return unrated.length > 0 ? unrated[0] : null;
+  }, [allTickets]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -70,12 +77,21 @@ export function UserDashboard({ user }: UserDashboardProps) {
           <h1 className="text-2xl font-headline font-bold">Seus Chamados</h1>
           <p className="text-muted-foreground">Veja e gerencie os chamados que você abriu.</p>
         </div>
-        <Button asChild className="w-full sm:w-auto">
-          <Link href="/tickets/new">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Novo Chamado
-          </Link>
-        </Button>
+        {oldestUnratedTicket ? (
+            <Button asChild variant="outline" className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 hover:text-primary animate-pulse">
+                <Link href={`/tickets/${oldestUnratedTicket.id}`}>
+                    <Star className="mr-2 h-4 w-4" />
+                    Avaliar chamado pendente
+                </Link>
+            </Button>
+        ) : (
+            <Button asChild className="w-full sm:w-auto">
+              <Link href="/tickets/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Novo Chamado
+              </Link>
+            </Button>
+        )}
       </div>
 
       <div className="space-y-4">
