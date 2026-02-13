@@ -53,6 +53,7 @@ export interface Rating {
   rating: number;
   comment?: string;
   createdAt: Timestamp;
+  updatedAt?: Timestamp;
 }
 
 export interface InternalNote {
