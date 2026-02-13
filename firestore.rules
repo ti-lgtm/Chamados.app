@@ -110,6 +110,18 @@ service cloud.firestore {
     }
     
     /**
+     * Returns true if the only fields being changed are 'rating' and 'updatedAt'.
+     * This is to allow a user to rate a ticket, which also updates the timestamp.
+     */
+    function isUpdatingRating() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      let size = changedKeys.size();
+      // Allow 'rating' and 'updatedAt' together, or just 'updatedAt' if rating value is unchanged.
+      return (size == 2 && changedKeys.hasAll(['rating', 'updatedAt'])) ||
+             (size == 1 && changedKeys.has('updatedAt'));
+    }
+
+    /**
      * On comment creation, ensures the `userId` is the commenter's UID and the
      * `ticketId` matches the parent ticket in the path.
      */
@@ -186,10 +198,9 @@ service cloud.firestore {
       // CREATE: A user can create a ticket for themselves. `create` rules can use `get()`.
       allow create: if isOwner(request.resource.data.userId);
 
-      // UPDATE: Support staff (TI/Admin) can update a ticket. The owner of the ticket
-      // is also allowed to update it, but ONLY to add or change the 'rating' field.
+      // UPDATE: Support staff can update. The owner can only update the rating.
       allow update: if (isSupportStaff() && hasImmutableTicketFields()) || 
-                       (isOwner(resource.data.userId) && isUpdatingOnlyRating());
+                       (isOwner(resource.data.userId) && isUpdatingRating());
                        
       // DELETE: The owner or an admin can delete a ticket. `delete` rules can use `get()`.
       allow delete: if isOwner(resource.data.userId) || isAdmin();

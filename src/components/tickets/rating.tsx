@@ -101,7 +101,7 @@ export function RatingSection({ ticketId, ticketCreatorId, currentUser }: Rating
                 }
                 
                 // Update the denormalized rating on the ticket in both cases
-                transaction.update(ticketRef, { rating });
+                transaction.update(ticketRef, { rating, updatedAt: serverTimestamp() });
             });
             
             toast({ title: `Avaliação ${existingRating ? 'atualizada' : 'enviada'} com sucesso!` });
