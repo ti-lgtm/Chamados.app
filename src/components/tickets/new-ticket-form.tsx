@@ -37,6 +37,7 @@ const formSchema = z.object({
   title: z.string().min(5, { message: 'O título deve ter pelo menos 5 caracteres.' }),
   company: z.string().min(2, { message: 'O nome da empresa é obrigatório.' }),
   department: z.string().min(2, { message: 'O nome do setor é obrigatório.' }),
+  contactNumber: z.string().min(10, { message: 'O número de contato é obrigatório e deve incluir o DDD.' }),
   description: z.string().min(10, { message: 'A descrição deve ter pelo menos 10 caracteres.' }),
   priority: z.enum(['low', 'normal', 'high'], { required_error: 'A prioridade é obrigatória.' }),
   attachments: z.custom<FileList>().optional(),
@@ -75,6 +76,7 @@ export function NewTicketForm() {
       title: '',
       company: '',
       department: '',
+      contactNumber: '',
       description: '',
       priority: 'normal',
     },
@@ -123,6 +125,7 @@ export function NewTicketForm() {
           title: values.title,
           company: values.company,
           department: values.department,
+          contactNumber: values.contactNumber,
           description: values.description,
           priority: values.priority,
           status: 'open' as const,
@@ -235,6 +238,19 @@ export function NewTicketForm() {
           />
         </div>
         <FormField
+            control={form.control}
+            name="contactNumber"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Número de Contato (com DDD)</FormLabel>
+                <FormControl>
+                    <Input placeholder="(XX) XXXXX-XXXX" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
+        <FormField
           control={form.control}
           name="description"
           render={({ field }) => (
@@ -295,5 +311,3 @@ export function NewTicketForm() {
     </Form>
   );
 }
-
-    

@@ -82,6 +82,10 @@
           "type": "string",
           "description": "A detailed description of the issue."
         },
+        "contactNumber": {
+          "type": "string",
+          "description": "The contact phone number for the user."
+        },
         "status": {
           "type": "string",
           "description": "The current status of the ticket (open, in_progress, resolved)."

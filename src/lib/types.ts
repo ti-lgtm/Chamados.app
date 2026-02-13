@@ -19,6 +19,7 @@ export interface Ticket {
   company: string;
   department: string;
   description: string;
+  contactNumber?: string;
   status: 'open' | 'in_progress' | 'resolved';
   priority: 'low' | 'normal' | 'high';
   userId: string;
