@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Ticket } from '@/lib/types';
+import { format } from 'date-fns';
 
 import { NewTicketForm } from "@/components/tickets/new-ticket-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,12 +29,11 @@ export default function NewTicketPage() {
 
     const { data: resolvedTickets, isLoading: ticketsLoading } = useCollection<Ticket>(resolvedTicketsQuery);
 
-    const oldestUnratedTicket = useMemo(() => {
-        if (!resolvedTickets) return null;
-        const unrated = resolvedTickets
+    const unratedTickets = useMemo(() => {
+        if (!resolvedTickets) return [];
+        return resolvedTickets
             .filter(ticket => !ticket.rating)
             .sort((a, b) => (a.createdAt.toMillis() || 0) - (b.createdAt.toMillis() || 0));
-        return unrated.length > 0 ? unrated[0] : null;
     }, [resolvedTickets]);
 
     const isLoading = authLoading || ticketsLoading;
@@ -46,21 +46,30 @@ export default function NewTicketPage() {
         );
     }
     
-    if (oldestUnratedTicket) {
+    if (unratedTickets.length > 0) {
         return (
              <div className="mx-auto w-full max-w-2xl pt-8">
                 <Card className="border-primary/50">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 font-headline"><Star className="text-yellow-400 fill-yellow-400" /> Avaliação Pendente</CardTitle>
-                        <CardDescription>Para abrir um novo chamado, por favor, avalie o atendimento do seu último chamado resolvido.</CardDescription>
+                        <CardTitle className="flex items-center gap-2 font-headline"><Star className="text-yellow-400 fill-yellow-400" /> Avaliações Pendentes</CardTitle>
+                        <CardDescription>Para abrir um novo chamado, por favor, avalie os atendimentos resolvidos abaixo.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <p className="text-sm">Chamado: <strong className="font-medium">#{oldestUnratedTicket.ticketNumber} - {oldestUnratedTicket.title}</strong>.</p>
-                        <Button asChild className="w-full">
-                            <Link href={`/tickets/${oldestUnratedTicket.id}`}>
-                                Ir para Avaliação
-                            </Link>
-                        </Button>
+                    <CardContent className="pt-2">
+                       <ul className="divide-y divide-border -mx-6">
+                            {unratedTickets.map(ticket => (
+                                <li key={ticket.id} className="py-3 px-6 flex justify-between items-center">
+                                    <div>
+                                        <p className="font-medium">#{ticket.ticketNumber} - {ticket.title}</p>
+                                        {ticket.updatedAt && <p className="text-sm text-muted-foreground">Resolvido em {format(ticket.updatedAt.toDate(), "dd/MM/yyyy")}</p>}
+                                    </div>
+                                    <Button asChild size="sm" variant="outline">
+                                        <Link href={`/tickets/${ticket.id}`}>
+                                            Avaliar
+                                        </Link>
+                                    </Button>
+                                </li>
+                            ))}
+                        </ul>
                     </CardContent>
                 </Card>
             </div>
