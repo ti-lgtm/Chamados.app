@@ -10,7 +10,7 @@
  *
  * Key Security Decisions:
  * - Top-Level Tickets: Storing tickets at the root level is a deliberate choice to enable efficient `list`
- *   operations for TI/Admin dashboards, which is not possible with collection group queries under strict security.
+ *   operations for TI/Admin dashboards.
  * - User Roles: A 'role' field ('user', 'ti', 'admin') is stored directly on each document in the `/users` collection.
  *   This is the single source of truth for authorization decisions.
  * - Suspension: A 'status' field ('active' or 'suspended') on the user document allows admins to disable accounts.
@@ -141,6 +141,15 @@ service cloud.firestore {
       return request.resource.data.ticketId == resource.data.ticketId;
     }
 
+    /**
+     * Returns true if the only field being changed in an update is the 'rating'.
+     * Used to allow users to rate a resolved ticket.
+     */
+    function isUpdatingOnlyRating() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return changedKeys.size() == 1 && changedKeys.has('rating');
+    }
+
     //-------------------------------------------------------------------------
     // Collection Rules
     //-------------------------------------------------------------------------
@@ -176,8 +185,12 @@ service cloud.firestore {
 
       // CREATE: A user can create a ticket for themselves. `create` rules can use `get()`.
       allow create: if isOwner(request.resource.data.userId);
-      // UPDATE: Support staff (TI/Admin) can update a ticket.
-      allow update: if isSupportStaff() && hasImmutableTicketFields();
+
+      // UPDATE: Support staff (TI/Admin) can update a ticket. The owner of the ticket
+      // is also allowed to update it, but ONLY to add or change the 'rating' field.
+      allow update: if (isSupportStaff() && hasImmutableTicketFields()) || 
+                       (isOwner(resource.data.userId) && isUpdatingOnlyRating());
+                       
       // DELETE: The owner or an admin can delete a ticket. `delete` rules can use `get()`.
       allow delete: if isOwner(resource.data.userId) || isAdmin();
     }
