@@ -152,6 +152,7 @@ export function NewTicketForm() {
         title: newTicketData.payload.title,
         userName: newTicketData.payload.userName,
         userEmail: newTicketData.payload.userEmail,
+        description: newTicketData.payload.description,
       });
 
       // 4. Trigger email notification for support team
@@ -163,6 +164,7 @@ export function NewTicketForm() {
                 title: newTicketData.payload.title,
                 creatorName: newTicketData.payload.userName,
                 supportEmails: supportEmails,
+                description: newTicketData.payload.description,
             });
         }
       }

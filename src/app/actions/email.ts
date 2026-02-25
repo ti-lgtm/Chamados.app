@@ -7,6 +7,7 @@ interface TicketCreatedPayload {
   title: string;
   userName: string;
   userEmail: string;
+  description: string;
 }
 
 export async function triggerTicketCreatedEmail(payload: TicketCreatedPayload) {
@@ -17,6 +18,8 @@ export async function triggerTicketCreatedEmail(payload: TicketCreatedPayload) {
       html_body: `
             <h1>Olá ${payload.userName},</h1>
             <p>Seu chamado <strong>#${payload.ticketNumber} - "${payload.title}"</strong> foi criado com sucesso.</p>
+            <p><strong>Descrição:</strong></p>
+            <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">${payload.description}</blockquote>
             <p>Nossa equipe de suporte irá analisá-lo em breve. Você pode acompanhar o status do seu chamado em nosso portal.</p>
             <p>Atenciosamente,<br/>Equipe de Suporte Soluções AMLMF</p>
         `,
@@ -31,6 +34,7 @@ interface TicketCreatedSupportPayload {
   title: string;
   creatorName: string;
   supportEmails: string[];
+  description: string;
 }
 
 export async function triggerTicketCreatedSupportEmail(payload: TicketCreatedSupportPayload) {
@@ -47,6 +51,8 @@ export async function triggerTicketCreatedSupportEmail(payload: TicketCreatedSup
                     <li><strong>Número:</strong> #${payload.ticketNumber}</li>
                     <li><strong>Título:</strong> ${payload.title}</li>
                 </ul>
+                <p><strong>Descrição:</strong></p>
+                <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">${payload.description}</blockquote>
                 <p>Acesse o portal para ver os detalhes e atribuir o chamado.</p>
                 <p>Atenciosamente,<br/>Sistema de Notificações AMLMF</p>
             `,
