@@ -10,42 +10,73 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BarChart as BarChartIcon, ShieldAlert, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, BarChart } from 'recharts';
-import { startOfWeek, startOfMonth, startOfYear, differenceInHours } from 'date-fns';
+import { startOfWeek, startOfMonth, startOfYear, endOfWeek, endOfMonth, endOfYear, getYear, differenceInHours } from 'date-fns';
 
 
 function StatisticsPageContent() {
     const firestore = useFirestore();
     const [timeRange, setTimeRange] = useState('month');
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
 
     const ticketsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Query all tickets, as we need to filter them on the client by date
         return query(collection(firestore, 'tickets'));
     }, [firestore]);
 
     const { data: allTickets, isLoading: ticketsLoading, error: ticketsError } = useCollection<Ticket>(ticketsQuery);
+    
+    const availableYears = useMemo(() => {
+        if (!allTickets) return [new Date().getFullYear()];
+        const years = new Set(allTickets.map(t => getYear(t.createdAt.toDate())));
+        years.add(new Date().getFullYear());
+        return Array.from(years).sort((a, b) => b - a);
+    }, [allTickets]);
+
+    const months = useMemo(() => Array.from({ length: 12 }, (_, i) => {
+        const monthName = new Date(2000, i).toLocaleString('pt-BR', { month: 'long' });
+        return {
+            value: i,
+            label: monthName.charAt(0).toUpperCase() + monthName.slice(1)
+        };
+    }), []);
+
 
     const filteredTickets = useMemo(() => {
         if (!allTickets) return [];
+
         const now = new Date();
         let startDate: Date;
+        let endDate: Date;
 
         switch (timeRange) {
-            case 'week':
-                startDate = startOfWeek(now);
-                break;
             case 'year':
-                startDate = startOfYear(now);
+                startDate = startOfYear(new Date(selectedYear, 0, 1));
+                endDate = endOfYear(new Date(selectedYear, 11, 31));
                 break;
             case 'month':
+                startDate = startOfMonth(new Date(selectedYear, selectedMonth));
+                endDate = endOfMonth(new Date(selectedYear, selectedMonth));
+                break;
+            case 'week':
             default:
-                startDate = startOfMonth(now);
+                // "Semana" will always refer to the current week.
+                startDate = startOfWeek(now);
+                endDate = endOfWeek(now);
                 break;
         }
+        
+        // Do not include data from the future.
+        const finalEndDate = endDate > now ? now : endDate;
 
-        return allTickets.filter(ticket => ticket.createdAt.toDate() >= startDate);
-    }, [allTickets, timeRange]);
+        return allTickets.filter(ticket => {
+            if (!ticket.createdAt) return false;
+            const ticketDate = ticket.createdAt.toDate();
+            return ticketDate >= startDate && ticketDate <= finalEndDate;
+        });
+    }, [allTickets, timeRange, selectedYear, selectedMonth]);
 
     const resolvedTickets = useMemo(() => filteredTickets.filter(t => t.status === 'resolved'), [filteredTickets]);
 
@@ -121,17 +152,57 @@ function StatisticsPageContent() {
 
 
     return (
-        <Tabs value={timeRange} onValueChange={setTimeRange}>
+        <div className="space-y-6">
             <div className="flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
                 <div>
                     <h1 className="text-2xl font-headline font-bold">Estatísticas dos Chamados</h1>
                     <p className="text-muted-foreground">Análise de desempenho da equipe de suporte.</p>
                 </div>
-                <TabsList>
-                    <TabsTrigger value="week">Semana</TabsTrigger>
-                    <TabsTrigger value="month">Mês</TabsTrigger>
-                    <TabsTrigger value="year">Ano</TabsTrigger>
-                </TabsList>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Tabs value={timeRange} onValueChange={setTimeRange}>
+                        <TabsList>
+                            <TabsTrigger value="week">Semana</TabsTrigger>
+                            <TabsTrigger value="month">Mês</TabsTrigger>
+                            <TabsTrigger value="year">Ano</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                    {timeRange === 'year' && (
+                        <Select value={String(selectedYear)} onValueChange={(val) => setSelectedYear(Number(val))}>
+                            <SelectTrigger className="w-[120px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableYears.map(year => (
+                                    <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                    {timeRange === 'month' && (
+                        <>
+                            <Select value={String(selectedMonth)} onValueChange={(val) => setSelectedMonth(Number(val))}>
+                                <SelectTrigger className="w-[140px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {months.map(month => (
+                                        <SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={String(selectedYear)} onValueChange={(val) => setSelectedYear(Number(val))}>
+                                <SelectTrigger className="w-[120px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableYears.map(year => (
+                                        <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </>
+                    )}
+                </div>
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
                 <Card>
@@ -206,8 +277,7 @@ function StatisticsPageContent() {
                     </CardContent>
                 </Card>
             </div>
-
-        </Tabs>
+        </div>
     )
 }
 
