@@ -14,7 +14,7 @@ export async function triggerTicketCreatedEmail(payload: TicketCreatedPayload) {
   try {
     await sendEmail({
       to: [payload.userEmail],
-      subject: `Chamado #${payload.ticketNumber} Criado: ${payload.title}`,
+      subject: `Chamado #${payload.ticketNumber}: ${payload.title}`,
       html_body: `
             <h1>Olá ${payload.userName},</h1>
             <p>Seu chamado <strong>#${payload.ticketNumber} - "${payload.title}"</strong> foi criado com sucesso.</p>
@@ -42,7 +42,7 @@ export async function triggerTicketCreatedSupportEmail(payload: TicketCreatedSup
     try {
         await sendEmail({
             to: payload.supportEmails,
-            subject: `Novo Chamado Aberto: #${payload.ticketNumber} por ${payload.creatorName}`,
+            subject: `Novo Chamado #${payload.ticketNumber}: ${payload.title}`,
             html_body: `
                 <h1>Novo Chamado no Portal</h1>
                 <p>Um novo chamado foi aberto e precisa de atenção.</p>
