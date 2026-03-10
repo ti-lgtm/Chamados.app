@@ -82,8 +82,10 @@ function StatisticsPageContent() {
 
     const attendantStats = useMemo(() => {
         const counts = resolvedTickets.reduce((acc, ticket) => {
-            const attendant = ticket.assignedUserName || 'Não atribuído';
-            acc[attendant] = (acc[attendant] || 0) + 1;
+            if (ticket.assignedUserName) {
+                const attendant = ticket.assignedUserName;
+                acc[attendant] = (acc[attendant] || 0) + 1;
+            }
             return acc;
         }, {} as Record<string, number>);
 
@@ -118,6 +120,35 @@ function StatisticsPageContent() {
         return (totalHours / resolvedTickets.length).toFixed(1);
     }, [resolvedTickets]);
 
+    const departmentStats = useMemo(() => {
+        const counts = filteredTickets.reduce((acc, ticket) => {
+            const department = ticket.department || 'Não informado';
+            acc[department] = (acc[department] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        return Object.entries(counts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10); // Top 10
+    }, [filteredTickets]);
+
+    const assignedTicketsByAttendantStats = useMemo(() => {
+        const counts = filteredTickets.reduce((acc, ticket) => {
+            if (ticket.assignedUserName) {
+                const attendant = ticket.assignedUserName;
+                acc[attendant] = (acc[attendant] || 0) + 1;
+            }
+            return acc;
+        }, {} as Record<string, number>);
+
+        return Object.entries(counts)
+            .map(([name, tickets]) => ({ name, tickets }))
+            .sort((a, b) => b.tickets - a.tickets)
+            .slice(0, 10); // Top 10
+    }, [filteredTickets]);
+
+
     if (ticketsLoading) {
         return (
             <div className="space-y-6">
@@ -130,7 +161,9 @@ function StatisticsPageContent() {
                     <Skeleton className="h-32 w-full" />
                     <Skeleton className="h-32 w-full" />
                 </div>
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+                    <Skeleton className="h-80 w-full" />
+                    <Skeleton className="h-80 w-full" />
                     <Skeleton className="h-80 w-full" />
                     <Skeleton className="h-80 w-full" />
                 </div>
@@ -236,15 +269,15 @@ function StatisticsPageContent() {
             <div className="grid gap-6 mt-6 md:grid-cols-1 lg:grid-cols-2">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Top Atendentes</CardTitle>
+                        <CardTitle>Top Atendentes (Resolvidos)</CardTitle>
                         <CardDescription>Chamados resolvidos por membro da equipe.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {attendantStats.length > 0 ? (
                              <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={attendantStats} layout="vertical" margin={{ left: 20 }}>
+                                <BarChart data={attendantStats} layout="vertical" margin={{ left: 20, right: 20 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis type="number" />
+                                    <XAxis type="number" allowDecimals={false} />
                                     <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
                                     <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
                                     <Bar dataKey="tickets" name="Chamados Resolvidos" fill="hsl(var(--primary))">
@@ -274,6 +307,48 @@ function StatisticsPageContent() {
                                 </BarChart>
                             </ResponsiveContainer>
                          ) : <p className="text-center text-muted-foreground py-10">Nenhuma avaliação para exibir.</p>}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Chamados por Setor</CardTitle>
+                        <CardDescription>Top 10 setores com mais chamados no período.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {departmentStats.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={departmentStats} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis type="number" allowDecimals={false} />
+                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
+                                    <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
+                                    <Bar dataKey="count" name="Chamados" fill="hsl(var(--chart-2))">
+                                        <LabelList dataKey="count" position="right" className="fill-foreground" />
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : <p className="text-center text-muted-foreground py-10">Nenhum dado de setor para exibir.</p>}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Chamados Atribuídos por Atendente</CardTitle>
+                        <CardDescription>Top 10 atendentes com mais chamados atribuídos no período.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {assignedTicketsByAttendantStats.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={assignedTicketsByAttendantStats} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis type="number" allowDecimals={false}/>
+                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
+                                    <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
+                                    <Bar dataKey="tickets" name="Chamados Atribuídos" fill="hsl(var(--chart-3))">
+                                        <LabelList dataKey="tickets" position="right" className="fill-foreground" />
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : <p className="text-center text-muted-foreground py-10">Nenhum chamado atribuído para exibir.</p>}
                     </CardContent>
                 </Card>
             </div>
