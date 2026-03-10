@@ -120,7 +120,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
                     />
                 </div>
                 <Tabs defaultValue="open" onValueChange={setStatusFilter} className="w-full sm:w-auto">
-                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
                         <TabsTrigger value="all">Todos</TabsTrigger>
                         <TabsTrigger value="open">Abertos</TabsTrigger>
                         <TabsTrigger value="in_progress">Em Atend.</TabsTrigger>
