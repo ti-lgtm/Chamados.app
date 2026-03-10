@@ -7,9 +7,10 @@ import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError }
 import type { AppUser, Ticket } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { TicketList } from '@/components/tickets/ticket-list';
-import { PlusCircle, Star } from 'lucide-react';
+import { PlusCircle, Star, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 
 interface UserDashboardProps {
   user: AppUser;
@@ -20,6 +21,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('open');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const ticketsQuery = useMemoFirebase(
     () =>
@@ -57,11 +59,22 @@ export function UserDashboard({ user }: UserDashboardProps) {
   }, [ticketsQuery]);
 
   const filteredTickets = useMemo(() => {
-    if (statusFilter === 'all') {
-      return allTickets;
+    let tickets = allTickets;
+
+    if (statusFilter !== 'all') {
+      tickets = tickets.filter(ticket => ticket.status === statusFilter);
     }
-    return allTickets.filter(ticket => ticket.status === statusFilter);
-  }, [allTickets, statusFilter]);
+    
+    if (searchTerm.trim()) {
+        const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
+        tickets = tickets.filter(ticket => 
+            ticket.title.toLowerCase().includes(lowercasedSearchTerm) ||
+            String(ticket.ticketNumber).includes(lowercasedSearchTerm)
+        );
+    }
+
+    return tickets;
+  }, [allTickets, statusFilter, searchTerm]);
 
   const unratedTickets = useMemo(() => {
     return allTickets.filter(ticket => ticket.status === 'resolved' && !ticket.rating);
@@ -92,14 +105,25 @@ export function UserDashboard({ user }: UserDashboardProps) {
       </div>
 
       <div className="space-y-4">
-        <Tabs defaultValue="open" onValueChange={setStatusFilter} className="w-full sm:w-auto">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
-                <TabsTrigger value="all">Todos</TabsTrigger>
-                <TabsTrigger value="open">Abertos</TabsTrigger>
-                <TabsTrigger value="in_progress">Em Atend.</TabsTrigger>
-                <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
-            </TabsList>
-        </Tabs>
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <Tabs defaultValue="open" onValueChange={setStatusFilter} className="w-full sm:w-auto">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                    <TabsTrigger value="all">Todos</TabsTrigger>
+                    <TabsTrigger value="open">Abertos</TabsTrigger>
+                    <TabsTrigger value="in_progress">Em Atend.</TabsTrigger>
+                    <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
+                </TabsList>
+            </Tabs>
+            <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Pesquisar por nº ou título..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                />
+            </div>
+        </div>
 
         {loading ? (
             <div className="space-y-4">

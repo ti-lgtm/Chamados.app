@@ -6,9 +6,10 @@ import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError }
 import type { AppUser, Ticket } from '@/lib/types';
 import { TicketList } from '@/components/tickets/ticket-list';
 import { StatsCard } from './stats-card';
-import { Circle, GanttChart, CheckCircle } from 'lucide-react';
+import { Circle, GanttChart, CheckCircle, Search } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 
 interface TiDashboardProps {
   user: AppUser;
@@ -19,6 +20,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('open');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const stats = useMemo(() => ({
     open: allTickets.filter((t) => t.status === 'open').length,
@@ -60,11 +62,22 @@ export function TiDashboard({ user }: TiDashboardProps) {
   }, [ticketsQuery]);
 
   const filteredTickets = useMemo(() => {
-    if (statusFilter === 'all') {
-      return allTickets;
+    let tickets = allTickets;
+    
+    if (statusFilter !== 'all') {
+      tickets = tickets.filter(ticket => ticket.status === statusFilter);
     }
-    return allTickets.filter(ticket => ticket.status === statusFilter);
-  }, [allTickets, statusFilter]);
+    
+    if (searchTerm.trim()) {
+        const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
+        tickets = tickets.filter(ticket =>
+            ticket.title.toLowerCase().includes(lowercasedSearchTerm) ||
+            String(ticket.ticketNumber).includes(lowercasedSearchTerm)
+        );
+    }
+
+    return tickets;
+  }, [allTickets, statusFilter, searchTerm]);
 
   return (
     <div className="space-y-6">
@@ -96,14 +109,25 @@ export function TiDashboard({ user }: TiDashboardProps) {
             <h2 className="text-xl font-headline font-semibold">
                 Todos os Chamados
             </h2>
-             <Tabs defaultValue="open" onValueChange={setStatusFilter} className="w-full sm:w-auto">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
-                    <TabsTrigger value="all">Todos</TabsTrigger>
-                    <TabsTrigger value="open">Abertos</TabsTrigger>
-                    <TabsTrigger value="in_progress">Em Atend.</TabsTrigger>
-                    <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
-                </TabsList>
-            </Tabs>
+             <div className="flex flex-col-reverse sm:flex-row w-full sm:w-auto sm:justify-end gap-4">
+                <div className="relative w-full sm:max-w-xs">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Pesquisar por nº ou título..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-8"
+                    />
+                </div>
+                <Tabs defaultValue="open" onValueChange={setStatusFilter} className="w-full sm:w-auto">
+                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                        <TabsTrigger value="all">Todos</TabsTrigger>
+                        <TabsTrigger value="open">Abertos</TabsTrigger>
+                        <TabsTrigger value="in_progress">Em Atend.</TabsTrigger>
+                        <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+             </div>
         </div>
 
         {loading ? (

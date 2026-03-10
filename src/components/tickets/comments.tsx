@@ -45,6 +45,9 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
     const { toast } = useToast();
     const ticketId = ticket.id;
 
+    const isResolved = ticket.status === 'resolved';
+    const isSupportStaff = !!currentUser && (currentUser.role === 'ti' || currentUser.role === 'admin');
+
     const form = useForm<z.infer<typeof commentSchema>>({
         resolver: zodResolver(commentSchema),
         defaultValues: { message: "", attachments: undefined },
@@ -209,7 +212,7 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
                     ))}
                 </div>
                 
-                {currentUser && (
+                {currentUser && (isSupportStaff || !isResolved) ? (
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start space-x-4">
                             <Avatar>
@@ -250,7 +253,11 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
                             </div>
                         </form>
                     </Form>
-                )}
+                ) : isResolved ? (
+                    <div className="text-center text-sm text-muted-foreground p-4 border-t">
+                        Comentários estão desabilitados para chamados resolvidos.
+                    </div>
+                ) : null }
             </CardContent>
         </Card>
     );

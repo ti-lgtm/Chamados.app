@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, CalendarClock, Building, Briefcase, CheckCircle, Phone } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, CalendarClock, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
@@ -274,7 +274,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                     </SelectContent>
                                 </Select>
                              </div>
-                              {ticket.status !== 'resolved' && (
+                              {ticket.status !== 'resolved' ? (
                                 <Button 
                                     className="w-full" 
                                     onClick={() => handleStatusChange('resolved')}
@@ -282,6 +282,16 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                 >
                                     {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                                     Marcar como Resolvido
+                                </Button>
+                            ) : (
+                                <Button 
+                                    className="w-full" 
+                                    variant="outline"
+                                    onClick={() => handleStatusChange('open')}
+                                    disabled={isUpdating}
+                                >
+                                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CircleIcon className="mr-2 h-4 w-4" />}
+                                    Reabrir Chamado
                                 </Button>
                             )}
                          </CardFooter>
