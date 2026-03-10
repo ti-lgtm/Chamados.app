@@ -33,10 +33,29 @@ import { Loader2 } from 'lucide-react';
 import { triggerTicketCreatedEmail, triggerTicketCreatedSupportEmail } from '@/app/actions/email';
 import type { AppUser } from '@/lib/types';
 
+const departmentOptions = [
+    "Administrativo",
+    "Arquivo",
+    "Assistência Técnica",
+    "Atendimento ao Cliente",
+    "Auditoria",
+    "Comercial",
+    "Contabilidade",
+    "Diretoria",
+    "Financeiro",
+    "Gestão Pessoal",
+    "Jurídico",
+    "Obra",
+    "Planejamento",
+    "Projetos",
+    "Suprimentos",
+    "Marketing",
+] as const;
+
 const formSchema = z.object({
   title: z.string().min(5, { message: 'O título deve ter pelo menos 5 caracteres.' }),
   company: z.string().min(2, { message: 'O nome da empresa é obrigatório.' }),
-  department: z.string().min(2, { message: 'O nome do setor é obrigatório.' }),
+  department: z.enum(departmentOptions, { required_error: 'O setor é obrigatório.' }),
   contactNumber: z.string().min(10, { message: 'O número de contato é obrigatório e deve incluir o DDD.' }),
   description: z.string().min(10, { message: 'A descrição deve ter pelo menos 10 caracteres.' }),
   priority: z.enum(['low', 'normal', 'high'], { required_error: 'A prioridade é obrigatória.' }),
@@ -75,7 +94,6 @@ export function NewTicketForm() {
     defaultValues: {
       title: '',
       company: '',
-      department: '',
       contactNumber: '',
       description: '',
       priority: 'normal',
@@ -225,19 +243,30 @@ export function NewTicketForm() {
               </FormItem>
             )}
           />
-          <FormField
+           <FormField
             control={form.control}
             name="department"
             render={({ field }) => (
-              <FormItem>
+                <FormItem>
                 <FormLabel>Setor</FormLabel>
-                <FormControl>
-                  <Input placeholder="Seu setor ou departamento" {...field} />
-                </FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Selecione o seu setor" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {departmentOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                                {option}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
                 <FormMessage />
-              </FormItem>
+                </FormItem>
             )}
-          />
+            />
         </div>
         <FormField
             control={form.control}
