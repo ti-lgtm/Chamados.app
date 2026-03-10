@@ -104,30 +104,25 @@ export function TiDashboard({ user }: TiDashboardProps) {
         />
       </div>
 
-      <div>
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
-            <h2 className="text-xl font-headline font-semibold">
-                Todos os Chamados
-            </h2>
-             <div className="flex flex-col-reverse sm:flex-row w-full sm:w-auto sm:justify-end gap-4">
-                <div className="relative w-full sm:max-w-xs">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Pesquisar por nº ou título..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-8"
-                    />
-                </div>
-                <Tabs defaultValue="open" onValueChange={setStatusFilter} className="w-full sm:w-auto">
-                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
-                        <TabsTrigger value="all">Todos</TabsTrigger>
-                        <TabsTrigger value="open">Abertos</TabsTrigger>
-                        <TabsTrigger value="in_progress">Em Atend.</TabsTrigger>
-                        <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-             </div>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <Tabs defaultValue="open" onValueChange={setStatusFilter} className="w-full sm:w-auto">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                    <TabsTrigger value="all">Todos</TabsTrigger>
+                    <TabsTrigger value="open">Abertos</TabsTrigger>
+                    <TabsTrigger value="in_progress">Em Atend.</TabsTrigger>
+                    <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
+                </TabsList>
+            </Tabs>
+            <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Pesquisar por nº ou título..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                />
+            </div>
         </div>
 
         {loading ? (
