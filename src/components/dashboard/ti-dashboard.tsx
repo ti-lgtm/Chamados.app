@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import type { AppUser, Ticket } from '@/lib/types';
@@ -21,6 +21,14 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('in_progress');
   const [searchTerm, setSearchTerm] = useState('');
+  const prevTicketsRef = useRef<Ticket[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    // The sound is from a reliable open-source assets library.
+    audioRef.current = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3");
+    audioRef.current.volume = 0.5;
+  }, []);
 
   const stats = useMemo(() => ({
     open: allTickets.filter((t) => t.status === 'open').length,
@@ -61,6 +69,21 @@ export function TiDashboard({ user }: TiDashboardProps) {
     return () => unsubscribe();
   }, [ticketsQuery]);
 
+  useEffect(() => {
+    if (prevTicketsRef.current.length > 0 && allTickets.length > prevTicketsRef.current.length) {
+        const newTickets = allTickets.filter(
+            (t) => !prevTicketsRef.current.some((pt) => pt.id === t.id)
+        );
+
+        if (newTickets.length > 0 && audioRef.current) {
+            audioRef.current.play().catch(e => {
+                console.warn("A reprodução do som de notificação foi bloqueada pelo navegador. Interaja com a página para ativar o som.", e);
+            });
+        }
+    }
+    prevTicketsRef.current = allTickets;
+  }, [allTickets]);
+
   const filteredTickets = useMemo(() => {
     let tickets = allTickets;
     
@@ -83,7 +106,6 @@ export function TiDashboard({ user }: TiDashboardProps) {
     <div className="space-y-6">
       { user.role === 'ti' && (
         <div>
-            <h1 className="text-2xl font-headline font-bold">Painel de Controle TI</h1>
             <p className="text-muted-foreground">
                 Visão geral de todos os chamados do sistema.
             </p>
@@ -107,7 +129,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
             <Tabs defaultValue="in_progress" onValueChange={setStatusFilter} className="w-full sm:w-auto">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-4">
                     <TabsTrigger value="all">Todos</TabsTrigger>
                     <TabsTrigger value="open">Abertos</TabsTrigger>
                     <TabsTrigger value="in_progress">Em Atend.</TabsTrigger>
