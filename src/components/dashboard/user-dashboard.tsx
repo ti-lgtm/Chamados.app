@@ -59,20 +59,21 @@ export function UserDashboard({ user }: UserDashboardProps) {
   }, [ticketsQuery]);
 
   const stats = useMemo(() => {
-    return {
-        open: allTickets.filter((t) => t.status === 'open').length,
-        inProgress: allTickets.filter((t) => t.status === 'in_progress').length,
-        awaitingUser: allTickets.filter((t) => t.status === 'awaiting_user').length,
-        awaitingSupport: allTickets.filter((t) => t.status === 'awaiting_support').length,
-        resolved: allTickets.filter((t) => t.status === 'resolved').length,
-    };
+    const open = allTickets.filter((t) => t.status === 'open').length;
+    const inProgress = allTickets.filter((t) => ['in_progress', 'awaiting_user', 'awaiting_support'].includes(t.status)).length;
+    const resolved = allTickets.filter((t) => t.status === 'resolved').length;
+    return { open, inProgress, resolved };
   }, [allTickets]);
 
   const filteredTickets = useMemo(() => {
     let tickets = allTickets;
 
     if (statusFilter !== 'all') {
-      tickets = tickets.filter(ticket => ticket.status === statusFilter);
+      if (statusFilter === 'in_progress') {
+        tickets = tickets.filter(ticket => ['in_progress', 'awaiting_user', 'awaiting_support'].includes(ticket.status));
+      } else {
+        tickets = tickets.filter(ticket => ticket.status === statusFilter);
+      }
     }
     
     if (searchTerm.trim()) {
@@ -117,12 +118,10 @@ export function UserDashboard({ user }: UserDashboardProps) {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
             <Tabs defaultValue="in_progress" onValueChange={setStatusFilter} className="w-full sm:w-auto">
-                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
                     <TabsTrigger value="all">Todos ({loading ? '...' : allTickets.length})</TabsTrigger>
                     <TabsTrigger value="open">Abertos ({loading ? '...' : stats.open})</TabsTrigger>
                     <TabsTrigger value="in_progress">Em Atend. ({loading ? '...' : stats.inProgress})</TabsTrigger>
-                    <TabsTrigger value="awaiting_support">Aguard. Suporte ({loading ? '...' : stats.awaitingSupport})</TabsTrigger>
-                    <TabsTrigger value="awaiting_user">Aguard. Você ({loading ? '...' : stats.awaitingUser})</TabsTrigger>
                     <TabsTrigger value="resolved">Resolvidos ({loading ? '...' : stats.resolved})</TabsTrigger>
                 </TabsList>
             </Tabs>
