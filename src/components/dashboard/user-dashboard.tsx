@@ -107,10 +107,12 @@ export function UserDashboard({ user }: UserDashboardProps) {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
             <Tabs defaultValue="in_progress" onValueChange={setStatusFilter} className="w-full sm:w-auto">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
                     <TabsTrigger value="all">Todos</TabsTrigger>
                     <TabsTrigger value="open">Abertos</TabsTrigger>
                     <TabsTrigger value="in_progress">Em Atend.</TabsTrigger>
+                    <TabsTrigger value="awaiting_support">Aguard. Suporte</TabsTrigger>
+                    <TabsTrigger value="awaiting_user">Aguard. Você</TabsTrigger>
                     <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
                 </TabsList>
             </Tabs>

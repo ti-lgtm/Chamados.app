@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, doc, updateDoc } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import type { AppUser, Comment as CommentType, Ticket } from "@/lib/types";
 import { useForm } from "react-hook-form";
@@ -116,6 +116,24 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
         addDoc(commentsCollectionRef, commentData)
             .then(() => {
                 form.reset({ message: "", attachments: undefined });
+
+                // Update ticket status
+                if (ticket.status !== 'resolved') {
+                    const ticketRef = doc(firestore, "tickets", ticketId);
+                    const newStatus = currentUser.uid === ticket.userId ? 'awaiting_support' : 'awaiting_user';
+                    const updateData = { status: newStatus, updatedAt: serverTimestamp() };
+                    
+                    updateDoc(ticketRef, updateData)
+                    .catch(err => {
+                        const permissionError = new FirestorePermissionError({
+                            path: ticketRef.path,
+                            operation: 'update',
+                            requestResourceData: updateData,
+                        });
+                        errorEmitter.emit('permission-error', permissionError);
+                        toast({ title: "Erro ao atualizar status do chamado", variant: "destructive" });
+                    });
+                }
                 
                 let recipientEmail: string | undefined | null = null;
                 let recipientName: string | undefined | null = null;

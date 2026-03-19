@@ -88,7 +88,14 @@
         },
         "status": {
           "type": "string",
-          "description": "The current status of the ticket (open, in_progress, resolved)."
+          "description": "The current status of the ticket (open, in_progress, resolved, awaiting_user, awaiting_support).",
+          "enum": [
+            "open",
+            "in_progress",
+            "resolved",
+            "awaiting_user",
+            "awaiting_support"
+          ]
         },
         "priority": {
           "type": "string",

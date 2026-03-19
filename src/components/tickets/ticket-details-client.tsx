@@ -27,6 +27,8 @@ interface TicketDetailsClientProps {
 const statusMap: { [key: string]: { label: string; variant: "default" | "secondary" | "destructive" | "outline", color: string } } = {
     open: { label: 'Aberto', variant: 'destructive', color: 'bg-red-500' },
     in_progress: { label: 'Em Atendimento', variant: 'default', color: 'bg-blue-500' },
+    awaiting_user: { label: 'Aguardando Usuário', variant: 'outline', color: 'bg-orange-500' },
+    awaiting_support: { label: 'Aguardando Suporte', variant: 'outline', color: 'bg-yellow-500' },
     resolved: { label: 'Resolvido', variant: 'secondary', color: 'bg-green-500' },
 };
 
@@ -73,7 +75,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     }, [ticketRef]);
 
 
-    const handleStatusChange = async (newStatus: "open" | "in_progress" | "resolved") => {
+    const handleStatusChange = async (newStatus: "open" | "in_progress" | "resolved" | "awaiting_user" | "awaiting_support") => {
         if (!ticketRef) return;
         setIsUpdating(true);
         const updateData = {
@@ -98,6 +100,32 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         })
         .catch(error => {
             toast({ title: "Erro ao atualizar status", variant: "destructive" });
+             const contextualError = new FirestorePermissionError({
+                operation: 'update',
+                path: ticketRef.path,
+                requestResourceData: updateData,
+            });
+            errorEmitter.emit('permission-error', contextualError);
+        })
+        .finally(() => {
+            setIsUpdating(false);
+        });
+    };
+    
+    const handlePriorityChange = async (newPriority: "low" | "normal" | "high") => {
+        if (!ticketRef) return;
+        setIsUpdating(true);
+        const updateData = {
+            priority: newPriority,
+            updatedAt: serverTimestamp(),
+        };
+
+        updateDoc(ticketRef, updateData)
+        .then(() => {
+            toast({ title: "Prioridade do chamado atualizada com sucesso!" });
+        })
+        .catch(error => {
+            toast({ title: "Erro ao atualizar prioridade", variant: "destructive" });
              const contextualError = new FirestorePermissionError({
                 operation: 'update',
                 path: ticketRef.path,
@@ -257,6 +285,21 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                     <SelectContent>
                                         <SelectItem value="open">Aberto</SelectItem>
                                         <SelectItem value="in_progress">Em Atendimento</SelectItem>
+                                        <SelectItem value="awaiting_user">Aguardando Usuário</SelectItem>
+                                        <SelectItem value="awaiting_support">Aguardando Suporte</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                             </div>
+                              <div className="w-full space-y-2">
+                                <p className="text-sm font-medium">Alterar Prioridade</p>
+                                 <Select onValueChange={(value) => handlePriorityChange(value as any)} value={ticket.priority} disabled={isUpdating}>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="low">Baixa</SelectItem>
+                                        <SelectItem value="normal">Normal</SelectItem>
+                                        <SelectItem value="high">Alta</SelectItem>
                                     </SelectContent>
                                 </Select>
                              </div>

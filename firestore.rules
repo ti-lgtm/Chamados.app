@@ -120,6 +120,17 @@ service cloud.firestore {
       return (size == 2 && changedKeys.hasAll(['rating', 'updatedAt'])) ||
              (size == 1 && changedKeys.has('updatedAt'));
     }
+    
+    /**
+     * Returns true if the user is changing the status to 'awaiting_support' after commenting.
+     */
+    function isSettingAwaitingSupport() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      let size = changedKeys.size();
+      return request.resource.data.status == 'awaiting_support' && 
+             ((size == 2 && changedKeys.hasAll(['status', 'updatedAt'])) || (size == 1 && changedKeys.has('status')));
+    }
+
 
     /**
      * On comment creation, ensures the `userId` is the commenter's UID and the
@@ -198,9 +209,9 @@ service cloud.firestore {
       // CREATE: A user can create a ticket for themselves. `create` rules can use `get()`.
       allow create: if isOwner(request.resource.data.userId);
 
-      // UPDATE: Support staff can update. The owner can only update the rating.
+      // UPDATE: Support staff can update. Owner can update rating or status after commenting.
       allow update: if (isSupportStaff() && hasImmutableTicketFields()) || 
-                       (isOwner(resource.data.userId) && isUpdatingRating());
+                       (isOwner(resource.data.userId) && (isUpdatingRating() || isSettingAwaitingSupport()));
                        
       // DELETE: The owner or an admin can delete a ticket. `delete` rules can use `get()`.
       allow delete: if isOwner(resource.data.userId) || isAdmin();

@@ -6,7 +6,7 @@ import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError }
 import type { AppUser, Ticket } from '@/lib/types';
 import { TicketList } from '@/components/tickets/ticket-list';
 import { StatsCard } from './stats-card';
-import { Circle, GanttChart, CheckCircle, Search } from 'lucide-react';
+import { Circle, GanttChart, CheckCircle, Search, Clock, UserCheck } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,8 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const stats = useMemo(() => ({
     open: allTickets.filter((t) => t.status === 'open').length,
     inProgress: allTickets.filter((t) => t.status === 'in_progress').length,
+    awaitingUser: allTickets.filter((t) => t.status === 'awaiting_user').length,
+    awaitingSupport: allTickets.filter((t) => t.status === 'awaiting_support').length,
     resolved: allTickets.filter((t) => t.status === 'resolved').length,
   }), [allTickets]);
 
@@ -112,12 +114,22 @@ export function TiDashboard({ user }: TiDashboardProps) {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatsCard title="Abertos" value={loading ? <Skeleton className="h-8 w-12" /> : stats.open} icon={Circle} />
         <StatsCard
           title="Em Atendimento"
           value={loading ? <Skeleton className="h-8 w-12" /> : stats.inProgress}
           icon={GanttChart}
+        />
+        <StatsCard
+          title="Aguardando Suporte"
+          value={loading ? <Skeleton className="h-8 w-12" /> : stats.awaitingSupport}
+          icon={Clock}
+        />
+        <StatsCard
+          title="Aguardando Usuário"
+          value={loading ? <Skeleton className="h-8 w-12" /> : stats.awaitingUser}
+          icon={UserCheck}
         />
         <StatsCard
           title="Resolvidos"
@@ -129,10 +141,12 @@ export function TiDashboard({ user }: TiDashboardProps) {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
             <Tabs defaultValue="in_progress" onValueChange={setStatusFilter} className="w-full sm:w-auto">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
                     <TabsTrigger value="all">Todos</TabsTrigger>
                     <TabsTrigger value="open">Abertos</TabsTrigger>
                     <TabsTrigger value="in_progress">Em Atend.</TabsTrigger>
+                    <TabsTrigger value="awaiting_support">Aguard. Suporte</TabsTrigger>
+                    <TabsTrigger value="awaiting_user">Aguard. Usuário</TabsTrigger>
                     <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
                 </TabsList>
             </Tabs>

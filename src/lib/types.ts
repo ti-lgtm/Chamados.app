@@ -20,7 +20,7 @@ export interface Ticket {
   department: string;
   description: string;
   contactNumber?: string;
-  status: 'open' | 'in_progress' | 'resolved';
+  status: 'open' | 'in_progress' | 'resolved' | 'awaiting_user' | 'awaiting_support';
   priority: 'low' | 'normal' | 'high';
   userId: string;
   userName: string;

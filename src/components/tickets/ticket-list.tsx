@@ -16,6 +16,8 @@ interface TicketListProps {
 const statusMap: { [key: string]: { label: string; variant: "default" | "secondary" | "destructive" | "outline" } } = {
     open: { label: 'Aberto', variant: 'destructive' },
     in_progress: { label: 'Em Atendimento', variant: 'default' },
+    awaiting_user: { label: 'Aguardando Usuário', variant: 'outline' },
+    awaiting_support: { label: 'Aguardando Suporte', variant: 'outline' },
     resolved: { label: 'Resolvido', variant: 'secondary' },
 };
 
