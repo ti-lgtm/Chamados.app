@@ -20,6 +20,7 @@ import { Skeleton } from "../ui/skeleton";
 import { triggerNewCommentEmail } from "@/app/actions/email";
 import { uploadAttachments } from "@/app/actions/upload";
 import { Input } from "../ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CommentsProps {
     ticket: Ticket;
@@ -54,6 +55,31 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
     });
 
     const fileRef = form.register('attachments');
+    
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return 'Bom dia.';
+        if (hour >= 12 && hour < 18) return 'Boa tarde.';
+        return 'Boa noite.';
+    };
+
+    const cannedResponses = [
+        { id: 'configurado', label: 'Configurado com sucesso', text: 'A configuração solicitada foi realizada com sucesso.' },
+        { id: 'verificando', label: 'Verificando ocorrido', text: 'Recebemos seu chamado e já estamos verificando o ocorrido. Retornaremos em breve com mais informações.' },
+        { id: 'informacoes', label: 'Solicitar mais informações', text: 'Para prosseguir com o seu atendimento, por favor, nos forneça mais detalhes sobre o problema. Especificamente, precisamos saber...' },
+        { id: 'sem_contato', label: 'Tentativa de contato sem sucesso', text: 'Tentamos entrar em contato por telefone para agilizar a solução, mas não obtivemos sucesso. Por favor, nos informe o melhor horário para ligarmos.' },
+        { id: 'resolvido_encerrando', label: 'Resolvido e encerrando', text: 'O problema reportado foi resolvido. Estamos marcando este chamado como "Resolvido". Caso o problema persista, por favor, nos informe respondendo a este chamado.' },
+    ];
+
+    const handleCannedResponse = (value: string) => {
+        if (!value) return;
+        const response = cannedResponses.find(r => r.id === value);
+        if (response) {
+            const greeting = getGreeting();
+            const newText = `${greeting}\n\n${response.text}`;
+            form.setValue('message', newText, { shouldValidate: true });
+        }
+    };
     
     const commentsQuery = useMemoFirebase(() => 
         firestore ? query(collection(firestore, "tickets", ticketId, "comments"), orderBy("createdAt", "asc")) : null
@@ -250,6 +276,18 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
                                         </FormItem>
                                     )}
                                 />
+                                {isSupportStaff && (
+                                    <Select onValueChange={handleCannedResponse}>
+                                        <SelectTrigger className="text-sm text-muted-foreground h-9 w-full sm:w-auto">
+                                            <SelectValue placeholder="Inserir resposta rápida..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {cannedResponses.map(res => (
+                                                <SelectItem key={res.id} value={res.id} className="text-sm">{res.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                                 <FormField
                                     control={form.control}
                                     name="attachments"
