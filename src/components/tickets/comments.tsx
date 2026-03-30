@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ClipboardEvent } from "react";
 import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, doc, updateDoc } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import type { AppUser, Comment as CommentType, Ticket } from "@/lib/types";
@@ -84,6 +84,39 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
     const commentsQuery = useMemoFirebase(() => 
         firestore ? query(collection(firestore, "tickets", ticketId, "comments"), orderBy("createdAt", "asc")) : null
     , [firestore, ticketId]);
+
+    const handlePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+        const items = event.clipboardData?.items;
+        if (!items) return;
+        
+        const imageFiles: File[] = [];
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
+                const file = items[i].getAsFile();
+                if (file) {
+                    imageFiles.push(file);
+                }
+            }
+        }
+
+        if (imageFiles.length > 0) {
+            event.preventDefault();
+
+            const currentAttachments = form.getValues('attachments');
+            const existingFiles = currentAttachments ? Array.from(currentAttachments) : [];
+            const combinedFiles = [...existingFiles, ...imageFiles];
+
+            const dataTransfer = new DataTransfer();
+            combinedFiles.forEach(file => dataTransfer.items.add(file));
+            
+            form.setValue('attachments', dataTransfer.files, { shouldValidate: true });
+
+            toast({
+                title: `${imageFiles.length} imagem(ns) colada(s) com sucesso!`,
+                description: "A imagem foi adicionada à lista de anexos.",
+            });
+        }
+    };
 
     useEffect(() => {
         if (!commentsQuery) return;
@@ -270,7 +303,12 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormControl>
-                                                <Textarea placeholder="Adicionar um comentário..." {...field} rows={3} />
+                                                <Textarea 
+                                                    placeholder="Adicionar um comentário ou colar uma imagem..." 
+                                                    {...field} 
+                                                    rows={3}
+                                                    onPaste={handlePaste} 
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
