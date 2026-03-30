@@ -1,358 +1,525 @@
-"use client";
+'use client';
 
-import { useState, useEffect, type ClipboardEvent } from "react";
-import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, doc, updateDoc } from "firebase/firestore";
-import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
-import type { AppUser, Comment as CommentType, Ticket } from "@/lib/types";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Loader2, Send, Paperclip } from "lucide-react";
-import { Skeleton } from "../ui/skeleton";
-import { triggerNewCommentEmail } from "@/app/actions/email";
-import { uploadAttachments } from "@/app/actions/upload";
-import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useEffect, type ClipboardEvent } from 'react';
+import {
+  collection,
+  addDoc,
+  query,
+  onSnapshot,
+  orderBy,
+  serverTimestamp,
+  doc,
+  updateDoc,
+} from 'firebase/firestore';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import type { AppUser, Comment as CommentType, Ticket } from '@/lib/types';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Loader2, Send, Paperclip, X } from 'lucide-react';
+import { Skeleton } from '../ui/skeleton';
+import { triggerNewCommentEmail } from '@/app/actions/email';
+import { uploadAttachments } from '@/app/actions/upload';
+import { Input } from '../ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface CommentsProps {
-    ticket: Ticket;
-    currentUser: AppUser | null;
+  ticket: Ticket;
+  currentUser: AppUser | null;
 }
 
-const commentSchema = z.object({
-    message: z.string().max(1000, "A mensagem é muito longa.").optional(),
+const commentSchema = z
+  .object({
+    message: z.string().max(1000, 'A mensagem é muito longa.').optional(),
     attachments: z.custom<FileList>().optional(),
-}).refine(data => !!data.message || (data.attachments && data.attachments.length > 0), {
-    message: "Você deve enviar uma mensagem ou um anexo.",
-    path: ["message"],
-});
+  })
+  .refine(
+    (data) => !!data.message || (data.attachments && data.attachments.length > 0),
+    {
+      message: 'Você deve enviar uma mensagem ou um anexo.',
+      path: ['message'],
+    }
+  );
 
-
-const getInitials = (name: string) => name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '';
+const getInitials = (name: string) =>
+  name
+    ? name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase()
+    : '';
 
 export function Comments({ ticket, currentUser }: CommentsProps) {
-    const firestore = useFirestore();
-    const [comments, setComments] = useState<CommentType[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const { toast } = useToast();
-    const ticketId = ticket.id;
+  const firestore = useFirestore();
+  const [comments, setComments] = useState<CommentType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  const ticketId = ticket.id;
 
-    const isResolved = ticket.status === 'resolved';
-    const isSupportStaff = !!currentUser && (currentUser.role === 'ti' || currentUser.role === 'admin');
+  const isResolved = ticket.status === 'resolved';
+  const isSupportStaff = !!currentUser && (currentUser.role === 'ti' || currentUser.role === 'admin');
 
-    const form = useForm<z.infer<typeof commentSchema>>({
-        resolver: zodResolver(commentSchema),
-        defaultValues: { message: "", attachments: undefined },
-    });
+  const form = useForm<z.infer<typeof commentSchema>>({
+    resolver: zodResolver(commentSchema),
+    defaultValues: { message: '', attachments: undefined },
+  });
 
-    const fileRef = form.register('attachments');
-    
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour >= 5 && hour < 12) return 'Bom dia.';
-        if (hour >= 12 && hour < 18) return 'Boa tarde.';
-        return 'Boa noite.';
-    };
+  const attachments = form.watch('attachments');
+  const fileRef = form.register('attachments');
 
-    const cannedResponses = [
-        { id: 'configurado', label: 'Configurado com sucesso', text: 'A configuração solicitada foi realizada com sucesso.' },
-        { id: 'verificando', label: 'Verificando ocorrido', text: 'Recebemos seu chamado e já estamos verificando o ocorrido. Retornaremos em breve com mais informações.' },
-        { id: 'informacoes', label: 'Solicitar mais informações', text: 'Para prosseguir com o seu atendimento, por favor, nos forneça mais detalhes sobre o problema. Especificamente, precisamos saber...' },
-        { id: 'sem_contato', label: 'Tentativa de contato sem sucesso', text: 'Tentamos entrar em contato por telefone para agilizar a solução, mas não obtivemos sucesso. Por favor, nos informe o melhor horário para ligarmos.' },
-        { id: 'resolvido_encerrando', label: 'Resolvido e encerrando', text: 'O problema reportado foi resolvido. Estamos marcando este chamado como "Resolvido". Caso o problema persista, por favor, nos informe respondendo a este chamado.' },
-    ];
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Bom dia.';
+    if (hour >= 12 && hour < 18) return 'Boa tarde.';
+    return 'Boa noite.';
+  };
 
-    const handleCannedResponse = (value: string) => {
-        if (!value) return;
-        const response = cannedResponses.find(r => r.id === value);
-        if (response) {
-            const greeting = getGreeting();
-            const newText = `${greeting}\n\n${response.text}`;
-            form.setValue('message', newText, { shouldValidate: true });
+  const cannedResponses = [
+    {
+      id: 'configurado',
+      label: 'Configurado com sucesso',
+      text: 'A configuração solicitada foi realizada com sucesso.',
+    },
+    {
+      id: 'verificando',
+      label: 'Verificando ocorrido',
+      text: 'Recebemos seu chamado e já estamos verificando o ocorrido. Retornaremos em breve com mais informações.',
+    },
+    {
+      id: 'informacoes',
+      label: 'Solicitar mais informações',
+      text: 'Para prosseguir com o seu atendimento, por favor, nos forneça mais detalhes sobre o problema. Especificamente, precisamos saber...',
+    },
+    {
+      id: 'sem_contato',
+      label: 'Tentativa de contato sem sucesso',
+      text: 'Tentamos entrar em contato por telefone para agilizar a solução, mas não obtivemos sucesso. Por favor, nos informe o melhor horário para ligarmos.',
+    },
+    {
+      id: 'resolvido_encerrando',
+      label: 'Resolvido e encerrando',
+      text: 'O problema reportado foi resolvido. Estamos marcando este chamado como "Resolvido". Caso o problema persista, por favor, nos informe respondendo a este chamado.',
+    },
+  ];
+
+  const handleCannedResponse = (value: string) => {
+    if (!value) return;
+    const response = cannedResponses.find((r) => r.id === value);
+    if (response) {
+      const greeting = getGreeting();
+      const newText = `${greeting}\n\n${response.text}`;
+      form.setValue('message', newText, { shouldValidate: true });
+    }
+  };
+
+  const commentsQuery = useMemoFirebase(
+    () =>
+      firestore
+        ? query(
+            collection(firestore, 'tickets', ticketId, 'comments'),
+            orderBy('createdAt', 'asc')
+          )
+        : null,
+    [firestore, ticketId]
+  );
+
+  const handlePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) {
+          imageFiles.push(file);
         }
-    };
-    
-    const commentsQuery = useMemoFirebase(() => 
-        firestore ? query(collection(firestore, "tickets", ticketId, "comments"), orderBy("createdAt", "asc")) : null
-    , [firestore, ticketId]);
-
-    const handlePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
-        const items = event.clipboardData?.items;
-        if (!items) return;
-        
-        const imageFiles: File[] = [];
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
-                const file = items[i].getAsFile();
-                if (file) {
-                    imageFiles.push(file);
-                }
-            }
-        }
-
-        if (imageFiles.length > 0) {
-            event.preventDefault();
-
-            const currentAttachments = form.getValues('attachments');
-            const existingFiles = currentAttachments ? Array.from(currentAttachments) : [];
-            const combinedFiles = [...existingFiles, ...imageFiles];
-
-            const dataTransfer = new DataTransfer();
-            combinedFiles.forEach(file => dataTransfer.items.add(file));
-            
-            form.setValue('attachments', dataTransfer.files, { shouldValidate: true });
-
-            toast({
-                title: `${imageFiles.length} imagem(ns) colada(s) com sucesso!`,
-                description: "A imagem foi adicionada à lista de anexos.",
-            });
-        }
-    };
-
-    useEffect(() => {
-        if (!commentsQuery) return;
-
-        const unsubscribe = onSnapshot(commentsQuery, (querySnapshot) => {
-            const commentsData = querySnapshot.docs.map(docSnap => {
-                return { id: docSnap.id, ...docSnap.data() } as CommentType;
-            });
-            setComments(commentsData);
-            setLoading(false);
-        },
-        (err) => {
-            const contextualError = new FirestorePermissionError({
-                operation: 'list',
-                path: `tickets/${ticketId}/comments`
-            });
-            errorEmitter.emit('permission-error', contextualError);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, [commentsQuery, ticketId]);
-
-    async function onSubmit(values: z.infer<typeof commentSchema>) {
-        if (!currentUser || !firestore) return;
-        setIsSubmitting(true);
-
-        let attachmentUrls: string[] = [];
-        try {
-            if (values.attachments && values.attachments.length > 0) {
-                const formData = new FormData();
-                Array.from(values.attachments).forEach(file => {
-                    formData.append('attachments', file);
-                });
-                attachmentUrls = await uploadAttachments(formData);
-            }
-        } catch (uploadError) {
-            console.error("Upload error:", uploadError);
-            toast({ title: "Erro ao fazer upload dos anexos", variant: "destructive" });
-            setIsSubmitting(false);
-            return;
-        }
-
-        const commentData = {
-            ticketId,
-            userId: currentUser.uid,
-            userName: currentUser.name,
-            userAvatarUrl: currentUser.avatarUrl || '',
-            message: values.message || "",
-            createdAt: serverTimestamp(),
-            attachments: attachmentUrls,
-        };
-
-        const commentsCollectionRef = collection(firestore, "tickets", ticketId, "comments");
-
-        addDoc(commentsCollectionRef, commentData)
-            .then(() => {
-                form.reset({ message: "", attachments: undefined });
-
-                // Update ticket status
-                if (ticket.status !== 'resolved') {
-                    const ticketRef = doc(firestore, "tickets", ticketId);
-                    const newStatus = currentUser.uid === ticket.userId ? 'awaiting_support' : 'awaiting_user';
-                    const updateData = { status: newStatus, updatedAt: serverTimestamp() };
-                    
-                    updateDoc(ticketRef, updateData)
-                    .catch(err => {
-                        const permissionError = new FirestorePermissionError({
-                            path: ticketRef.path,
-                            operation: 'update',
-                            requestResourceData: updateData,
-                        });
-                        errorEmitter.emit('permission-error', permissionError);
-                        toast({ title: "Erro ao atualizar status do chamado", variant: "destructive" });
-                    });
-                }
-                
-                let recipientEmail: string | undefined | null = null;
-                let recipientName: string | undefined | null = null;
-
-                if (currentUser.uid === ticket.userId) {
-                    recipientEmail = ticket.assignedUserEmail;
-                    recipientName = ticket.assignedUserName;
-                } else { 
-                    recipientEmail = ticket.userEmail;
-                    recipientName = ticket.userName;
-                }
-
-                if (recipientEmail && recipientName) {
-                    const emailMessage = values.message || (attachmentUrls.length > 0 ? "Um novo anexo foi adicionado." : "Nova atividade no chamado.");
-                    triggerNewCommentEmail({
-                        recipientEmail,
-                        recipientName,
-                        ticketNumber: ticket.ticketNumber,
-                        ticketTitle: ticket.title,
-                        commenterName: currentUser.name,
-                        commentMessage: emailMessage,
-                    });
-                }
-            })
-            .catch((error) => {
-                toast({ title: "Erro ao enviar comentário", variant: "destructive" });
-                const contextualError = new FirestorePermissionError({
-                    operation: 'create',
-                    path: `tickets/${ticketId}/comments`,
-                    requestResourceData: commentData
-                });
-                errorEmitter.emit('permission-error', contextualError);
-            })
-            .finally(() => {
-                setIsSubmitting(false);
-            });
+      }
     }
 
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="font-headline">Histórico de Comentários</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="space-y-4 max-h-96 overflow-y-auto pr-4">
-                    {loading && Array.from({ length: 2 }).map((_, i) => (
-                        <div className="flex items-start space-x-4" key={i}>
-                            <Skeleton className="h-10 w-10 rounded-full" />
-                            <div className="space-y-2 flex-1">
-                                <Skeleton className="h-4 w-24" />
-                                <Skeleton className="h-10 w-full" />
-                            </div>
-                        </div>
-                    ))}
-                    {!loading && comments.length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-4">Nenhum comentário ainda.</p>
-                    )}
-                    {!loading && comments.map((comment) => (
-                        <div key={comment.id} className="flex items-start space-x-4">
-                            <Avatar>
-                                <AvatarImage src={comment.userAvatarUrl} />
-                                <AvatarFallback>{comment.userName ? getInitials(comment.userName) : '?'}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                    <p className="font-semibold">{comment.userName}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}
-                                    </p>
-                                </div>
-                                {comment.message && <p className="text-sm text-foreground whitespace-pre-wrap">{comment.message}</p>}
-                                {comment.attachments && comment.attachments.length > 0 && (
-                                    <div className="mt-2 space-y-2">
-                                        {comment.attachments.map((url, index) => {
-                                            const fileName = url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`;
-                                            const decodedFileName = decodeURIComponent(fileName);
-                                            return (
-                                                <a 
-                                                    key={index} 
-                                                    href={url} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary hover:underline"
-                                                >
-                                                    <Paperclip className="h-4 w-4 flex-shrink-0" />
-                                                    <span className="truncate">{decodedFileName.substring(decodedFileName.indexOf('_') + 1)}</span>
-                                                </a>
-                                            )
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                
-                {currentUser && (isSupportStaff || !isResolved) ? (
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start space-x-4">
-                            <Avatar>
-                                <AvatarImage src={currentUser.avatarUrl} />
-                                <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 space-y-2">
-                                <FormField
-                                    control={form.control}
-                                    name="message"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormControl>
-                                                <Textarea 
-                                                    placeholder="Adicionar um comentário ou colar uma imagem..." 
-                                                    {...field} 
-                                                    rows={3}
-                                                    onPaste={handlePaste} 
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                {isSupportStaff && (
-                                    <Select onValueChange={handleCannedResponse}>
-                                        <SelectTrigger className="text-sm text-muted-foreground h-9 w-full sm:w-auto">
-                                            <SelectValue placeholder="Inserir resposta rápida..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {cannedResponses.map(res => (
-                                                <SelectItem key={res.id} value={res.id} className="text-sm">{res.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                                <FormField
-                                    control={form.control}
-                                    name="attachments"
-                                    render={() => (
-                                        <FormItem>
-                                            <FormControl>
-                                                <Input type="file" multiple {...fileRef} className="text-sm" />
-                                            </FormControl>
-                                            <FormMessage/>
-                                        </FormItem>
-                                    )}
-                                />
-                                <div className="flex justify-end">
-                                    <Button type="submit" size="sm" disabled={isSubmitting}>
-                                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                                        Enviar
-                                    </Button>
-                                </div>
-                            </div>
-                        </form>
-                    </Form>
-                ) : isResolved ? (
-                    <div className="text-center text-sm text-muted-foreground p-4 border-t">
-                        Comentários estão desabilitados para chamados resolvidos.
-                    </div>
-                ) : null }
-            </CardContent>
-        </Card>
+    if (imageFiles.length > 0) {
+      event.preventDefault();
+
+      const currentAttachments = form.getValues('attachments');
+      const existingFiles = currentAttachments
+        ? Array.from(currentAttachments)
+        : [];
+      const combinedFiles = [...existingFiles, ...imageFiles];
+
+      const dataTransfer = new DataTransfer();
+      combinedFiles.forEach((file) => dataTransfer.items.add(file));
+
+      form.setValue('attachments', dataTransfer.files, {
+        shouldValidate: true,
+      });
+
+      toast({
+        title: `${imageFiles.length} imagem(ns) colada(s) com sucesso!`,
+        description: 'A imagem foi adicionada à lista de anexos.',
+      });
+    }
+  };
+
+  const handleRemoveAttachment = (indexToRemove: number) => {
+    const currentAttachments = form.getValues('attachments');
+    if (!currentAttachments) return;
+
+    const newFiles = Array.from(currentAttachments).filter(
+      (_, index) => index !== indexToRemove
     );
+
+    const dataTransfer = new DataTransfer();
+    newFiles.forEach((file) => dataTransfer.items.add(file));
+
+    form.setValue('attachments', dataTransfer.files, { shouldValidate: true });
+  };
+
+  useEffect(() => {
+    if (!commentsQuery) return;
+
+    const unsubscribe = onSnapshot(
+      commentsQuery,
+      (querySnapshot) => {
+        const commentsData = querySnapshot.docs.map((docSnap) => {
+          return { id: docSnap.id, ...docSnap.data() } as CommentType;
+        });
+        setComments(commentsData);
+        setLoading(false);
+      },
+      (err) => {
+        const contextualError = new FirestorePermissionError({
+          operation: 'list',
+          path: `tickets/${ticketId}/comments`,
+        });
+        errorEmitter.emit('permission-error', contextualError);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [commentsQuery, ticketId]);
+
+  async function onSubmit(values: z.infer<typeof commentSchema>) {
+    if (!currentUser || !firestore) return;
+    setIsSubmitting(true);
+
+    let attachmentUrls: string[] = [];
+    try {
+      if (values.attachments && values.attachments.length > 0) {
+        const formData = new FormData();
+        Array.from(values.attachments).forEach((file) => {
+          formData.append('attachments', file);
+        });
+        attachmentUrls = await uploadAttachments(formData);
+      }
+    } catch (uploadError) {
+      console.error('Upload error:', uploadError);
+      toast({
+        title: 'Erro ao fazer upload dos anexos',
+        variant: 'destructive',
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    const commentData = {
+      ticketId,
+      userId: currentUser.uid,
+      userName: currentUser.name,
+      userAvatarUrl: currentUser.avatarUrl || '',
+      message: values.message || '',
+      createdAt: serverTimestamp(),
+      attachments: attachmentUrls,
+    };
+
+    const commentsCollectionRef = collection(
+      firestore,
+      'tickets',
+      ticketId,
+      'comments'
+    );
+
+    addDoc(commentsCollectionRef, commentData)
+      .then(() => {
+        form.reset({ message: '', attachments: undefined });
+
+        // Update ticket status
+        if (ticket.status !== 'resolved') {
+          const ticketRef = doc(firestore, 'tickets', ticketId);
+          const newStatus =
+            currentUser.uid === ticket.userId
+              ? 'awaiting_support'
+              : 'awaiting_user';
+          const updateData = {
+            status: newStatus,
+            updatedAt: serverTimestamp(),
+          };
+
+          updateDoc(ticketRef, updateData).catch((err) => {
+            const permissionError = new FirestorePermissionError({
+              path: ticketRef.path,
+              operation: 'update',
+              requestResourceData: updateData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+              title: 'Erro ao atualizar status do chamado',
+              variant: 'destructive',
+            });
+          });
+        }
+
+        let recipientEmail: string | undefined | null = null;
+        let recipientName: string | undefined | null = null;
+
+        if (currentUser.uid === ticket.userId) {
+          recipientEmail = ticket.assignedUserEmail;
+          recipientName = ticket.assignedUserName;
+        } else {
+          recipientEmail = ticket.userEmail;
+          recipientName = ticket.userName;
+        }
+
+        if (recipientEmail && recipientName) {
+          const emailMessage =
+            values.message ||
+            (attachmentUrls.length > 0
+              ? 'Um novo anexo foi adicionado.'
+              : 'Nova atividade no chamado.');
+          triggerNewCommentEmail({
+            recipientEmail,
+            recipientName,
+            ticketNumber: ticket.ticketNumber,
+            ticketTitle: ticket.title,
+            commenterName: currentUser.name,
+            commentMessage: emailMessage,
+          });
+        }
+      })
+      .catch((error) => {
+        toast({ title: 'Erro ao enviar comentário', variant: 'destructive' });
+        const contextualError = new FirestorePermissionError({
+          operation: 'create',
+          path: `tickets/${ticketId}/comments`,
+          requestResourceData: commentData,
+        });
+        errorEmitter.emit('permission-error', contextualError);
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-headline">Histórico de Comentários</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-4 max-h-96 overflow-y-auto pr-4">
+          {loading &&
+            Array.from({ length: 2 }).map((_, i) => (
+              <div className="flex items-start space-x-4" key={i}>
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </div>
+            ))}
+          {!loading && comments.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nenhum comentário ainda.
+            </p>
+          )}
+          {!loading &&
+            comments.map((comment) => (
+              <div key={comment.id} className="flex items-start space-x-4">
+                <Avatar>
+                  <AvatarImage src={comment.userAvatarUrl} />
+                  <AvatarFallback>
+                    {comment.userName ? getInitials(comment.userName) : '?'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold">{comment.userName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {comment.createdAt
+                        ? formatDistanceToNow(comment.createdAt.toDate(), {
+                            addSuffix: true,
+                            locale: ptBR,
+                          })
+                        : ''}
+                    </p>
+                  </div>
+                  {comment.message && (
+                    <p className="text-sm text-foreground whitespace-pre-wrap">
+                      {comment.message}
+                    </p>
+                  )}
+                  {comment.attachments && comment.attachments.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {comment.attachments.map((url, index) => {
+                        const fileName =
+                          url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`;
+                        const decodedFileName = decodeURIComponent(fileName);
+                        return (
+                          <a
+                            key={index}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary hover:underline"
+                          >
+                            <Paperclip className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">
+                              {decodedFileName.substring(
+                                decodedFileName.indexOf('_') + 1
+                              )}
+                            </span>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+        </div>
+
+        {currentUser && (isSupportStaff || !isResolved) ? (
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="flex items-start space-x-4"
+            >
+              <Avatar>
+                <AvatarImage src={currentUser.avatarUrl} />
+                <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 space-y-2">
+                <FormField
+                  control={form.control}
+                  name="message"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Adicionar um comentário ou colar uma imagem..."
+                          {...field}
+                          rows={3}
+                          onPaste={handlePaste}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {isSupportStaff && (
+                  <Select onValueChange={handleCannedResponse}>
+                    <SelectTrigger className="text-sm text-muted-foreground h-9 w-full sm:w-auto">
+                      <SelectValue placeholder="Inserir resposta rápida..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cannedResponses.map((res) => (
+                        <SelectItem
+                          key={res.id}
+                          value={res.id}
+                          className="text-sm"
+                        >
+                          {res.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <FormField
+                  control={form.control}
+                  name="attachments"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel className="sr-only">Anexos</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="file"
+                          multiple
+                          {...fileRef}
+                          className="text-sm"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {attachments && attachments.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Anexos a serem enviados:
+                    </p>
+                    <ul className="space-y-1">
+                      {Array.from(attachments).map((file, index) => (
+                        <li
+                          key={index}
+                          className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded-md"
+                        >
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <Paperclip className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">{file.name}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 flex-shrink-0"
+                            onClick={() => handleRemoveAttachment(index)}
+                          >
+                            <X className="h-4 w-4" />
+                            <span className="sr-only">Remover anexo</span>
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="flex justify-end">
+                  <Button type="submit" size="sm" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="mr-2 h-4 w-4" />
+                    )}
+                    Enviar
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </Form>
+        ) : isResolved ? (
+          <div className="text-center text-sm text-muted-foreground p-4 border-t">
+            Comentários estão desabilitados para chamados resolvidos.
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
 }
