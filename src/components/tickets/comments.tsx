@@ -229,10 +229,11 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
         });
         attachmentUrls = await uploadAttachments(formData);
       }
-    } catch (uploadError) {
+    } catch (uploadError: any) {
       console.error('Upload error:', uploadError);
       toast({
         title: 'Erro ao fazer upload dos anexos',
+        description: uploadError.message || "Ocorreu um erro inesperado. Verifique o console para mais detalhes.",
         variant: 'destructive',
       });
       setIsSubmitting(false);

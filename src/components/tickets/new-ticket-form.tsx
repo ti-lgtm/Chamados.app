@@ -196,7 +196,7 @@ export function NewTicketForm() {
     } catch (error: any) {
       console.error('Erro ao criar chamado:', error);
       
-      let description = 'Ocorreu um erro inesperado ao criar seu chamado. Tente novamente.';
+      const description = error.message || 'Ocorreu um erro inesperado ao criar seu chamado. Tente novamente.';
 
       toast({
         title: 'Erro ao criar chamado',
