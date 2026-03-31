@@ -109,7 +109,7 @@ function StatisticsPageContent() {
         
         const totalRating = ratedTickets.reduce((acc, ticket) => acc + (ticket.rating || 0), 0);
         const avg = totalRating / ratedTickets.length;
-        return avg.toFixed(1);
+        return avg.toFixed(2);
     }, [resolvedTickets]);
 
     const attendantStats = useMemo(() => {
@@ -319,7 +319,7 @@ function StatisticsPageContent() {
                 </Card>
                  <Card className="print:shadow-none print:border print:break-inside-avoid">
                     <CardHeader>
-                        <CardTitle>Total de Chamados Abertos</CardTitle>
+                        <CardTitle>Total de Chamados</CardTitle>
                         <CardDescription>Total no período selecionado</CardDescription>
                     </CardHeader>
                     <CardContent>
