@@ -34,6 +34,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 p-4 sm:px-6 sm:py-4 md:gap-8 print:block print:p-0">
           {children}
       </main>
+       <footer className="py-4 text-center text-xs text-muted-foreground w-full">
+          Desenvolvido por Thulio Costa e AMLMF com assistência de Gemini.
+      </footer>
     </div>
   );
 }

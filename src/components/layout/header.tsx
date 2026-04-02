@@ -95,7 +95,7 @@ export function AppHeader() {
   const availableNavItems = navItems.filter(item => user && item.roles.includes(user.role));
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6 print:hidden">
+    <header className="relative sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6 print:hidden">
       
       <div className="flex items-center gap-6">
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -116,7 +116,7 @@ export function AppHeader() {
                 className="flex items-center gap-2 text-lg font-semibold"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <PortalLogo className="h-8 w-8 text-primary" />
+                <PortalLogo className="h-8 w-auto text-primary" />
                 <span className="font-bold">Portal de Suporte</span>
               </Link>
               {availableNavItems.map(item => (
@@ -128,20 +128,19 @@ export function AppHeader() {
           </SheetContent>
         </Sheet>
         
-        <div className="hidden items-center gap-6 md:flex">
-            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-                <PortalLogo className="h-8 w-8 text-primary" />
-                <span className="sr-only">Portal de Suporte</span>
-            </Link>
-            <nav className="flex flex-row items-center gap-5 text-sm font-medium">
-                {availableNavItems.map(item => (
-                    <NavLink key={item.href} href={item.href} isDashboard={item.isDashboard}>
-                        {item.label}
-                    </NavLink>
-                ))}
-            </nav>
-        </div>
+        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+            <PortalLogo className="h-8 w-auto text-primary" />
+            <span className="sr-only">Portal de Suporte</span>
+        </Link>
       </div>
+
+      <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex flex-row items-center gap-5 text-sm font-medium">
+        {availableNavItems.map(item => (
+            <NavLink key={item.href} href={item.href} isDashboard={item.isDashboard}>
+                {item.label}
+            </NavLink>
+        ))}
+      </nav>
 
       <div className="flex items-center gap-4">
         <DropdownMenu>
@@ -167,10 +166,6 @@ export function AppHeader() {
             <DropdownMenuItem disabled>Configurações</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>Sair</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <div className="px-2 py-1.5 text-xs text-center text-muted-foreground">
-                Dev by Thulio Costa & AMLMF com Gemini
-            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
