@@ -19,7 +19,7 @@ export default function SignupPage() {
         </div>
       </main>
       <footer className="py-4 text-center text-xs text-muted-foreground w-full">
-          Desenvolvido por Thulio Costa e AMLMF com assistência de Gemini.
+          Desenvolvido por Thulio Costa e AMLMF com Firebase Studio
       </footer>
     </div>
   );
