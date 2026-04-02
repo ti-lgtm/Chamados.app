@@ -1,7 +1,8 @@
 "use client";
 
+import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   PanelLeft,
   PlusCircle,
@@ -32,12 +33,45 @@ import { useAuth as useFirebaseAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { PortalLogo } from "../icons/portal-logo";
 import { TicketIconAlt } from "../icons/ticket-icon-alt";
+import { cn } from "@/lib/utils";
+
+const NavLink = ({ href, children, isDashboard = false }: { href: string; children: React.ReactNode; isDashboard?: boolean }) => {
+    const pathname = usePathname();
+    let isActive = false;
+    if (isDashboard) {
+        isActive = pathname === '/dashboard' || (pathname.startsWith('/tickets/') && !pathname.startsWith('/tickets/new'));
+    } else {
+        isActive = pathname.startsWith(href);
+    }
+
+    return (
+        <Link
+            href={href}
+            className={cn(
+                "transition-colors hover:text-foreground",
+                isActive ? "text-foreground font-semibold" : "text-muted-foreground"
+            )}
+        >
+            {children}
+        </Link>
+    );
+};
+
+const MobileNavLink = ({ href, children, icon: Icon, onNavigate }: { href: string; children: React.ReactNode; icon: React.ElementType, onNavigate: () => void }) => {
+    return (
+        <Link href={href} className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground" onClick={onNavigate}>
+            <Icon className="h-5 w-5" />
+            {children}
+        </Link>
+    );
+};
 
 export function AppHeader() {
   const { user } = useAuth();
   const firebaseAuth = useFirebaseAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const handleLogout = async () => {
     await signOut(firebaseAuth);
@@ -46,83 +80,100 @@ export function AppHeader() {
   };
 
   const getInitials = (name: string) => {
+    if (!name) return "";
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  }
+  };
+
+  const navItems = [
+    { href: "/dashboard", label: "Chamados", icon: TicketIconAlt, roles: ['user', 'ti', 'admin'], isDashboard: true },
+    { href: "/schedules", label: "Agendamentos", icon: CalendarDays, roles: ['user', 'ti', 'admin'] },
+    { href: "/tickets/new", label: "Novo Chamado", icon: PlusCircle, roles: ['user', 'ti', 'admin'] },
+    { href: "/statistics", label: "Estatísticas", icon: BarChart, roles: ['ti', 'admin'] },
+    { href: "/admin/users", label: "Usuários", icon: Users, roles: ['admin'] },
+  ];
+
+  const availableNavItems = navItems.filter(item => user && item.roles.includes(user.role));
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 print:hidden">
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button size="icon" variant="outline" className="sm:hidden">
-            <PanelLeft className="h-5 w-5" />
-            <span className="sr-only">Abrir menu</span>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="sm:max-w-xs">
-          <nav className="grid gap-6 text-lg font-medium">
-            <Link
-              href="/dashboard"
-              className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
-            >
-              <PortalLogo className="h-6 w-6 transition-all group-hover:scale-110" />
-              <span className="sr-only">Portal de Suporte</span>
-            </Link>
-            <Link href="/schedules" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-              <CalendarDays className="h-5 w-5" />
-              Agendamentos
-            </Link>
-            <Link href="/dashboard" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-              <TicketIconAlt className="h-5 w-5" />
-              Chamados
-            </Link>
-            <Link href="/tickets/new" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-                <PlusCircle className="h-5 w-5" />
-                Novo Chamado
-            </Link>
-            {(user?.role === 'admin' || user?.role === 'ti') && (
-              <Link href="/statistics" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-                <BarChart className="h-5 w-5" />
-                Estatísticas
-              </Link>
-            )}
-            {user?.role === 'admin' && (
-              <Link href="/admin/users" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-                <Users className="h-5 w-5" />
-                Gerenciar Usuários
-              </Link>
-            )}
-          </nav>
-        </SheetContent>
-      </Sheet>
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6 print:hidden">
       
-      <div className="relative ml-auto flex-1 md:grow-0">
-        {/* Potentially a search bar here in the future */}
+      <div className="flex items-center gap-6">
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 md:hidden"
+            >
+              <PanelLeft className="h-5 w-5" />
+              <span className="sr-only">Abrir menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left">
+            <nav className="grid gap-6 text-lg font-medium">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 text-lg font-semibold"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <PortalLogo className="h-8 w-8 text-primary" />
+                <span className="font-bold">Portal de Suporte</span>
+              </Link>
+              {availableNavItems.map(item => (
+                  <MobileNavLink key={item.href} href={item.href} icon={item.icon} onNavigate={() => setIsMobileMenuOpen(false)}>
+                      {item.label}
+                  </MobileNavLink>
+              ))}
+            </nav>
+          </SheetContent>
+        </Sheet>
+        
+        <div className="hidden items-center gap-6 md:flex">
+            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+                <PortalLogo className="h-8 w-8 text-primary" />
+                <span className="sr-only">Portal de Suporte</span>
+            </Link>
+            <nav className="flex flex-row items-center gap-5 text-sm font-medium">
+                {availableNavItems.map(item => (
+                    <NavLink key={item.href} href={item.href} isDashboard={item.isDashboard}>
+                        {item.label}
+                    </NavLink>
+                ))}
+            </nav>
+        </div>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="overflow-hidden rounded-full"
-          >
-            <Avatar>
-              <AvatarImage src={user?.avatarUrl} alt={user?.name} />
-              <AvatarFallback>{user ? getInitials(user.name) : <UserIcon/>}</AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>{user?.name}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/profile">Perfil</Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled>Configurações</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout}>Sair</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="secondary"
+              size="icon"
+              className="rounded-full"
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user?.avatarUrl} alt={user?.name} />
+                <AvatarFallback>{user ? getInitials(user.name) : <UserIcon/>}</AvatarFallback>
+              </Avatar>
+              <span className="sr-only">Toggle user menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>{user?.name}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/profile">Perfil</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled>Configurações</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>Sair</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1.5 text-xs text-center text-muted-foreground">
+                Dev by Thulio Costa & AMLMF com Gemini
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }

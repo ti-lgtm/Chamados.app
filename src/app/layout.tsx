@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "Portal de Agendamentos e Chamados de TI",
 };
 
-const favicon = `data:image/svg+xml,%3Csvg width='42' height='42' viewBox='0 0 42 42' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='42' height='42' rx='8' fill='%23F97316'/%3E%3Cpath d='M14 12H23C26.3137 12 29 14.6863 29 18C29 21.3137 26.3137 24 23 24H14V12Z' fill='white'/%3E%3Cpath d='M14 24H20V30H14V24Z' fill='white'/%3E%3C/svg%3E`;
+const favicon = `data:image/svg+xml,%3Csvg viewBox='0 0 52 48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M26 0L0.908203 22.5V48H51.0918V22.5L26 0ZM13.0918 25.5L26 15L38.9082 25.5V42H13.0918V25.5Z' fill='%23F97316'/%3E%3C/svg%3E`;
 
 export default function RootLayout({
   children,
