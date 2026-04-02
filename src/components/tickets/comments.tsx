@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, type ClipboardEvent } from 'react';
+import Image from 'next/image';
 import {
   collection,
   addDoc,
@@ -376,28 +377,53 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
                       {comment.message}
                     </p>
                   )}
-                  {comment.attachments && comment.attachments.length > 0 && (
-                    <div className="mt-2 space-y-2">
+                   {comment.attachments && comment.attachments.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-4">
                       {comment.attachments.map((url, index) => {
-                        const fileName =
-                          url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`;
-                        const decodedFileName = decodeURIComponent(fileName);
-                        return (
-                          <a
-                            key={index}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary hover:underline"
-                          >
-                            <Paperclip className="h-4 w-4 flex-shrink-0" />
-                            <span className="truncate">
-                              {decodedFileName.substring(
-                                decodedFileName.indexOf('_') + 1
-                              )}
-                            </span>
-                          </a>
-                        );
+                        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+                        if (isImage) {
+                          return (
+                            <a
+                              key={index}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative block w-32 h-24 rounded-md overflow-hidden border hover:opacity-80 transition-opacity"
+                            >
+                              <Image
+                                src={url}
+                                alt={`Anexo ${index + 1}`}
+                                layout="fill"
+                                className="object-cover"
+                              />
+                            </a>
+                          );
+                        }
+                        return null;
+                      })}
+                      {comment.attachments.map((url, index) => {
+                        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+                        if (!isImage) {
+                          const fileName = url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`;
+                          const decodedFileName = decodeURIComponent(fileName);
+                          return (
+                            <a
+                              key={index}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex w-full items-center gap-2 text-sm text-muted-foreground hover:text-primary hover:underline bg-muted/50 p-2 rounded-md"
+                            >
+                              <Paperclip className="h-4 w-4 flex-shrink-0" />
+                              <span className="truncate">
+                                {decodedFileName.substring(
+                                  decodedFileName.indexOf('_') + 1
+                                )}
+                              </span>
+                            </a>
+                          );
+                        }
+                        return null;
                       })}
                     </div>
                   )}
