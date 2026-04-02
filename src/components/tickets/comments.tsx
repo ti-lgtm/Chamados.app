@@ -118,6 +118,11 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
       label: 'Resolvido e encerrando',
       text: 'O problema reportado foi resolvido. Estamos marcando este chamado como "Resolvido". Caso o problema persista, por favor, nos informe respondendo a este chamado.',
     },
+    {
+      id: 'fornecedor_cadastrado',
+      label: 'Fornecedor cadastrado',
+      text: 'O fornecedor foi cadastrado em nosso sistema com sucesso. Já pode seguir com o processo.',
+    },
   ];
 
   const handleCannedResponse = (value: string) => {
