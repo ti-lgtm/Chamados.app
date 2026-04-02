@@ -21,7 +21,7 @@ export async function triggerTicketCreatedEmail(payload: TicketCreatedPayload) {
             <p><strong>Descrição:</strong></p>
             <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">${payload.description}</blockquote>
             <p>Nossa equipe de suporte irá analisá-lo em breve. Você pode acompanhar o status do seu chamado em nosso portal.</p>
-            <p>Atenciosamente,<br/>Equipe de Suporte Soluções AMLMF</p>
+            <p>Atenciosamente,<br/>Equipe de Suporte do Portal</p>
         `,
     });
   } catch (error) {
@@ -54,7 +54,7 @@ export async function triggerTicketCreatedSupportEmail(payload: TicketCreatedSup
                 <p><strong>Descrição:</strong></p>
                 <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">${payload.description}</blockquote>
                 <p>Acesse o portal para ver os detalhes e atribuir o chamado.</p>
-                <p>Atenciosamente,<br/>Sistema de Notificações AMLMF</p>
+                <p>Atenciosamente,<br/>Sistema de Notificações do Portal</p>
             `,
         });
     } catch (error) {
@@ -84,7 +84,7 @@ export async function triggerNewCommentEmail(payload: NewCommentPayload) {
             <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">${payload.commentMessage}</blockquote>
             <hr/>
             <p>Para ver o chamado completo, acesse o portal.</p>
-            <p>Atenciosamente,<br/>Equipe de Suporte Soluções AMLMF</p>
+            <p>Atenciosamente,<br/>Equipe de Suporte do Portal</p>
         `,
     });
   } catch (error) {
@@ -112,7 +112,7 @@ export async function triggerTicketResolvedEmail(payload: TicketResolvedPayload)
             <p>Agradeceríamos muito se você pudesse dedicar um momento para <strong>avaliar o atendimento</strong> recebido diretamente na página do chamado em nosso portal, clicando no link abaixo:</p>
             <p><a href="${payload.ticketUrl}" style="display: inline-block; padding: 12px 24px; font-size: 16px; color: #ffffff; background-color: #F97316; text-decoration: none; border-radius: 5px; font-weight: bold;">Avaliar Atendimento</a></p>
             <p style="font-size: 12px; color: #666;">Se o botão não funcionar, copie e cole este link em seu navegador: ${payload.ticketUrl}</p>
-            <p>Atenciosamente,<br/>Equipe de Suporte Soluções AMLMF</p>
+            <p>Atenciosamente,<br/>Equipe de Suporte do Portal</p>
         `,
     });
   } catch (error) {

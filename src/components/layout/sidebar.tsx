@@ -20,7 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "firebase/auth";
 import { useAuth as useFirebaseAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { AmlmfLogo } from "../icons/amlmf-logo";
+import { PortalLogo } from "../icons/portal-logo";
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string; }) => {
     const pathname = usePathname();
@@ -64,11 +64,11 @@ export function AppSidebar() {
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-card sm:flex print:hidden">
         <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
           <Link
-            href="/schedules"
+            href="/dashboard"
             className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
           >
-            <AmlmfLogo className="h-5 w-5 transition-all group-hover:scale-110" />
-            <span className="sr-only">Soluções AMLMF</span>
+            <PortalLogo className="h-5 w-5 transition-all group-hover:scale-110" />
+            <span className="sr-only">Portal de Suporte</span>
           </Link>
           <NavLink href="/schedules" icon={CalendarDays} label="Agendamentos" />
           <NavLink href="/dashboard" icon={Ticket} label="Chamados" />
@@ -84,6 +84,9 @@ export function AppSidebar() {
 
         </nav>
         <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
+          <div className="px-2 text-center text-[10px] text-muted-foreground group-data-[state=collapsed]:hidden">
+              <p>Dev by Thulio Costa & AMLMF com Gemini</p>
+          </div>
           <Tooltip>
             <TooltipTrigger asChild>
               <button onClick={handleLogout} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8">

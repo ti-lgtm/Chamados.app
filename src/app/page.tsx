@@ -12,7 +12,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        router.push("/schedules");
+        router.push("/dashboard");
       } else {
         router.push("/login");
       }
