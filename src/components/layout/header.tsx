@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   PanelLeft,
-  Ticket,
   PlusCircle,
   Users,
   LogOut,
@@ -32,6 +31,7 @@ import { signOut } from "firebase/auth";
 import { useAuth as useFirebaseAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { PortalLogo } from "../icons/portal-logo";
+import { TicketIconAlt } from "../icons/ticket-icon-alt";
 
 export function AppHeader() {
   const { user } = useAuth();
@@ -72,7 +72,7 @@ export function AppHeader() {
               Agendamentos
             </Link>
             <Link href="/dashboard" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-              <Ticket className="h-5 w-5" />
+              <TicketIconAlt className="h-5 w-5" />
               Chamados
             </Link>
             <Link href="/tickets/new" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">

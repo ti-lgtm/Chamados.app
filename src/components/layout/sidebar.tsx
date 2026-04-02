@@ -9,7 +9,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Ticket,
   PlusCircle,
   Users,
   LogOut,
@@ -21,10 +20,17 @@ import { signOut } from "firebase/auth";
 import { useAuth as useFirebaseAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { PortalLogo } from "../icons/portal-logo";
+import { TicketIconAlt } from "../icons/ticket-icon-alt";
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string; }) => {
     const pathname = usePathname();
-    const isActive = pathname.startsWith(href);
+    
+    let isActive = false;
+    if (href === '/dashboard') {
+        isActive = pathname === '/dashboard' || (pathname.startsWith('/tickets/') && !pathname.startsWith('/tickets/new'));
+    } else {
+        isActive = pathname.startsWith(href);
+    }
 
     return (
          <Tooltip>
@@ -71,7 +77,7 @@ export function AppSidebar() {
             <span className="sr-only">Portal de Suporte</span>
           </Link>
           <NavLink href="/schedules" icon={CalendarDays} label="Agendamentos" />
-          <NavLink href="/dashboard" icon={Ticket} label="Chamados" />
+          <NavLink href="/dashboard" icon={TicketIconAlt} label="Chamados" />
           <NavLink href="/tickets/new" icon={PlusCircle} label="Novo Chamado" />
           
           {(user?.role === 'admin' || user?.role === 'ti') && (
