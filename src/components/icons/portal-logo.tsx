@@ -6,8 +6,8 @@ export function PortalLogo(props: { className?: string }) {
         <Image
             src={logoDataUri}
             alt="Portal Logo"
-            width={250}
-            height={250}
+            width={96}
+            height={96}
             unoptimized
             {...props}
         />
