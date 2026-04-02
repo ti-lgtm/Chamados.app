@@ -7,7 +7,7 @@ export default function SignupPage() {
       <main className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="flex justify-center mb-6">
-              <PortalLogo className="h-12 w-auto text-primary" />
+              <PortalLogo className="h-12 w-auto" />
           </div>
           <h1 className="text-3xl font-headline font-bold text-center mb-2 text-foreground">
             Crie sua Conta no Portal

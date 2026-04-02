@@ -116,7 +116,7 @@ export function AppHeader() {
                 className="flex items-center gap-2 text-lg font-semibold"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <PortalLogo className="h-8 w-auto text-primary" />
+                <PortalLogo className="h-8 w-auto" />
                 <span className="font-bold">Portal de Suporte</span>
               </Link>
               {availableNavItems.map(item => (
@@ -129,7 +129,7 @@ export function AppHeader() {
         </Sheet>
         
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-            <PortalLogo className="h-8 w-auto text-primary" />
+            <PortalLogo className="h-8 w-auto" />
             <span className="sr-only">Portal de Suporte</span>
         </Link>
       </div>

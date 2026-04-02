@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "Portal de Agendamentos e Chamados de TI",
 };
 
-const favicon = `data:image/svg+xml,%3Csvg viewBox='0 0 50 48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M25%200%20L50%2020%20L45%2048%20L5%2048%20L0%2020%20Z%20M25%208%20L42%2024%20L38%2041%20L12%2041%20L8%2024%20Z' fill='%23F97316'/%3E%3C/svg%3E`;
+const favicon = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAMAAABrrFhUAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAPUExURQAAAP///zMApQApM//9/wCVVjLgAAAACdFJOU/////8A/wD48+cDr/EAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAIQSURBVHic7dvJboMwEIVhC0sx//+3VymKBCspsu7NqesJqGzjePTs2LFlx1J63UvovS7P0nxdnsxP8q1+f7f8Lp+m39VzOY6fp8+7/L5d35a/pM/p1/U9b0lQoAIFClSgQAEKFKBAgQIFKFCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKFCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKFCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKFCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKFCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKFCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKFCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKUCBAgQIFKlCgAAUKULA3dC9/wLgL08t2AAAAAElFTkSuQmCC`;
 
 export default function RootLayout({
   children,
@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
-        <link rel="icon" href={favicon} type="image/svg+xml" />
+        <link rel="icon" href={favicon} type="image/png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
