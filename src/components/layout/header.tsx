@@ -49,8 +49,8 @@ const NavLink = ({ href, children, isDashboard = false }: { href: string; childr
         <Link
             href={href}
             className={cn(
-                "transition-colors hover:text-foreground",
-                isActive ? "text-foreground font-semibold" : "text-muted-foreground"
+                "transition-colors hover:text-foreground px-3 py-1.5 rounded-md",
+                isActive ? "text-foreground font-semibold border border-primary/50 bg-primary/10" : "text-muted-foreground"
             )}
         >
             {children}
