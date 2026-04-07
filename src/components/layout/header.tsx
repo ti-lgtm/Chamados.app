@@ -34,6 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PortalLogo } from "../icons/portal-logo";
 import { TicketIconAlt } from "../icons/ticket-icon-alt";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./theme-toggle";
 
 const NavLink = ({ href, children, isDashboard = false }: { href: string; children: React.ReactNode; isDashboard?: boolean }) => {
     const pathname = usePathname();
@@ -143,6 +144,7 @@ export function AppHeader() {
       </nav>
 
       <div className="flex items-center gap-4">
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
