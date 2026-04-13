@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
 import { Loader2, User, Clock, Shield, Tag, Paperclip, CalendarClock, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon } from "lucide-react";
-import { triggerTicketResolvedEmail } from "@/app/actions/email";
+import { triggerTicketResolvedEmail, triggerTicketAssignedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
 import { Button } from "../ui/button";
@@ -155,6 +155,17 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         updateDoc(ticketRef, updateData)
         .then(() => {
             toast({ title: "Chamado atribuído com sucesso!" });
+
+            // Send email notification if assigned to a user
+            if (assignedUserData && ticket.userEmail && ticket.userName) {
+                triggerTicketAssignedEmail({
+                    recipientEmail: ticket.userEmail,
+                    recipientName: ticket.userName,
+                    ticketNumber: ticket.ticketNumber,
+                    ticketTitle: ticket.title,
+                    supportAgentName: assignedUserData.name,
+                });
+            }
         })
         .catch(error => {
             toast({ title: "Erro ao atribuir chamado", variant: "destructive" });
