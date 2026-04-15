@@ -1,31 +1,37 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 type Room = {
   name: string;
+  description: string;
   koalendarUrl: string;
   googleCalendarUrl: string;
+  imageUrl: string;
+  imageHint: string;
 };
 
 const rooms: Room[] = [
   {
     name: 'INTEGRIDADE',
+    description: 'Sala de reunião para até 8 pessoas, equipada com TV e quadro branco.',
     koalendarUrl: 'https://koalendar.com/e/integridade',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.1.integridade%40gmail.com&ctz=America%2FFortaleza',
+    imageUrl: 'https://picsum.photos/seed/integridade/600/400',
+    imageHint: 'meeting room',
   },
   {
     name: 'VALORIZAÇÃO DAS PESSOAS',
+    description: 'Espaço colaborativo para até 12 pessoas, ideal para workshops e treinamentos.',
     koalendarUrl: 'https://koalendar.com/e/2valorizacao-das-pessoas',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.2.valorizacaodaspessoas%40gmail.com&ctz=America%2FFortaleza',
-  },
-  {
-    name: 'INOVAÇÃO',
-    koalendarUrl: 'https://koalendar.com/e/inovacao',
-    googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.3.inovacao%40gmail.com&ctz=America%2FFortaleza',
+    imageUrl: 'https://picsum.photos/seed/pessoas/600/400',
+    imageHint: 'conference room',
   },
 ];
 
@@ -56,10 +62,10 @@ export default function SchedulesPage() {
     const currentIndex = rooms.findIndex(r => r.name === selectedRoom.name);
     return (
         <div className="space-y-6">
-             <div className="flex justify-between items-center">
+             <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
-                    <h1 className="text-2xl font-headline font-bold">{selectedRoom.name}</h1>
-                    <p className="text-muted-foreground">Use os painéis abaixo para agendar e visualizar a agenda da sala.</p>
+                    <h1 className="text-3xl font-headline font-bold">{selectedRoom.name}</h1>
+                    <p className="text-muted-foreground">Agende um horário ou visualize a disponibilidade da sala.</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={handlePrevRoom} disabled={currentIndex <= 0}>
@@ -71,21 +77,24 @@ export default function SchedulesPage() {
                         <span className="sr-only">Próxima Sala</span>
                     </Button>
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => setSelectedRoom(null)}
-                        className="flex-shrink-0 ml-4"
+                        className="flex-shrink-0 ml-2"
                     >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
                         Voltar à lista
                     </Button>
                 </div>
             </div>
-            <div className="grid grid-cols-1 gap-6">
-                <Card className="flex flex-col">
-                    <CardHeader>
-                        <CardTitle>Agendar Sala</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                         <div className="w-full h-[70vh] rounded-lg overflow-hidden border">
+            
+            <Tabs defaultValue="schedule" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="schedule">Agendar Sala</TabsTrigger>
+                    <TabsTrigger value="view">Visualizar Agenda</TabsTrigger>
+                </TabsList>
+                <TabsContent value="schedule" className="mt-4">
+                    <Card className="overflow-hidden">
+                        <div className="w-full h-[75vh] rounded-lg">
                             <iframe
                                 src={selectedRoom.koalendarUrl}
                                 className="h-full w-full"
@@ -93,15 +102,12 @@ export default function SchedulesPage() {
                                 frameBorder="0"
                             />
                         </div>
-                    </CardContent>
-                </Card>
-                <Card className="flex flex-col">
-                    <CardHeader>
-                        <CardTitle>Visualizar Agenda</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
+                    </Card>
+                </TabsContent>
+                <TabsContent value="view" className="mt-4">
+                    <Card className="overflow-hidden">
                         {selectedRoom.googleCalendarUrl ? (
-                            <div className="w-full h-[70vh] rounded-lg overflow-hidden border">
+                            <div className="w-full h-[75vh] rounded-lg">
                                 <iframe
                                 src={selectedRoom.googleCalendarUrl}
                                 className="h-full w-full"
@@ -110,46 +116,48 @@ export default function SchedulesPage() {
                                 />
                             </div>
                         ) : (
-                            <div className="w-full h-[70vh] flex items-center justify-center bg-muted rounded-lg border">
+                            <div className="w-full h-[75vh] flex items-center justify-center bg-muted rounded-lg border">
                                 <p className="text-muted-foreground">Agenda desta sala não disponível.</p>
                             </div>
                         )}
-                    </CardContent>
-                </Card>
-            </div>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-        <div>
-            <h1 className="text-2xl font-headline font-bold">Portal de Agendamentos</h1>
-            <p className="text-muted-foreground">Selecione uma sala para agendar e visualizar a agenda.</p>
+    <div className="space-y-8">
+        <div className="text-center">
+            <h1 className="text-4xl font-headline font-bold tracking-tight">Portal de Agendamentos</h1>
+            <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Selecione uma das nossas salas de reunião para verificar a disponibilidade e fazer seu agendamento de forma rápida e fácil.</p>
         </div>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>Salas Disponíveis</CardTitle>
-                <CardDescription>Selecione uma sala para ver a disponibilidade e fazer seu agendamento.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {rooms.map((room) => (
-                        <Card key={room.name} className="flex flex-col">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-headline">{room.name}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-grow flex items-end">
-                            <Button onClick={() => handleSelectRoom(room)} className="w-full">
-                                Ver Agenda e Agendar <ArrowRight className="ml-2 h-4 w-4" />
-                            </Button>
-                        </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {rooms.map((room) => (
+                <Card key={room.name} className="flex flex-col overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl">
+                     <div className="relative h-56 w-full">
+                        <Image
+                            src={room.imageUrl}
+                            alt={`Foto da sala ${room.name}`}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover"
+                            data-ai-hint={room.imageHint}
+                        />
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    </div>
+                    <div className="flex flex-col flex-grow p-6 bg-card">
+                        <CardTitle className="text-2xl font-headline mb-2">{room.name}</CardTitle>
+                        <CardDescription className="flex-grow mb-6 text-base">{room.description}</CardDescription>
+                        <Button onClick={() => handleSelectRoom(room)} className="w-full mt-auto" size="lg">
+                            Ver Agenda e Agendar
+                        </Button>
+                    </div>
+                </Card>
+            ))}
+        </div>
     </div>
   );
 }
