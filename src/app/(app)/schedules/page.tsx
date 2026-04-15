@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -7,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { buildingImageDataUri } from '@/lib/building-image-data';
 
 type Room = {
   name: string;
@@ -21,15 +21,15 @@ const rooms: Room[] = [
     name: 'INTEGRIDADE',
     koalendarUrl: 'https://koalendar.com/e/integridade',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.1.integridade%40gmail.com&ctz=America%2FFortaleza',
-    imageUrl: 'https://picsum.photos/seed/integridade/600/400',
-    imageHint: 'meeting room',
+    imageUrl: buildingImageDataUri,
+    imageHint: 'building exterior',
   },
   {
     name: 'VALORIZAÇÃO DAS PESSOAS',
     koalendarUrl: 'https://koalendar.com/e/2valorizacao-das-pessoas',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.2.valorizacaodaspessoas%40gmail.com&ctz=America%2FFortaleza',
-    imageUrl: 'https://picsum.photos/seed/pessoas/600/400',
-    imageHint: 'conference room',
+    imageUrl: buildingImageDataUri,
+    imageHint: 'modern building',
   },
 ];
 
@@ -143,6 +143,7 @@ export default function SchedulesPage() {
                             sizes="(max-width: 768px) 100vw, 50vw"
                             className="object-cover"
                             data-ai-hint={room.imageHint}
+                            unoptimized
                         />
                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     </div>
