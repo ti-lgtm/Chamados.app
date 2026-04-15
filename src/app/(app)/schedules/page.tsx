@@ -9,7 +9,6 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 type Room = {
   name: string;
-  description: string;
   koalendarUrl: string;
   googleCalendarUrl: string;
   imageUrl: string;
@@ -19,19 +18,17 @@ type Room = {
 const rooms: Room[] = [
   {
     name: 'INTEGRIDADE',
-    description: 'Sala de reunião para até 8 pessoas, equipada com TV e quadro branco.',
     koalendarUrl: 'https://koalendar.com/e/integridade',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.1.integridade%40gmail.com&ctz=America%2FFortaleza',
-    imageUrl: 'https://picsum.photos/seed/integridade/600/400',
-    imageHint: 'meeting room',
+    imageUrl: 'https://storage.googleapis.com/project-spark-b95ad.appspot.com/cache/36881c19-974a-464a-ad29-28c045b85a3c.png',
+    imageHint: 'office building',
   },
   {
     name: 'VALORIZAÇÃO DAS PESSOAS',
-    description: 'Espaço colaborativo para até 12 pessoas, ideal para workshops e treinamentos.',
     koalendarUrl: 'https://koalendar.com/e/2valorizacao-das-pessoas',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.2.valorizacaodaspessoas%40gmail.com&ctz=America%2FFortaleza',
-    imageUrl: 'https://picsum.photos/seed/pessoas/600/400',
-    imageHint: 'conference room',
+    imageUrl: 'https://storage.googleapis.com/project-spark-b95ad.appspot.com/cache/36881c19-974a-464a-ad29-28c045b85a3c.png',
+    imageHint: 'city street',
   },
 ];
 
@@ -149,8 +146,7 @@ export default function SchedulesPage() {
                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     </div>
                     <div className="flex flex-col flex-grow p-6 bg-card">
-                        <CardTitle className="text-2xl font-headline mb-2">{room.name}</CardTitle>
-                        <CardDescription className="flex-grow mb-6 text-base">{room.description}</CardDescription>
+                        <CardTitle className="text-2xl font-headline mb-6">{room.name}</CardTitle>
                         <Button onClick={() => handleSelectRoom(room)} className="w-full mt-auto" size="lg">
                             Ver Agenda e Agendar
                         </Button>
