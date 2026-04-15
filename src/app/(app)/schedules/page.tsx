@@ -1,18 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building, Users } from 'lucide-react';
 
 type Room = {
   name: string;
   koalendarUrl: string;
   googleCalendarUrl: string;
-  imageUrl: string;
-  imageHint: string;
+  icon: React.ElementType;
 };
 
 const rooms: Room[] = [
@@ -20,15 +18,13 @@ const rooms: Room[] = [
     name: 'INTEGRIDADE',
     koalendarUrl: 'https://koalendar.com/e/integridade',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.1.integridade%40gmail.com&ctz=America%2FFortaleza',
-    imageUrl: 'https://picsum.photos/seed/1/800/600',
-    imageHint: 'modern office',
+    icon: Building,
   },
   {
     name: 'VALORIZAÇÃO DAS PESSOAS',
     koalendarUrl: 'https://koalendar.com/e/2valorizacao-das-pessoas',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.2.valorizacaodaspessoas%40gmail.com&ctz=America%2FFortaleza',
-    imageUrl: 'https://picsum.photos/seed/2/800/600',
-    imageHint: 'collaborative workspace',
+    icon: Users,
   },
 ];
 
@@ -134,16 +130,8 @@ export default function SchedulesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {rooms.map((room) => (
                 <Card key={room.name} className="flex flex-col overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl">
-                     <div className="relative h-56 w-full">
-                        <Image
-                            src={room.imageUrl}
-                            alt={`Foto da sala ${room.name}`}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                            className="object-cover"
-                            data-ai-hint={room.imageHint}
-                        />
-                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                     <div className="relative h-56 w-full bg-secondary flex items-center justify-center">
+                        <room.icon className="h-24 w-24 text-muted-foreground" />
                     </div>
                     <div className="flex flex-col flex-grow p-6 bg-card">
                         <CardTitle className="text-2xl font-headline mb-6">{room.name}</CardTitle>
