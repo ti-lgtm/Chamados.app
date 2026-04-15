@@ -1,3 +1,5 @@
+'use client';
+
 import Link from "next/link";
 import type { Ticket } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +17,7 @@ interface TicketListProps {
 
 const statusMap: { [key: string]: { label: string; variant: "default" | "secondary" | "destructive" | "outline" } } = {
     open: { label: 'Aberto', variant: 'destructive' },
-    in_progress: { label: 'Em Atendimento', variant: 'default' },
+    in_progress: { label: 'Em Andamento', variant: 'default' },
     awaiting_user: { label: 'Aguardando Usuário', variant: 'outline' },
     awaiting_support: { label: 'Aguardando Suporte', variant: 'outline' },
     resolved: { label: 'Resolvido', variant: 'secondary' },
@@ -44,7 +46,7 @@ export function TicketList({ tickets }: TicketListProps) {
   return (
     <div className="space-y-4">
       {tickets.map((ticket) => (
-        <Card key={ticket.id}>
+        <Card key={ticket.id} className="transition-shadow hover:shadow-md">
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                 <div className="order-2 sm:order-1">
@@ -52,7 +54,7 @@ export function TicketList({ tickets }: TicketListProps) {
                         <Link href={`/tickets/${ticket.id}`}>{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</Link>
                     </CardTitle>
                     <CardDescription>
-                        Criado por {ticket.userName} • {formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR })}
+                        Criado por {ticket.userName} • {ticket.createdAt ? formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}
                     </CardDescription>
                 </div>
               <div className="flex gap-2 order-1 sm:order-2 self-end sm:self-auto flex-shrink-0">
