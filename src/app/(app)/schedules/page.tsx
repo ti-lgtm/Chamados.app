@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -20,15 +21,15 @@ const rooms: Room[] = [
     name: 'INTEGRIDADE',
     koalendarUrl: 'https://koalendar.com/e/integridade',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.1.integridade%40gmail.com&ctz=America%2FFortaleza',
-    imageUrl: 'https://storage.googleapis.com/project-spark-b95ad.appspot.com/cache/36881c19-974a-464a-ad29-28c045b85a3c.png',
-    imageHint: 'office building',
+    imageUrl: 'https://picsum.photos/seed/integridade/600/400',
+    imageHint: 'meeting room',
   },
   {
     name: 'VALORIZAÇÃO DAS PESSOAS',
     koalendarUrl: 'https://koalendar.com/e/2valorizacao-das-pessoas',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.2.valorizacaodaspessoas%40gmail.com&ctz=America%2FFortaleza',
-    imageUrl: 'https://storage.googleapis.com/project-spark-b95ad.appspot.com/cache/36881c19-974a-464a-ad29-28c045b85a3c.png',
-    imageHint: 'city street',
+    imageUrl: 'https://picsum.photos/seed/pessoas/600/400',
+    imageHint: 'conference room',
   },
 ];
 
