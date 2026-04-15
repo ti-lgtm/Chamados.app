@@ -52,7 +52,7 @@ export function TicketList({ tickets }: TicketListProps) {
                         <Link href={`/tickets/${ticket.id}`}>{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</Link>
                     </CardTitle>
                     <CardDescription>
-                        Criado {formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR })}
+                        Criado por {ticket.userName} • {formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR })}
                     </CardDescription>
                 </div>
               <div className="flex gap-2 order-1 sm:order-2 self-end sm:self-auto flex-shrink-0">

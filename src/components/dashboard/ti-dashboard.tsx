@@ -100,7 +100,8 @@ export function TiDashboard({ user }: TiDashboardProps) {
         const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
         tickets = tickets.filter(ticket =>
             ticket.title.toLowerCase().includes(lowercasedSearchTerm) ||
-            String(ticket.ticketNumber).includes(lowercasedSearchTerm)
+            String(ticket.ticketNumber).includes(lowercasedSearchTerm) ||
+            (ticket.userName && ticket.userName.toLowerCase().includes(lowercasedSearchTerm))
         );
     }
 
@@ -144,7 +145,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
             <div className="relative w-full sm:max-w-xs">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
-                    placeholder="Pesquisar por nº ou título..."
+                    placeholder="Pesquisar por nº, título ou solicitante..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-8"
