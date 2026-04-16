@@ -1,37 +1,37 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, ArrowRight, Building, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
-type Room = {
-  name: string;
-  koalendarUrl: string;
-  googleCalendarUrl: string;
-  icon: React.ElementType;
-};
 
-const rooms: Room[] = [
+const rooms: { name: string; koalendarUrl: string; googleCalendarUrl: string; imageId: string; }[] = [
   {
     name: 'INTEGRIDADE',
     koalendarUrl: 'https://koalendar.com/e/integridade',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.1.integridade%40gmail.com&ctz=America%2FFortaleza',
-    icon: Building,
+    imageId: 'meeting-room-1',
   },
   {
     name: 'VALORIZAÇÃO DAS PESSOAS',
     koalendarUrl: 'https://koalendar.com/e/2valorizacao-das-pessoas',
     googleCalendarUrl: 'https://calendar.google.com/calendar/embed?src=sala.2.valorizacaodaspessoas%40gmail.com&ctz=America%2FFortaleza',
-    icon: Users,
+    imageId: 'meeting-room-2',
   },
 ];
 
 export default function SchedulesPage() {
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<(typeof rooms)[0] | null>(null);
+  
+  const getImage = (id: string) => {
+    return PlaceHolderImages.find(img => img.id === id);
+  }
 
-  const handleSelectRoom = (room: Room) => {
+  const handleSelectRoom = (room: (typeof rooms)[0]) => {
     setSelectedRoom(room);
   };
   
@@ -128,10 +128,21 @@ export default function SchedulesPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {rooms.map((room) => (
+            {rooms.map((room) => {
+              const image = getImage(room.imageId);
+              return (
                 <Card key={room.name} className="flex flex-col overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl">
-                     <div className="relative h-56 w-full bg-secondary flex items-center justify-center">
-                        <room.icon className="h-24 w-24 text-muted-foreground" />
+                    <div className="relative h-56 w-full">
+                        {image && (
+                          <Image
+                              src={image.imageUrl}
+                              alt={image.description}
+                              width={800}
+                              height={600}
+                              data-ai-hint={image.imageHint}
+                              className="object-cover w-full h-full"
+                          />
+                        )}
                     </div>
                     <div className="flex flex-col flex-grow p-6 bg-card">
                         <CardTitle className="text-2xl font-headline mb-6">{room.name}</CardTitle>
@@ -140,7 +151,7 @@ export default function SchedulesPage() {
                         </Button>
                     </div>
                 </Card>
-            ))}
+            )})}
         </div>
     </div>
   );

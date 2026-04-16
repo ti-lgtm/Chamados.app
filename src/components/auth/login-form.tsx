@@ -4,9 +4,20 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, signOut } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  sendPasswordResetEmail,
+  signOut,
+} from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { useAuth as useFirebaseAuth, useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
+import {
+  useAuth as useFirebaseAuth,
+  useFirestore,
+  errorEmitter,
+  FirestorePermissionError,
+} from "@/firebase";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,26 +35,50 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
-  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
+  password:
+    z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
 });
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg {...props} role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.62-4.55 1.62-3.87 0-7-3.13-7-7s3.13-7 7-7c2.04 0 3.5.83 4.61 1.82l2.44-2.31C17.43 3.12 15.14 2 12.48 2 7.01 2 3 6.02 3 11s4.01 9 9.48 9c2.82 0 4.95-1.02 6.59-2.58 1.74-1.64 2.3-4.18 2.3-6.19 0-.58-.05-1.12-.14-1.68H12.48z" fill="currentColor"></path>
-    </svg>
-)
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 18 18"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
+    <g fill="none" fillRule="evenodd">
+      <path
+        d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.54C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z"
+        fill="#EA4335"
+      />
+      <path
+        d="M17.64 9.2c0-.74-.06-1.28-.19-1.82H9v3.48h4.84c-.2 1.12-.79 2.08-1.54 2.68v2.24h2.91c1.7-1.56 2.69-3.89 2.69-6.58z"
+        fill="#4285F4"
+      />
+      <path
+        d="M3.86 10.71c-.2-.59-.31-1.22-.31-1.87s.11-1.28.31-1.87L.95 4.96C.35 6.18 0 7.55 0 9.04s.35 2.86.96 4.08l2.9-2.41z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.24c-.79.53-1.8.84-3.05.84-2.38 0-4.4-1.57-5.12-3.71L.96 13.1c1.48 2.94 4.53 4.9 8.04 4.9z"
+        fill="#34A853"
+      />
+    </g>
+  </svg>
+);
 
 export function LoginForm() {
   const router = useRouter();
@@ -54,14 +89,14 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState("");
+  const [resetEmail, setResetEmail] = useState('');
   const [isSendingReset, setIsSendingReset] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: '',
+      password: '',
     },
   });
 
@@ -69,45 +104,49 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
+      );
       const user = userCredential.user;
-      
-      const userDocRef = doc(db, "users", user.uid);
+
+      const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
-         const userData = {
-            uid: user.uid,
-            name: user.displayName || values.email.split('@')[0],
-            email: user.email,
-            role: "user" as const,
-            status: "active" as const,
-            createdAt: serverTimestamp(),
+        const userData = {
+          uid: user.uid,
+          name: user.displayName || values.email.split('@')[0],
+          email: user.email,
+          role: 'user' as const,
+          status: 'active' as const,
+          createdAt: serverTimestamp(),
         };
 
         try {
-            await setDoc(userDocRef, userData);
+          await setDoc(userDocRef, userData);
         } catch (firestoreError) {
-             const permissionError = new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'create',
-                requestResourceData: userData
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            await signOut(auth);
-            setError("Falha ao configurar o perfil do usuário. Tente novamente.");
-            setLoading(false);
-            return;
+          const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'create',
+            requestResourceData: userData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          await signOut(auth);
+          setError('Falha ao configurar o perfil do usuário. Tente novamente.');
+          setLoading(false);
+          return;
         }
       }
 
       toast({
-        title: "Login bem-sucedido!",
-        description: "Redirecionando para o painel.",
+        title: 'Login bem-sucedido!',
+        description: 'Redirecionando para o painel.',
       });
-      router.push("/dashboard");
+      router.push('/dashboard');
     } catch (error: any) {
-      setError("E-mail ou senha inválidos. Por favor, tente novamente.");
+      setError('E-mail ou senha inválidos. Por favor, tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -122,85 +161,105 @@ export function LoginForm() {
       const user = result.user;
 
       if (!user.email) {
-        setError("Não foi possível obter o e-mail da sua conta Google. Tente outro método de login.");
+        setError(
+          'Não foi possível obter o e-mail da sua conta Google. Tente outro método de login.'
+        );
         await signOut(auth);
         setLoading(false);
         return;
       }
 
-      const userDocRef = doc(db, "users", user.uid);
+      const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
         const userData = {
-            uid: user.uid,
-            name: user.displayName || user.email.split('@')[0],
-            email: user.email,
-            role: "user" as const,
-            status: "active" as const,
-            createdAt: serverTimestamp(),
-            avatarUrl: user.photoURL || null
+          uid: user.uid,
+          name: user.displayName || user.email.split('@')[0],
+          email: user.email,
+          role: 'user' as const,
+          status: 'active' as const,
+          createdAt: serverTimestamp(),
+          avatarUrl: user.photoURL || null,
         };
 
         try {
-            await setDoc(userDocRef, userData);
+          await setDoc(userDocRef, userData);
         } catch (firestoreError) {
-             const permissionError = new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'create',
-                requestResourceData: userData
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            await signOut(auth);
-            setError("Falha ao configurar o perfil do usuário com Google. Tente novamente.");
-            setLoading(false);
-            return;
+          const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'create',
+            requestResourceData: userData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          await signOut(auth);
+          setError(
+            'Falha ao configurar o perfil do usuário com Google. Tente novamente.'
+          );
+          setLoading(false);
+          return;
         }
       }
-      
+
       toast({
-        title: "Login com Google bem-sucedido!",
-        description: "Redirecionando para o painel.",
+        title: 'Login com Google bem-sucedido!',
+        description: 'Redirecionando para o painel.',
       });
-      router.push("/dashboard");
+      router.push('/dashboard');
     } catch (error: any) {
-        if (error.code === 'auth/popup-closed-by-user') {
-            // Don't show an error if the user just closes the popup.
-        } else if (error.code === 'auth/account-exists-with-different-credential') {
-             setError("Uma conta já existe com este e-mail, mas com um método de login diferente. Por favor, faça login usando o método original.");
-        } else if (error.code === 'auth/unauthorized-domain') {
-            setError("Este domínio não está autorizado para fazer login. Adicione-o na lista de 'Domínios autorizados' nas configurações de Autenticação do seu projeto Firebase.");
-        }
-        else {
-             console.error("Google Sign-In Error:", error);
-             setError("Falha ao fazer login com o Google. Verifique se os pop-ups estão habilitados e tente novamente.");
-        }
+      if (error.code === 'auth/popup-closed-by-user') {
+        // Don't show an error if the user just closes the popup.
+      } else if (
+        error.code === 'auth/account-exists-with-different-credential'
+      ) {
+        setError(
+          'Uma conta já existe com este e-mail, mas com um método de login diferente. Por favor, faça login usando o método original.'
+        );
+      } else if (error.code === 'auth/unauthorized-domain') {
+        setError(
+          "Este domínio não está autorizado para fazer login. Adicione-o na lista de 'Domínios autorizados' nas configurações de Autenticação do seu projeto Firebase."
+        );
+      } else {
+        console.error('Google Sign-In Error:', error);
+        setError(
+          'Falha ao fazer login com o Google. Verifique se os pop-ups estão habilitados e tente novamente.'
+        );
+      }
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   }
 
   const handlePasswordReset = async () => {
     if (!resetEmail) {
-        toast({ title: "Por favor, insira seu e-mail.", variant: "destructive" });
-        return;
+      toast({ title: 'Por favor, insira seu e-mail.', variant: 'destructive' });
+      return;
     }
     setIsSendingReset(true);
     try {
-        await sendPasswordResetEmail(auth, resetEmail);
-        toast({ title: "E-mail de redefinição de senha enviado!", description: "Verifique sua caixa de entrada." });
-        setIsResetDialogOpen(false);
-        setResetEmail("");
+      await sendPasswordResetEmail(auth, resetEmail);
+      toast({
+        title: 'E-mail de redefinição de senha enviado!',
+        description: 'Verifique sua caixa de entrada.',
+      });
+      setIsResetDialogOpen(false);
+      setResetEmail('');
     } catch (error: any) {
-        if (error.code === 'auth/user-not-found') {
-             toast({ title: "Nenhum usuário encontrado com este e-mail.", variant: "destructive" });
-        } else {
-            toast({ title: "Erro ao enviar e-mail de redefinição.", variant: "destructive" });
-        }
+      if (error.code === 'auth/user-not-found') {
+        toast({
+          title: 'Nenhum usuário encontrado com este e-mail.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Erro ao enviar e-mail de redefinição.',
+          variant: 'destructive',
+        });
+      }
     } finally {
-        setIsSendingReset(false);
+      setIsSendingReset(false);
     }
-}
+  };
 
   return (
     <div className="space-y-4">
@@ -211,17 +270,24 @@ export function LoginForm() {
         </Alert>
       )}
 
-      <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+      <Button
+        variant="destructive"
+        className="w-full"
+        onClick={handleGoogleSignIn}
+        disabled={loading}
+      >
         <GoogleIcon className="mr-2 h-4 w-4" />
         Entrar com Google
       </Button>
 
       <div className="relative py-2">
         <div className="absolute inset-0 flex items-center">
-            <Separator />
+          <Separator />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">Ou entre com seu e-mail</span>
+          <span className="bg-card px-2 text-muted-foreground">
+            Ou entre com seu e-mail
+          </span>
         </div>
       </div>
 
@@ -246,18 +312,37 @@ export function LoginForm() {
             render={({ field }) => (
               <FormItem>
                 <div className="flex items-center justify-between">
-                    <FormLabel>Senha</FormLabel>
-                    <Button variant="link" type="button" className="p-0 h-auto text-sm" onClick={() => setIsResetDialogOpen(true)}>
-                        Esqueceu a senha?
-                    </Button>
+                  <FormLabel>Senha</FormLabel>
+                  <Button
+                    variant="link"
+                    type="button"
+                    className="p-0 h-auto text-sm"
+                    onClick={() => setIsResetDialogOpen(true)}
+                  >
+                    Esqueceu a senha?
+                  </Button>
                 </div>
                 <FormControl>
-                    <div className="relative">
-                        <Input type={showPassword ? "text" : "password"} placeholder="Sua senha" {...field} />
-                        <Button variant="ghost" size="icon" type="button" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={() => setShowPassword(!showPassword)}>
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                    </div>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Sua senha"
+                      {...field}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      type="button"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -269,28 +354,42 @@ export function LoginForm() {
           </Button>
         </form>
       </Form>
-      
-      <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                <AlertDialogTitle>Redefinir Senha</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Digite seu endereço de e-mail abaixo e enviaremos um link para redefinir sua senha.
-                </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="space-y-2">
-                    <Label htmlFor="reset-email">E-mail</Label>
-                    <Input id="reset-email" placeholder="seu@email.com" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
-                </div>
-                <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handlePasswordReset} disabled={isSendingReset}>
-                    {isSendingReset && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Enviar Link
-                </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+
+      <AlertDialog
+        open={isResetDialogOpen}
+        onOpenChange={setIsResetDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Redefinir Senha</AlertDialogTitle>
+            <AlertDialogDescription>
+              Digite seu endereço de e-mail abaixo e enviaremos um link para
+              redefinir sua senha.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="reset-email">E-mail</Label>
+            <Input
+              id="reset-email"
+              placeholder="seu@email.com"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handlePasswordReset}
+              disabled={isSendingReset}
+            >
+              {isSendingReset && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Enviar Link
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

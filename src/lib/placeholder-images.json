@@ -1,3 +1,16 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "meeting-room-1",
+      "description": "A modern meeting room",
+      "imageUrl": "https://picsum.photos/seed/1/800/600",
+      "imageHint": "meeting room"
+    },
+    {
+      "id": "meeting-room-2",
+      "description": "A collaborative workspace",
+      "imageUrl": "https://picsum.photos/seed/2/800/600",
+      "imageHint": "people collaboration"
+    }
+  ]
 }
