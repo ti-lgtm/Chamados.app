@@ -68,24 +68,29 @@ export function UserDashboard({ user }: UserDashboardProps) {
   const filteredTickets = useMemo(() => {
     let tickets = allTickets;
 
-    if (statusFilter !== 'all') {
-      if (statusFilter === 'in_progress') {
-        tickets = tickets.filter(ticket => ['in_progress', 'awaiting_user', 'awaiting_support'].includes(ticket.status));
-      } else {
-        tickets = tickets.filter(ticket => ticket.status === statusFilter);
-      }
+    if (searchTerm.trim()) {
+      const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
+      tickets = tickets.filter(
+        (ticket) =>
+          ticket.title.toLowerCase().includes(lowercasedSearchTerm) ||
+          String(ticket.ticketNumber).includes(lowercasedSearchTerm) ||
+          (ticket.userName && ticket.userName.toLowerCase().includes(lowercasedSearchTerm))
+      );
     }
     
-    if (searchTerm.trim()) {
-        const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
-        tickets = tickets.filter(ticket => 
-            ticket.title.toLowerCase().includes(lowercasedSearchTerm) ||
-            String(ticket.ticketNumber).includes(lowercasedSearchTerm) ||
-            (ticket.userName && ticket.userName.toLowerCase().includes(lowercasedSearchTerm))
+    switch (statusFilter) {
+      case 'open':
+        return tickets.filter((ticket) => ticket.status === 'open');
+      case 'in_progress':
+        return tickets.filter((ticket) =>
+          ['in_progress', 'awaiting_user', 'awaiting_support'].includes(ticket.status)
         );
+      case 'resolved':
+        return tickets.filter((ticket) => ticket.status === 'resolved');
+      case 'all':
+      default:
+        return tickets;
     }
-
-    return tickets;
   }, [allTickets, statusFilter, searchTerm]);
 
   const unratedTickets = useMemo(() => {

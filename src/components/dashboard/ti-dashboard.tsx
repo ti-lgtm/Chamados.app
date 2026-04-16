@@ -89,16 +89,6 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const filteredTickets = useMemo(() => {
     let tickets = allTickets;
     
-    if (statusFilter === 'mine') {
-      tickets = tickets.filter(ticket => ticket.assignedTo === user.uid);
-    } else if (statusFilter !== 'all') {
-      if (statusFilter === 'in_progress') {
-        tickets = tickets.filter(ticket => ['in_progress', 'awaiting_user', 'awaiting_support'].includes(ticket.status));
-      } else {
-        tickets = tickets.filter(ticket => ticket.status === statusFilter);
-      }
-    }
-    
     if (searchTerm.trim()) {
         const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
         tickets = tickets.filter(ticket =>
@@ -108,7 +98,19 @@ export function TiDashboard({ user }: TiDashboardProps) {
         );
     }
 
-    return tickets;
+    switch (statusFilter) {
+      case 'mine':
+        return tickets.filter(ticket => ticket.assignedTo === user.uid);
+      case 'open':
+        return tickets.filter(ticket => ticket.status === 'open');
+      case 'in_progress':
+        return tickets.filter(ticket => ['in_progress', 'awaiting_user', 'awaiting_support'].includes(ticket.status));
+      case 'resolved':
+        return tickets.filter(ticket => ticket.status === 'resolved');
+      case 'all':
+      default:
+        return tickets;
+    }
   }, [allTickets, statusFilter, searchTerm, user.uid]);
 
   return (
