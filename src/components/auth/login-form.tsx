@@ -8,7 +8,6 @@ import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPa
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth as useFirebaseAuth, useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -204,15 +203,30 @@ export function LoginForm() {
 }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>Erro no Login</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+        <GoogleIcon className="mr-2 h-4 w-4" />
+        Entrar com Google
+      </Button>
+
+      <div className="relative py-2">
+        <div className="absolute inset-0 flex items-center">
+            <Separator />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">Ou entre com seu e-mail</span>
+        </div>
+      </div>
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertTitle>Erro no Login</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
           <FormField
             control={form.control}
             name="email"
@@ -251,31 +265,12 @@ export function LoginForm() {
           />
           <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Entrar
+            Entrar com E-mail
           </Button>
         </form>
       </Form>
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-            <Separator />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Ou continue com</span>
-        </div>
-      </div>
-      <Button className="w-full bg-[#DB4437] text-white hover:bg-[#C33D2E]" onClick={handleGoogleSignIn} disabled={loading}>
-        <GoogleIcon className="mr-2 h-4 w-4" />
-        Google
-      </Button>
-
-      <p className="text-center text-sm text-muted-foreground">
-        Não tem uma conta?{" "}
-        <Link href="/signup" className="font-semibold text-primary hover:underline">
-          Cadastre-se
-        </Link>
-      </p>
-
-        <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+      
+      <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
                 <AlertDialogTitle>Redefinir Senha</AlertDialogTitle>
