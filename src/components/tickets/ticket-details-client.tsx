@@ -145,12 +145,18 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         
         const assignedUserData = supportUsers?.find(su => su.id === finalAssignedTo);
         
-        const updateData = {
+        const updateData: any = {
             assignedTo: finalAssignedTo,
             assignedUserName: assignedUserData ? assignedUserData.name : null,
             assignedUserEmail: assignedUserData ? assignedUserData.email : null,
             updatedAt: serverTimestamp(),
         };
+
+        if (finalAssignedTo) {
+            updateData.status = 'in_progress';
+        } else {
+            updateData.status = 'open';
+        }
 
         updateDoc(ticketRef, updateData)
         .then(() => {
@@ -199,7 +205,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                              </Badge>
                         </div>
                         <CardDescription>
-                            Aberto em {ticket.createdAt ? format(ticket.createdAt.toDate(), "dd 'de' MMMM 'de' yyyy, 'às' HH:mm", { locale: ptBR }) : ''}
+                            Criado por {ticket.userName} • {ticket.createdAt ? formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
