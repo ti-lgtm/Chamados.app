@@ -34,8 +34,9 @@ export function TiDashboard({ user }: TiDashboardProps) {
     const open = allTickets.filter((t) => t.status === 'open').length;
     const inProgress = allTickets.filter((t) => ['in_progress', 'awaiting_user', 'awaiting_support'].includes(t.status)).length;
     const resolved = allTickets.filter((t) => t.status === 'resolved').length;
-    return { open, inProgress, resolved };
-  }, [allTickets]);
+    const myTickets = allTickets.filter((t) => t.assignedTo === user.uid).length;
+    return { open, inProgress, resolved, myTickets };
+  }, [allTickets, user.uid]);
 
   const ticketsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -88,7 +89,9 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const filteredTickets = useMemo(() => {
     let tickets = allTickets;
     
-    if (statusFilter !== 'all') {
+    if (statusFilter === 'mine') {
+      tickets = tickets.filter(ticket => ticket.assignedTo === user.uid);
+    } else if (statusFilter !== 'all') {
       if (statusFilter === 'in_progress') {
         tickets = tickets.filter(ticket => ['in_progress', 'awaiting_user', 'awaiting_support'].includes(ticket.status));
       } else {
@@ -106,7 +109,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
     }
 
     return tickets;
-  }, [allTickets, statusFilter, searchTerm]);
+  }, [allTickets, statusFilter, searchTerm, user.uid]);
 
   return (
     <div className="space-y-6">
@@ -135,8 +138,9 @@ export function TiDashboard({ user }: TiDashboardProps) {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
             <Tabs defaultValue="in_progress" onValueChange={setStatusFilter} className="w-full sm:w-auto">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5">
                     <TabsTrigger value="all">Todos ({loading ? '...' : allTickets.length})</TabsTrigger>
+                    <TabsTrigger value="mine">Meus Chamados ({loading ? '...' : stats.myTickets})</TabsTrigger>
                     <TabsTrigger value="open">Abertos ({loading ? '...' : stats.open})</TabsTrigger>
                     <TabsTrigger value="in_progress">Em Atend. ({loading ? '...' : stats.inProgress})</TabsTrigger>
                     <TabsTrigger value="resolved">Resolvidos ({loading ? '...' : stats.resolved})</TabsTrigger>
