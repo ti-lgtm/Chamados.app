@@ -53,8 +53,14 @@ export function TicketList({ tickets }: TicketListProps) {
                     <CardTitle className="font-headline text-lg hover:text-primary">
                         <Link href={`/tickets/${ticket.id}`}>{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</Link>
                     </CardTitle>
-                    <CardDescription>
-                        Criado por {ticket.userName} • {ticket.createdAt ? formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}
+                    <CardDescription className="flex flex-wrap items-center text-xs">
+                        <span>Criado por {ticket.userName} • {ticket.createdAt ? formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}</span>
+                        {ticket.assignedUserName && (
+                            <>
+                                <span className="mx-1.5">•</span>
+                                <span>Atribuído a <span className="font-medium text-foreground">{ticket.assignedUserName}</span></span>
+                            </>
+                        )}
                     </CardDescription>
                 </div>
               <div className="flex gap-2 order-1 sm:order-2 self-end sm:self-auto flex-shrink-0">
