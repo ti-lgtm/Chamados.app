@@ -1,6 +1,6 @@
 import { LoginForm } from "@/components/auth/login-form";
 import { PortalLogo } from "@/components/icons/portal-logo";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
 
