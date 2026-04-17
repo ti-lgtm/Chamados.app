@@ -11,6 +11,7 @@ import { PlusCircle, Star, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface UserDashboardProps {
   user: AppUser;
@@ -22,6 +23,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('in_progress');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
 
   const ticketsQuery = useMemoFirebase(
     () =>
@@ -41,7 +43,6 @@ export function UserDashboard({ user }: UserDashboardProps) {
       ticketsQuery,
       (querySnapshot) => {
         const userTickets = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Ticket));
-        userTickets.sort((a, b) => (b.createdAt.toMillis() || 0) - (a.createdAt.toMillis() || 0));
         setAllTickets(userTickets);
         setLoading(false);
       },
@@ -66,7 +67,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
   }, [allTickets]);
 
   const filteredTickets = useMemo(() => {
-    let tickets = allTickets;
+    let tickets = [...allTickets]; // Create a new array to avoid mutating the original
 
     if (searchTerm.trim()) {
       const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
@@ -78,20 +79,36 @@ export function UserDashboard({ user }: UserDashboardProps) {
       );
     }
     
+    let statusFilteredTickets;
     switch (statusFilter) {
       case 'open':
-        return tickets.filter((ticket) => ticket.status === 'open');
+        statusFilteredTickets = tickets.filter((ticket) => ticket.status === 'open');
+        break;
       case 'in_progress':
-        return tickets.filter((ticket) =>
+        statusFilteredTickets = tickets.filter((ticket) =>
           ['in_progress', 'awaiting_user', 'awaiting_support'].includes(ticket.status)
         );
+        break;
       case 'resolved':
-        return tickets.filter((ticket) => ticket.status === 'resolved');
+        statusFilteredTickets = tickets.filter((ticket) => ticket.status === 'resolved');
+        break;
       case 'all':
       default:
-        return tickets;
+        statusFilteredTickets = tickets;
+        break;
     }
-  }, [allTickets, statusFilter, searchTerm]);
+
+    return statusFilteredTickets.sort((a, b) => {
+        const dateA = a.createdAt?.toMillis() || 0;
+        const dateB = b.createdAt?.toMillis() || 0;
+        if (sortBy === 'newest') {
+            return dateB - dateA;
+        } else {
+            return dateA - dateB;
+        }
+    });
+
+  }, [allTickets, statusFilter, searchTerm, sortBy]);
 
   const unratedTickets = useMemo(() => {
     return allTickets.filter(ticket => ticket.status === 'resolved' && !ticket.rating);
@@ -131,14 +148,25 @@ export function UserDashboard({ user }: UserDashboardProps) {
                     <TabsTrigger value="resolved">Resolvidos ({loading ? '...' : stats.resolved})</TabsTrigger>
                 </TabsList>
             </Tabs>
-            <div className="relative w-full sm:max-w-xs">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Pesquisar por nº, título ou responsável..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8"
-                />
+             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <div className="relative w-full sm:max-w-xs">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                      placeholder="Pesquisar por nº, título ou responsável..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-8"
+                  />
+              </div>
+               <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="newest">Mais recentes</SelectItem>
+                      <SelectItem value="oldest">Mais antigos</SelectItem>
+                  </SelectContent>
+              </Select>
             </div>
         </div>
 

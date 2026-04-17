@@ -10,6 +10,13 @@ import { Circle, GanttChart, CheckCircle, Search } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface TiDashboardProps {
   user: AppUser;
@@ -21,6 +28,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('in_progress');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
   const prevTicketsRef = useRef<Ticket[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -54,7 +62,6 @@ export function TiDashboard({ user }: TiDashboardProps) {
       ticketsQuery,
       (querySnapshot) => {
         const ticketsData = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Ticket));
-        ticketsData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
         setAllTickets(ticketsData);
         setLoading(false);
       },
@@ -87,7 +94,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
   }, [allTickets]);
 
   const filteredTickets = useMemo(() => {
-    let tickets = allTickets;
+    let tickets = [...allTickets];
     
     if (searchTerm.trim()) {
         const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
@@ -99,20 +106,37 @@ export function TiDashboard({ user }: TiDashboardProps) {
         );
     }
 
+    let statusFilteredTickets;
     switch (statusFilter) {
       case 'mine':
-        return tickets.filter(ticket => ticket.assignedTo === user.uid);
+        statusFilteredTickets = tickets.filter(ticket => ticket.assignedTo === user.uid);
+        break;
       case 'open':
-        return tickets.filter(ticket => ticket.status === 'open');
+        statusFilteredTickets = tickets.filter(ticket => ticket.status === 'open');
+        break;
       case 'in_progress':
-        return tickets.filter(ticket => ['in_progress', 'awaiting_user', 'awaiting_support'].includes(ticket.status));
+        statusFilteredTickets = tickets.filter(ticket => ['in_progress', 'awaiting_user', 'awaiting_support'].includes(ticket.status));
+        break;
       case 'resolved':
-        return tickets.filter(ticket => ticket.status === 'resolved');
+        statusFilteredTickets = tickets.filter(ticket => ticket.status === 'resolved');
+        break;
       case 'all':
       default:
-        return tickets;
+        statusFilteredTickets = tickets;
+        break;
     }
-  }, [allTickets, statusFilter, searchTerm, user.uid]);
+    
+    return statusFilteredTickets.sort((a, b) => {
+        const dateA = a.createdAt?.toMillis() || 0;
+        const dateB = b.createdAt?.toMillis() || 0;
+        if (sortBy === 'newest') {
+            return dateB - dateA;
+        } else {
+            return dateA - dateB;
+        }
+    });
+
+  }, [allTickets, statusFilter, searchTerm, user.uid, sortBy]);
 
   return (
     <div className="space-y-6">
@@ -149,14 +173,25 @@ export function TiDashboard({ user }: TiDashboardProps) {
                     <TabsTrigger value="resolved">Resolvidos ({loading ? '...' : stats.resolved})</TabsTrigger>
                 </TabsList>
             </Tabs>
-            <div className="relative w-full sm:max-w-xs">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Pesquisar por nº, título, solicitante ou responsável..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8"
-                />
+             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <div className="relative w-full sm:max-w-xs">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Pesquisar por nº, título, solicitante ou responsável..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-8"
+                    />
+                </div>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Ordenar por" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="newest">Mais recentes</SelectItem>
+                        <SelectItem value="oldest">Mais antigos</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
         </div>
 
