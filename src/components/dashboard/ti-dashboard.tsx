@@ -156,7 +156,12 @@ export function TiDashboard({ user }: TiDashboardProps) {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard title="Meus Chamados" value={loading ? <Skeleton className="h-8 w-12" /> : stats.myTickets} icon={User} />
-        <StatsCard title="Abertos" value={loading ? <Skeleton className="h-8 w-12" /> : stats.open} icon={CircleIcon} />
+        <StatsCard 
+          title="Abertos" 
+          value={loading ? <Skeleton className="h-8 w-12" /> : stats.open} 
+          icon={CircleIcon} 
+          variant={!loading && stats.open > 0 ? "destructive" : "default"}
+        />
         <StatsCard
           title="Total em Atendimento"
           value={loading ? <Skeleton className="h-8 w-12" /> : stats.totalInProgress}
