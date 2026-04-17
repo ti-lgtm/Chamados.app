@@ -6,9 +6,8 @@ import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError }
 import type { AppUser, Ticket } from '@/lib/types';
 import { TicketList } from '@/components/tickets/ticket-list';
 import { StatsCard } from './stats-card';
-import { Circle, GanttChart, CheckCircle, Search } from 'lucide-react';
+import { Circle as CircleIcon, GanttChart, CheckCircle, Search, User } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -26,7 +25,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const firestore = useFirestore();
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('in_progress');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const prevTicketsRef = useRef<Ticket[]>([]);
@@ -40,10 +39,13 @@ export function TiDashboard({ user }: TiDashboardProps) {
 
   const stats = useMemo(() => {
     const open = allTickets.filter((t) => t.status === 'open').length;
-    const inProgress = allTickets.filter((t) => ['in_progress', 'awaiting_user', 'awaiting_support'].includes(t.status)).length;
+    const inProgress = allTickets.filter((t) => t.status === 'in_progress').length;
+    const awaitingUser = allTickets.filter((t) => t.status === 'awaiting_user').length;
+    const awaitingSupport = allTickets.filter((t) => t.status === 'awaiting_support').length;
     const resolved = allTickets.filter((t) => t.status === 'resolved').length;
     const myTickets = allTickets.filter((t) => t.assignedTo === user.uid).length;
-    return { open, inProgress, resolved, myTickets };
+    const totalInProgress = inProgress + awaitingUser + awaitingSupport;
+    return { open, inProgress, resolved, myTickets, awaitingUser, awaitingSupport, totalInProgress };
   }, [allTickets, user.uid]);
 
   const ticketsQuery = useMemoFirebase(() => {
@@ -107,23 +109,12 @@ export function TiDashboard({ user }: TiDashboardProps) {
     }
 
     let statusFilteredTickets;
-    switch (statusFilter) {
-      case 'mine':
+    if (statusFilter === 'all') {
+      statusFilteredTickets = tickets;
+    } else if (statusFilter === 'mine') {
         statusFilteredTickets = tickets.filter(ticket => ticket.assignedTo === user.uid);
-        break;
-      case 'open':
-        statusFilteredTickets = tickets.filter(ticket => ticket.status === 'open');
-        break;
-      case 'in_progress':
-        statusFilteredTickets = tickets.filter(ticket => ['in_progress', 'awaiting_user', 'awaiting_support'].includes(ticket.status));
-        break;
-      case 'resolved':
-        statusFilteredTickets = tickets.filter(ticket => ticket.status === 'resolved');
-        break;
-      case 'all':
-      default:
-        statusFilteredTickets = tickets;
-        break;
+    } else {
+        statusFilteredTickets = tickets.filter(ticket => ticket.status === statusFilter);
     }
     
     return statusFilteredTickets.sort((a, b) => {
@@ -148,11 +139,12 @@ export function TiDashboard({ user }: TiDashboardProps) {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatsCard title="Abertos" value={loading ? <Skeleton className="h-8 w-12" /> : stats.open} icon={Circle} />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatsCard title="Meus Chamados" value={loading ? <Skeleton className="h-8 w-12" /> : stats.myTickets} icon={User} />
+        <StatsCard title="Abertos" value={loading ? <Skeleton className="h-8 w-12" /> : stats.open} icon={CircleIcon} />
         <StatsCard
-          title="Em Atendimento"
-          value={loading ? <Skeleton className="h-8 w-12" /> : stats.inProgress}
+          title="Total em Atendimento"
+          value={loading ? <Skeleton className="h-8 w-12" /> : stats.totalInProgress}
           icon={GanttChart}
         />
         <StatsCard
@@ -163,26 +155,22 @@ export function TiDashboard({ user }: TiDashboardProps) {
       </div>
 
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-            <Tabs defaultValue="in_progress" onValueChange={setStatusFilter} className="w-full sm:w-auto">
-                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5">
-                    <TabsTrigger value="all">Todos ({loading ? '...' : allTickets.length})</TabsTrigger>
-                    <TabsTrigger value="mine">Meus Chamados ({loading ? '...' : stats.myTickets})</TabsTrigger>
-                    <TabsTrigger value="open">Abertos ({loading ? '...' : stats.open})</TabsTrigger>
-                    <TabsTrigger value="in_progress">Em Atend. ({loading ? '...' : stats.inProgress})</TabsTrigger>
-                    <TabsTrigger value="resolved">Resolvidos ({loading ? '...' : stats.resolved})</TabsTrigger>
-                </TabsList>
-            </Tabs>
-             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <div className="relative w-full sm:max-w-xs">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Pesquisar por nº, título, solicitante ou responsável..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-8"
-                    />
-                </div>
+        <div className="flex flex-col sm:flex-row gap-2 justify-between items-center">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                 <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-[200px]">
+                        <SelectValue placeholder="Filtrar por status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos ({loading ? '...' : allTickets.length})</SelectItem>
+                        <SelectItem value="mine">Meus Chamados ({loading ? '...' : stats.myTickets})</SelectItem>
+                        <SelectItem value="open">Abertos ({loading ? '...' : stats.open})</SelectItem>
+                        <SelectItem value="in_progress">Em Atendimento ({loading ? '...' : stats.inProgress})</SelectItem>
+                        <SelectItem value="awaiting_user">Aguardando Usuário ({loading ? '...' : stats.awaitingUser})</SelectItem>
+                        <SelectItem value="awaiting_support">Aguardando Suporte ({loading ? '...' : stats.awaitingSupport})</SelectItem>
+                        <SelectItem value="resolved">Resolvidos ({loading ? '...' : stats.resolved})</SelectItem>
+                    </SelectContent>
+                </Select>
                 <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue placeholder="Ordenar por" />
@@ -192,6 +180,15 @@ export function TiDashboard({ user }: TiDashboardProps) {
                         <SelectItem value="oldest">Mais antigos</SelectItem>
                     </SelectContent>
                 </Select>
+            </div>
+             <div className="relative w-full sm:w-full sm:max-w-xs">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Pesquisar por nº, título, solicitante ou responsável..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                />
             </div>
         </div>
 

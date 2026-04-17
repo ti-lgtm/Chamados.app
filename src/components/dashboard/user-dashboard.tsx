@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { TicketList } from '@/components/tickets/ticket-list';
 import { PlusCircle, Star, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -21,7 +20,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
   const firestore = useFirestore();
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('in_progress');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
 
@@ -59,15 +58,8 @@ export function UserDashboard({ user }: UserDashboardProps) {
     return () => unsubscribe();
   }, [ticketsQuery]);
 
-  const stats = useMemo(() => {
-    const open = allTickets.filter((t) => t.status === 'open').length;
-    const inProgress = allTickets.filter((t) => ['in_progress', 'awaiting_user', 'awaiting_support'].includes(t.status)).length;
-    const resolved = allTickets.filter((t) => t.status === 'resolved').length;
-    return { open, inProgress, resolved };
-  }, [allTickets]);
-
   const filteredTickets = useMemo(() => {
-    let tickets = [...allTickets]; // Create a new array to avoid mutating the original
+    let tickets = [...allTickets]; 
 
     if (searchTerm.trim()) {
       const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
@@ -79,26 +71,11 @@ export function UserDashboard({ user }: UserDashboardProps) {
       );
     }
     
-    let statusFilteredTickets;
-    switch (statusFilter) {
-      case 'open':
-        statusFilteredTickets = tickets.filter((ticket) => ticket.status === 'open');
-        break;
-      case 'in_progress':
-        statusFilteredTickets = tickets.filter((ticket) =>
-          ['in_progress', 'awaiting_user', 'awaiting_support'].includes(ticket.status)
-        );
-        break;
-      case 'resolved':
-        statusFilteredTickets = tickets.filter((ticket) => ticket.status === 'resolved');
-        break;
-      case 'all':
-      default:
-        statusFilteredTickets = tickets;
-        break;
+    if (statusFilter !== 'all') {
+        tickets = tickets.filter(ticket => ticket.status === statusFilter);
     }
 
-    return statusFilteredTickets.sort((a, b) => {
+    return tickets.sort((a, b) => {
         const dateA = a.createdAt?.toMillis() || 0;
         const dateB = b.createdAt?.toMillis() || 0;
         if (sortBy === 'newest') {
@@ -139,26 +116,22 @@ export function UserDashboard({ user }: UserDashboardProps) {
       </div>
 
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-            <Tabs defaultValue="in_progress" onValueChange={setStatusFilter} className="w-full sm:w-auto">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
-                    <TabsTrigger value="all">Todos ({loading ? '...' : allTickets.length})</TabsTrigger>
-                    <TabsTrigger value="open">Abertos ({loading ? '...' : stats.open})</TabsTrigger>
-                    <TabsTrigger value="in_progress">Em Atend. ({loading ? '...' : stats.inProgress})</TabsTrigger>
-                    <TabsTrigger value="resolved">Resolvidos ({loading ? '...' : stats.resolved})</TabsTrigger>
-                </TabsList>
-            </Tabs>
+        <div className="flex flex-col sm:flex-row gap-2 justify-between items-center">
              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <div className="relative w-full sm:max-w-xs">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                      placeholder="Pesquisar por nº, título ou responsável..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-8"
-                  />
-              </div>
-               <Select value={sortBy} onValueChange={setSortBy}>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Filtrar por status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="open">Aberto</SelectItem>
+                      <SelectItem value="in_progress">Em Atendimento</SelectItem>
+                      <SelectItem value="awaiting_user">Aguardando Você</SelectItem>
+                      <SelectItem value="awaiting_support">Aguardando Suporte</SelectItem>
+                      <SelectItem value="resolved">Resolvido</SelectItem>
+                  </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="w-full sm:w-[180px]">
                       <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
@@ -168,6 +141,15 @@ export function UserDashboard({ user }: UserDashboardProps) {
                   </SelectContent>
               </Select>
             </div>
+             <div className="relative w-full sm:w-full sm:max-w-xs">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                      placeholder="Pesquisar por nº, título ou responsável..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-8"
+                  />
+              </div>
         </div>
 
         {loading ? (
