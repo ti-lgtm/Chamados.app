@@ -76,13 +76,28 @@ export function UserDashboard({ user }: UserDashboardProps) {
     }
 
     return tickets.sort((a, b) => {
+        if (sortBy === 'status') {
+            const statusOrder = { 
+                'in_progress': 1, 
+                'awaiting_support': 1, 
+                'open': 2, 
+                'awaiting_user': 3, 
+                'resolved': 4 
+            };
+            const statusA = statusOrder[a.status as keyof typeof statusOrder] || 99;
+            const statusB = statusOrder[b.status as keyof typeof statusOrder] || 99;
+
+            if (statusA !== statusB) {
+                return statusA - statusB;
+            }
+        }
+
         const dateA = a.createdAt?.toMillis() || 0;
         const dateB = b.createdAt?.toMillis() || 0;
-        if (sortBy === 'newest') {
-            return dateB - dateA;
-        } else {
+        if (sortBy === 'oldest') {
             return dateA - dateB;
         }
+        return dateB - dateA; // 'newest' is default
     });
 
   }, [allTickets, statusFilter, searchTerm, sortBy]);
@@ -132,12 +147,13 @@ export function UserDashboard({ user }: UserDashboardProps) {
                   </SelectContent>
               </Select>
               <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[220px]">
                       <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
                   <SelectContent>
                       <SelectItem value="newest">Mais recentes</SelectItem>
                       <SelectItem value="oldest">Mais antigos</SelectItem>
+                      <SelectItem value="status">Em atendimento primeiro</SelectItem>
                   </SelectContent>
               </Select>
             </div>
