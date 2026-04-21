@@ -113,6 +113,12 @@ export function TiDashboard({ user }: TiDashboardProps) {
       statusFilteredTickets = tickets;
     } else if (statusFilter === 'mine') {
         statusFilteredTickets = tickets.filter(ticket => ticket.assignedTo === user.uid);
+    } else if (statusFilter === 'in_progress') {
+        statusFilteredTickets = tickets.filter(ticket => 
+            ticket.status === 'in_progress' || 
+            ticket.status === 'awaiting_user' || 
+            ticket.status === 'awaiting_support'
+        );
     } else {
         statusFilteredTickets = tickets.filter(ticket => ticket.status === statusFilter);
     }
@@ -193,9 +199,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
                         <SelectItem value="all">Todos ({loading ? '...' : allTickets.length})</SelectItem>
                         <SelectItem value="mine">Meus Chamados ({loading ? '...' : stats.myTickets})</SelectItem>
                         <SelectItem value="open">Abertos ({loading ? '...' : stats.open})</SelectItem>
-                        <SelectItem value="in_progress">Em Atendimento ({loading ? '...' : stats.inProgress})</SelectItem>
-                        <SelectItem value="awaiting_user">Aguardando Usuário ({loading ? '...' : stats.awaitingUser})</SelectItem>
-                        <SelectItem value="awaiting_support">Aguardando Suporte ({loading ? '...' : stats.awaitingSupport})</SelectItem>
+                        <SelectItem value="in_progress">Em Atendimento ({loading ? '...' : stats.totalInProgress})</SelectItem>
                         <SelectItem value="resolved">Resolvidos ({loading ? '...' : stats.resolved})</SelectItem>
                     </SelectContent>
                 </Select>
