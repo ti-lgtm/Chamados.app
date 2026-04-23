@@ -25,9 +25,9 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const firestore = useFirestore();
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('mine');
+  const [statusFilter, setStatusFilter] = useState('my_in_progress');
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState('status');
   const prevTicketsRef = useRef<Ticket[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -44,8 +44,12 @@ export function TiDashboard({ user }: TiDashboardProps) {
     const awaitingSupport = allTickets.filter((t) => t.status === 'awaiting_support').length;
     const resolved = allTickets.filter((t) => t.status === 'resolved').length;
     const myTickets = allTickets.filter((t) => t.assignedTo === user.uid).length;
+    const myInProgress = allTickets.filter(
+        t => t.assignedTo === user.uid &&
+        (t.status === 'in_progress' || t.status === 'awaiting_user' || t.status === 'awaiting_support')
+    ).length;
     const totalInProgress = inProgress + awaitingUser + awaitingSupport;
-    return { open, inProgress, resolved, myTickets, awaitingUser, awaitingSupport, totalInProgress };
+    return { open, inProgress, resolved, myTickets, awaitingUser, awaitingSupport, totalInProgress, myInProgress };
   }, [allTickets, user.uid]);
 
   const ticketsQuery = useMemoFirebase(() => {
@@ -109,18 +113,29 @@ export function TiDashboard({ user }: TiDashboardProps) {
     }
 
     let statusFilteredTickets;
-    if (statusFilter === 'all') {
-      statusFilteredTickets = tickets;
-    } else if (statusFilter === 'mine') {
-        statusFilteredTickets = tickets.filter(ticket => ticket.assignedTo === user.uid);
-    } else if (statusFilter === 'in_progress') {
-        statusFilteredTickets = tickets.filter(ticket => 
-            ticket.status === 'in_progress' || 
-            ticket.status === 'awaiting_user' || 
-            ticket.status === 'awaiting_support'
-        );
-    } else {
-        statusFilteredTickets = tickets.filter(ticket => ticket.status === statusFilter);
+    switch (statusFilter) {
+        case 'all':
+            statusFilteredTickets = tickets;
+            break;
+        case 'mine':
+            statusFilteredTickets = tickets.filter(ticket => ticket.assignedTo === user.uid);
+            break;
+        case 'my_in_progress':
+            statusFilteredTickets = tickets.filter(ticket => 
+                ticket.assignedTo === user.uid && 
+                (ticket.status === 'in_progress' || ticket.status === 'awaiting_user' || ticket.status === 'awaiting_support')
+            );
+            break;
+        case 'in_progress':
+            statusFilteredTickets = tickets.filter(ticket => 
+                ticket.status === 'in_progress' || 
+                ticket.status === 'awaiting_user' || 
+                ticket.status === 'awaiting_support'
+            );
+            break;
+        default:
+            statusFilteredTickets = tickets.filter(ticket => ticket.status === statusFilter);
+            break;
     }
     
     return statusFilteredTickets.sort((a, b) => {
@@ -192,15 +207,16 @@ export function TiDashboard({ user }: TiDashboardProps) {
         <div className="flex flex-col sm:flex-row gap-2 justify-between items-center">
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectTrigger className="w-full sm:w-[240px]">
                         <SelectValue placeholder="Filtrar por status" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todos ({loading ? '...' : allTickets.length})</SelectItem>
-                        <SelectItem value="mine">Meus Chamados ({loading ? '...' : stats.myTickets})</SelectItem>
-                        <SelectItem value="open">Abertos ({loading ? '...' : stats.open})</SelectItem>
-                        <SelectItem value="in_progress">Em Atendimento ({loading ? '...' : stats.totalInProgress})</SelectItem>
-                        <SelectItem value="resolved">Resolvidos ({loading ? '...' : stats.resolved})</SelectItem>
+                        <SelectItem value="my_in_progress">Meus em Atendimento ({loading ? '...' : stats.myInProgress})</SelectItem>
+                        <SelectItem value="mine">Meus Chamados (Todos) ({loading ? '...' : stats.myTickets})</SelectItem>
+                        <SelectItem value="open">Abertos (Todos) ({loading ? '...' : stats.open})</SelectItem>
+                        <SelectItem value="in_progress">Em Atendimento (Todos) ({loading ? '...' : stats.totalInProgress})</SelectItem>
+                        <SelectItem value="resolved">Resolvidos (Todos) ({loading ? '...' : stats.resolved})</SelectItem>
+                        <SelectItem value="all">Todos os Chamados ({loading ? '...' : allTickets.length})</SelectItem>
                     </SelectContent>
                 </Select>
                 <Select value={sortBy} onValueChange={setSortBy}>
