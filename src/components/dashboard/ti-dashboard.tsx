@@ -25,7 +25,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const firestore = useFirestore();
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('mine');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const prevTicketsRef = useRef<Ticket[]>([]);
