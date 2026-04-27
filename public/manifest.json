@@ -1,0 +1,24 @@
+{
+    "name": "Portal de Suporte",
+    "short_name": "Portal AMLMF",
+    "description": "Portal de Agendamentos e Chamados de TI",
+    "icons": [
+        {
+            "src": "/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/icon_monochrome.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "monochrome"
+        }
+    ],
+    "theme_color": "#F97316",
+    "background_color": "#FFFFFF",
+    "start_url": "/dashboard",
+    "display": "standalone",
+    "orientation": "portrait"
+}
