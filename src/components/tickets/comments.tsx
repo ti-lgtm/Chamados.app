@@ -12,7 +12,7 @@ import {
   doc,
   updateDoc,
 } from 'firebase/firestore';
-import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, WithId } from '@/firebase';
 import type { AppUser, Comment as CommentType, Ticket } from '@/lib/types';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -41,6 +41,7 @@ import {
 interface CommentsProps {
   ticket: Ticket;
   currentUser: AppUser | null;
+  supportUsers?: WithId<AppUser>[] | null;
 }
 
 const commentSchema = z
@@ -66,7 +67,7 @@ const getInitials = (name: string) =>
         .toUpperCase()
     : '';
 
-export function Comments({ ticket, currentUser }: CommentsProps) {
+export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
   const firestore = useFirestore();
   const [comments, setComments] = useState<CommentType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -295,16 +296,24 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
 
         let recipientEmail: string | undefined | null = null;
         let recipientName: string | undefined | null = null;
+        let shouldSendEmail = true;
 
-        if (currentUser.uid === ticket.userId) {
+        if (currentUser.uid === ticket.userId) { // User is commenting, notify assigned support
           recipientEmail = ticket.assignedUserEmail;
           recipientName = ticket.assignedUserName;
-        } else {
+
+          if (ticket.assignedTo && supportUsers) {
+            const assignedSupportUser = supportUsers.find(su => su.id === ticket.assignedTo);
+            if (assignedSupportUser && assignedSupportUser.receivesEmails === false) {
+              shouldSendEmail = false;
+            }
+          }
+        } else { // Support is commenting, notify user
           recipientEmail = ticket.userEmail;
           recipientName = ticket.userName;
         }
 
-        if (recipientEmail && recipientName) {
+        if (shouldSendEmail && recipientEmail && recipientName) {
           const emailMessage =
             values.message ||
             (attachmentUrls.length > 0
@@ -555,3 +564,5 @@ export function Comments({ ticket, currentUser }: CommentsProps) {
     </Card>
   );
 }
+
+    

@@ -122,6 +122,7 @@ export function LoginForm() {
           role: 'user' as const,
           status: 'active' as const,
           createdAt: serverTimestamp(),
+          receivesEmails: true,
         };
 
         try {
@@ -181,6 +182,7 @@ export function LoginForm() {
           status: 'active' as const,
           createdAt: serverTimestamp(),
           avatarUrl: user.photoURL || null,
+          receivesEmails: true,
         };
 
         try {
@@ -393,3 +395,5 @@ export function LoginForm() {
     </div>
   );
 }
+
+    

@@ -30,7 +30,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Loader2 } from "lucide-react";
+import { MoreHorizontal, Loader2, MailOff, Mail } from "lucide-react";
 
 interface UserActionsProps {
   user: WithId<AppUser>;
@@ -88,6 +88,26 @@ export function UserActions({ user }: UserActionsProps) {
             .catch(() => toast({ title: "Erro ao enviar e-mail", variant: "destructive" }))
             .finally(() => setIsSubmitting(false));
     }
+    
+    const handleToggleEmails = () => {
+        setIsSubmitting(true);
+        const userRef = doc(firestore, "users", user.id);
+        const newStatus = !user.receivesEmails;
+        const updateData = { receivesEmails: newStatus };
+
+        updateDoc(userRef, updateData)
+            .then(() => toast({ title: "Preferência de e-mail atualizada!" }))
+            .catch(() => {
+                toast({ title: "Erro ao atualizar preferência", variant: "destructive" });
+                 const permissionError = new FirestorePermissionError({
+                    path: userRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            })
+            .finally(() => setIsSubmitting(false));
+    };
 
     const handleDeleteUser = () => {
         setIsSubmitting(true);
@@ -137,6 +157,15 @@ export function UserActions({ user }: UserActionsProps) {
                     <DropdownMenuItem onClick={() => handleUpdateStatus('active')}>Reativar Usuário</DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={handlePasswordReset}>Enviar Redefinição de Senha</DropdownMenuItem>
+                 {(user.role === 'ti' || user.role === 'admin') && (
+                    <DropdownMenuItem onClick={handleToggleEmails}>
+                        {user.receivesEmails !== false ? (
+                            <><MailOff className="mr-2 h-4 w-4" /> Desativar E-mails</>
+                        ) : (
+                            <><Mail className="mr-2 h-4 w-4" /> Ativar E-mails</>
+                        )}
+                    </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => setIsDeleteDialogOpen(true)}>
                     Excluir Usuário
@@ -165,3 +194,5 @@ export function UserActions({ user }: UserActionsProps) {
     </>
   );
 }
+
+    

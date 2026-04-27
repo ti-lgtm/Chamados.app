@@ -90,7 +90,7 @@ service cloud.firestore {
      */
     function hasValidUserDataOnCreate(userId) {
       let data = request.resource.data;
-      return data.uid == userId && data.role == 'user' && data.status == 'active';
+      return data.uid == userId && data.role == 'user' && data.status == 'active' && data.receivesEmails == true;
     }
 
     /**
@@ -267,3 +267,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

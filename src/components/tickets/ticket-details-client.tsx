@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where } from "firebase/firestore";
-import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, useCollection } from "@/firebase";
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, useCollection, WithId } from "@/firebase";
 import type { Ticket, AppUser } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { format, formatDistanceToNow } from "date-fns";
@@ -51,7 +51,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         return query(collection(firestore, 'users'), where('role', 'in', ['ti', 'admin']));
     }, [firestore, canEdit]);
 
-    const { data: supportUsers, isLoading: supportUsersLoading } = useCollection<AppUser>(supportUsersQuery);
+    const { data: supportUsers, isLoading: supportUsersLoading } = useCollection<WithId<AppUser>>(supportUsersQuery);
 
     const ticketRef = useMemoFirebase(() => 
         firestore ? doc(firestore, "tickets", initialTicket.id) : null
@@ -224,7 +224,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         )}
                     </CardContent>
                 </Card>
-                <Comments ticket={ticket} currentUser={user} />
+                <Comments ticket={ticket} currentUser={user} supportUsers={supportUsers} />
             </div>
 
             <div className="lg:col-span-1 space-y-6">
@@ -356,3 +356,5 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         </div>
     );
 }
+
+    

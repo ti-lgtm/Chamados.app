@@ -66,6 +66,7 @@ export function SignupForm() {
         role: "user", // Default role
         status: "active", // Default status
         createdAt: serverTimestamp(),
+        receivesEmails: true,
       };
 
       // Create user document in Firestore
@@ -163,3 +164,5 @@ export function SignupForm() {
     </div>
   );
 }
+
+    

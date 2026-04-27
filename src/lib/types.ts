@@ -10,6 +10,7 @@ export interface AppUser {
   status: 'active' | 'suspended';
   createdAt: Timestamp;
   avatarUrl?: string;
+  receivesEmails?: boolean;
 }
 
 export interface Ticket {
@@ -66,3 +67,5 @@ export interface InternalNote {
   message: string;
   createdAt: Timestamp;
 }
+
+    

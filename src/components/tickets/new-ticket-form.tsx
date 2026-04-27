@@ -175,7 +175,11 @@ export function NewTicketForm() {
 
       // 4. Trigger email notification for support team
       if (supportUsers && supportUsers.length > 0) {
-        const supportEmails = supportUsers.map(su => su.email).filter((email): email is string => !!email);
+        const supportEmails = supportUsers
+          .filter(su => su.receivesEmails !== false)
+          .map(su => su.email)
+          .filter((email): email is string => !!email);
+          
         if(supportEmails.length > 0) {
             triggerTicketCreatedSupportEmail({
                 ticketNumber: newTicketData.payload.ticketNumber,
@@ -342,3 +346,5 @@ export function NewTicketForm() {
     </Form>
   );
 }
+
+    
