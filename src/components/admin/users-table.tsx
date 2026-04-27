@@ -6,7 +6,7 @@ import { UserActions } from "./user-actions";
 import { format } from 'date-fns';
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { WithId } from "@/firebase";
-import { Mail, MailOff } from "lucide-react";
+import { Mail, MailX } from "lucide-react";
 
 const getInitials = (name: string) => {
     if (!name) return '';
@@ -77,7 +77,7 @@ export function UsersTable({ users }: { users: WithId<AppUser>[] }) {
                                     <div className="flex items-center gap-2">
                                         {user.receivesEmails !== false ?
                                             <><Mail className="h-4 w-4 text-green-600" /><span>Sim</span></> :
-                                            <><MailOff className="h-4 w-4 text-muted-foreground" /><span>Não</span></>
+                                            <><MailX className="h-4 w-4 text-muted-foreground" /><span>Não</span></>
                                         }
                                     </div>
                                 )}
@@ -95,5 +95,3 @@ export function UsersTable({ users }: { users: WithId<AppUser>[] }) {
         </div>
     );
 }
-
-    

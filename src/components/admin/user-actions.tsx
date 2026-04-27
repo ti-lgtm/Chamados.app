@@ -30,7 +30,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Loader2, MailOff, Mail } from "lucide-react";
+import { MoreHorizontal, Loader2, MailX, Mail } from "lucide-react";
 
 interface UserActionsProps {
   user: WithId<AppUser>;
@@ -160,7 +160,7 @@ export function UserActions({ user }: UserActionsProps) {
                  {(user.role === 'ti' || user.role === 'admin') && (
                     <DropdownMenuItem onClick={handleToggleEmails}>
                         {user.receivesEmails !== false ? (
-                            <><MailOff className="mr-2 h-4 w-4" /> Desativar E-mails</>
+                            <><MailX className="mr-2 h-4 w-4" /> Desativar E-mails</>
                         ) : (
                             <><Mail className="mr-2 h-4 w-4" /> Ativar E-mails</>
                         )}
@@ -194,5 +194,3 @@ export function UserActions({ user }: UserActionsProps) {
     </>
   );
 }
-
-    
