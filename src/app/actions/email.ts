@@ -119,28 +119,3 @@ export async function triggerTicketResolvedEmail(payload: TicketResolvedPayload)
     console.error("Error in triggerTicketResolvedEmail:", error);
   }
 }
-
-interface TicketAssignedPayload {
-    recipientEmail: string;
-    recipientName: string;
-    ticketNumber: number;
-    ticketTitle: string;
-    supportAgentName: string;
-}
-
-export async function triggerTicketAssignedEmail(payload: TicketAssignedPayload) {
-  try {
-    await sendEmail({
-      to: [payload.recipientEmail],
-      subject: `Seu chamado #${payload.ticketNumber} está em andamento!`,
-      html_body: `
-            <h1>Olá ${payload.recipientName},</h1>
-            <p>Boas notícias! Seu chamado <strong>#${payload.ticketNumber} - "${payload.ticketTitle}"</strong> foi recebido e já está sendo tratado pelo nosso especialista, <strong>${payload.supportAgentName}</strong>.</p>
-            <p>Você pode acompanhar o andamento e interagir com o suporte através do portal.</p>
-            <p>Atenciosamente,<br/>Equipe de Suporte do Portal</p>
-        `,
-    });
-  } catch (error) {
-    console.error("Error in triggerTicketAssignedEmail:", error);
-  }
-}
