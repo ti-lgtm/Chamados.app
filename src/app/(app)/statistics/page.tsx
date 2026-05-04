@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -7,7 +8,7 @@ import { collection, query, where } from 'firebase/firestore';
 import type { Ticket, AppUser } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { BarChart as BarChartIcon, ShieldAlert, Loader2, Printer, Star } from 'lucide-react';
+import { BarChart as BarChartIcon, ShieldAlert, Loader2, Printer, Star, Info } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -219,14 +220,14 @@ function StatisticsPageContent() {
 
     return (
         <div className="space-y-6 print:space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4 justify-between sm:items-center print:hidden">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between sm:items-center print:flex-row print:items-start print:mb-8">
                 <div>
                     <h1 className="text-2xl font-headline font-bold">Estatísticas dos Chamados</h1>
-                    <p className="text-muted-foreground">Análise de desempenho da equipe de suporte.</p>
+                    <p className="text-muted-foreground">Análise detalhada de desempenho e produtividade da equipe.</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 print:hidden">
                      <Button onClick={() => window.print()} variant="outline">
-                        <Printer className="mr-2" />
+                        <Printer className="mr-2 h-4 w-4" />
                         Imprimir Relatório
                     </Button>
                     <Tabs value={timeRange} onValueChange={setTimeRange}>
@@ -273,7 +274,12 @@ function StatisticsPageContent() {
                         </>
                     )}
                 </div>
+                <div className="hidden print:block text-right text-xs">
+                    <p>Relatório gerado em: {new Date().toLocaleDateString('pt-BR')}</p>
+                    <p>Período: {timeRange === 'year' ? `Ano ${selectedYear}` : timeRange === 'month' ? `${months[selectedMonth].label} / ${selectedYear}` : 'Última Semana'}</p>
+                </div>
             </div>
+
             <div className="flex flex-wrap items-center gap-2 print:hidden">
                 <Select value={selectedAttendant} onValueChange={setSelectedAttendant}>
                     <SelectTrigger className="w-full sm:w-[200px]">
@@ -298,130 +304,150 @@ function StatisticsPageContent() {
                     </SelectContent>
                 </Select>
             </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mt-6">
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mt-6 print:grid-cols-4">
                 <Card className="print:shadow-none print:border print:break-inside-avoid">
-                    <CardHeader>
-                        <CardTitle>Chamados Resolvidos</CardTitle>
-                        <CardDescription>Total no período selecionado</CardDescription>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Resolvidos</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-4xl font-bold">{resolvedTickets.length}</p>
+                        <p className="text-3xl font-bold">{resolvedTickets.length}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Chamados que atingiram o status final de conclusão.</p>
                     </CardContent>
                 </Card>
                 <Card className="print:shadow-none print:border print:break-inside-avoid">
-                    <CardHeader>
-                        <CardTitle>Tempo Médio de Resolução</CardTitle>
-                        <CardDescription>Em horas, para chamados resolvidos</CardDescription>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">TMR (Médio)</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-4xl font-bold">{avgResolutionTime}h</p>
+                        <p className="text-3xl font-bold">{avgResolutionTime}h</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Tempo médio entre a criação e a resolução final.</p>
                     </CardContent>
                 </Card>
                  <Card className="print:shadow-none print:border print:break-inside-avoid">
-                    <CardHeader>
-                        <CardTitle>Total de Chamados</CardTitle>
-                        <CardDescription>Total no período selecionado</CardDescription>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Volume Total</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-4xl font-bold">{filteredTickets.length}</p>
+                        <p className="text-3xl font-bold">{filteredTickets.length}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Demanda total de chamados abertos no período.</p>
                     </CardContent>
                 </Card>
                 <Card className="print:shadow-none print:border print:break-inside-avoid">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Avaliação Média</CardTitle>
-                        <Star className="h-4 w-4 text-muted-foreground" />
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium flex items-center justify-between">
+                            CSAT
+                            <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-4xl font-bold">{averageRating}</p>
-                        <p className="text-xs text-muted-foreground">De chamados avaliados no período</p>
+                        <p className="text-3xl font-bold">{averageRating}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Nível de satisfação média dos usuários finais.</p>
                     </CardContent>
                 </Card>
             </div>
+
             <div className="grid gap-6 mt-6 md:grid-cols-1 lg:grid-cols-2">
                 <Card className="print:shadow-none print:border print:break-inside-avoid">
                     <CardHeader>
-                        <CardTitle>Top Atendentes (Resolvidos)</CardTitle>
-                        <CardDescription>Chamados resolvidos por membro da equipe.</CardDescription>
+                        <CardTitle className="text-lg">Eficiência por Atendente</CardTitle>
+                        <CardDescription className="text-xs">
+                            Este gráfico apresenta o volume de chamados resolvidos por cada membro da equipe. Reflete a capacidade produtiva e a finalização de demandas individuais.
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {attendantStats.length > 0 ? (
                              <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={attendantStats} layout="vertical" margin={{ left: 20, right: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                     <XAxis type="number" allowDecimals={false} />
-                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
+                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10 }} />
                                     <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
-                                    <Bar dataKey="tickets" name="Chamados Resolvidos" fill="hsl(var(--primary))">
-                                        <LabelList dataKey="tickets" position="right" className="fill-foreground" />
+                                    <Bar dataKey="tickets" name="Resolvidos" fill="hsl(var(--primary))">
+                                        <LabelList dataKey="tickets" position="right" className="fill-foreground text-[10px]" />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
-                        ) : <p className="text-center text-muted-foreground py-10">Nenhum dado de atendente para exibir.</p>}
+                        ) : <p className="text-center text-muted-foreground py-10">Nenhum dado para exibir.</p>}
                     </CardContent>
                 </Card>
+
                  <Card className="print:shadow-none print:border print:break-inside-avoid">
                     <CardHeader>
-                        <CardTitle>Distribuição de Avaliações</CardTitle>
-                        <CardDescription>Avaliações recebidas em chamados resolvidos.</CardDescription>
+                        <CardTitle className="text-lg">Qualidade do Atendimento</CardTitle>
+                        <CardDescription className="text-xs">
+                            Distribuição das avaliações (1 a 5 estrelas). Permite identificar se a percepção de valor do usuário está alinhada com as expectativas de qualidade.
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                          {ratingStats.length > 0 ? (
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={ratingStats} margin={{ top: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                                     <YAxis allowDecimals={false} />
                                     <Tooltip cursor={{ fill: 'hsl(var(--muted))' }}/>
                                     <Bar dataKey="count" name="Quantidade" fill="hsl(var(--accent))">
-                                        <LabelList dataKey="count" position="top" className="fill-foreground" />
+                                        <LabelList dataKey="count" position="top" className="fill-foreground text-[10px]" />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
-                         ) : <p className="text-center text-muted-foreground py-10">Nenhuma avaliação para exibir.</p>}
+                         ) : <p className="text-center text-muted-foreground py-10">Nenhuma avaliação recebida.</p>}
                     </CardContent>
                 </Card>
+
                 <Card className="print:shadow-none print:border print:break-inside-avoid">
                     <CardHeader>
-                        <CardTitle>Chamados por Setor</CardTitle>
-                        <CardDescription>Top 10 setores com mais chamados no período.</CardDescription>
+                        <CardTitle className="text-lg">Demanda por Setor</CardTitle>
+                        <CardDescription className="text-xs">
+                            Identifica os departamentos com maior volume de solicitações. Útil para mapear gargalos operacionais ou necessidades de treinamento em áreas específicas.
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {departmentStats.length > 0 ? (
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={departmentStats} layout="vertical" margin={{ left: 20, right: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                     <XAxis type="number" allowDecimals={false} />
-                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
+                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10 }} />
                                     <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
                                     <Bar dataKey="count" name="Chamados" fill="hsl(var(--chart-2))">
-                                        <LabelList dataKey="count" position="right" className="fill-foreground" />
+                                        <LabelList dataKey="count" position="right" className="fill-foreground text-[10px]" />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
-                        ) : <p className="text-center text-muted-foreground py-10">Nenhum dado de setor para exibir.</p>}
+                        ) : <p className="text-center text-muted-foreground py-10">Nenhum dado disponível.</p>}
                     </CardContent>
                 </Card>
+
                 <Card className="print:shadow-none print:border print:break-inside-avoid">
                     <CardHeader>
-                        <CardTitle>Chamados Atribuídos por Atendente</CardTitle>
-                        <CardDescription>Top 10 atendentes com mais chamados atribuídos no período.</CardDescription>
+                        <CardTitle className="text-lg">Carga de Trabalho Atribuída</CardTitle>
+                        <CardDescription className="text-xs">
+                            Mostra a distribuição de chamados (independente do status) entre os técnicos. Auxilia no equilíbrio da carga operacional da equipe.
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {assignedTicketsByAttendantStats.length > 0 ? (
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={assignedTicketsByAttendantStats} layout="vertical" margin={{ left: 20, right: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                     <XAxis type="number" allowDecimals={false}/>
-                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
+                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10 }} />
                                     <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
-                                    <Bar dataKey="tickets" name="Chamados Atribuídos" fill="hsl(var(--chart-3))">
-                                        <LabelList dataKey="tickets" position="right" className="fill-foreground" />
+                                    <Bar dataKey="tickets" name="Atribuídos" fill="hsl(var(--chart-3))">
+                                        <LabelList dataKey="tickets" position="right" className="fill-foreground text-[10px]" />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
-                        ) : <p className="text-center text-muted-foreground py-10">Nenhum chamado atribuído para exibir.</p>}
+                        ) : <p className="text-center text-muted-foreground py-10">Nenhum chamado atribuído.</p>}
                     </CardContent>
                 </Card>
+            </div>
+            
+            <div className="hidden print:block border-t pt-8 mt-12 text-center text-[10px] text-muted-foreground">
+                <p>Este relatório é uma representação fiel dos dados extraídos do Portal de Suporte.</p>
+                <p>Fim do Relatório Estatístico.</p>
             </div>
         </div>
     )

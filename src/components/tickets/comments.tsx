@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, type ClipboardEvent } from 'react';
@@ -268,30 +269,43 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
       .then(() => {
         form.reset({ message: '', attachments: undefined });
 
-        // Update ticket status
+        // Update ticket status logic
         if (ticket.status !== 'resolved') {
           const ticketRef = doc(firestore, 'tickets', ticketId);
-          const newStatus =
-            currentUser.uid === ticket.userId
-              ? 'awaiting_support'
-              : 'awaiting_user';
-          const updateData = {
-            status: newStatus,
-            updatedAt: serverTimestamp(),
-          };
+          
+          let newStatus = ticket.status;
+          
+          if (currentUser.uid === ticket.userId) {
+            // User is commenting
+            // Only move to awaiting_support if it was already assigned or in a flow.
+            // If it's still 'open', it stays 'open' to avoid jumping to "in progress" filters.
+            if (ticket.status !== 'open') {
+              newStatus = 'awaiting_support';
+            }
+          } else {
+            // Support is commenting
+            newStatus = 'awaiting_user';
+          }
 
-          updateDoc(ticketRef, updateData).catch((err) => {
-            const permissionError = new FirestorePermissionError({
-              path: ticketRef.path,
-              operation: 'update',
-              requestResourceData: updateData,
+          if (newStatus !== ticket.status) {
+            const updateData = {
+              status: newStatus,
+              updatedAt: serverTimestamp(),
+            };
+
+            updateDoc(ticketRef, updateData).catch((err) => {
+              const permissionError = new FirestorePermissionError({
+                path: ticketRef.path,
+                operation: 'update',
+                requestResourceData: updateData,
+              });
+              errorEmitter.emit('permission-error', permissionError);
+              toast({
+                title: 'Erro ao atualizar status do chamado',
+                variant: 'destructive',
+              });
             });
-            errorEmitter.emit('permission-error', permissionError);
-            toast({
-              title: 'Erro ao atualizar status do chamado',
-              variant: 'destructive',
-            });
-          });
+          }
         }
 
         let recipientEmail: string | undefined | null = null;
@@ -564,5 +578,3 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
     </Card>
   );
 }
-
-    
