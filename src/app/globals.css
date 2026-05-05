@@ -68,3 +68,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  .text-muted-foreground {
+    color: #000000 !important;
+    opacity: 1 !important;
+  }
+  .text-xs {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+  h1, h2, h3, h4, h5, h6, p, span, div {
+    color: #000000 !important;
+  }
+  .bg-muted {
+    background-color: #f1f5f9 !important;
+    print-color-adjust: exact;
+  }
+  .border {
+    border-color: #d1d5db !important;
+  }
+  .shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
+    shadow: none !important;
+  }
+}
