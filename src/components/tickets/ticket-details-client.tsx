@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, CalendarClock, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, CalendarClock, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
@@ -184,26 +183,47 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     if (authLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
     return (
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3 print:block print:space-y-6">
             <div className="lg:col-span-2 space-y-6">
-                <Card>
+                <div className="hidden print:block mb-8 border-b-2 border-black pb-4">
+                    <h1 className="text-3xl font-headline font-bold">Relatório de Chamado de Suporte</h1>
+                    <p className="text-sm font-medium">Documento oficial de registro e tratativa de incidente.</p>
+                </div>
+
+                <Card className="print:shadow-none print:border-2">
                     <CardHeader>
                         <div className="flex justify-between items-start">
                              <CardTitle className="font-headline text-2xl">{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</CardTitle>
-                             <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="whitespace-nowrap">
+                             <div className="flex gap-2 print:hidden">
+                                <Button variant="outline" size="sm" onClick={() => window.print()}>
+                                    <Printer className="mr-2 h-4 w-4" />
+                                    Imprimir
+                                </Button>
+                                <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="whitespace-nowrap">
+                                    {statusMap[ticket.status]?.label || ticket.status}
+                                </Badge>
+                             </div>
+                             <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="hidden print:flex">
                                 {statusMap[ticket.status]?.label || ticket.status}
                              </Badge>
                         </div>
-                        <CardDescription>
-                            Criado por {ticket.userName} • {ticket.createdAt ? formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}
+                        <CardDescription className="print:text-black print:font-semibold">
+                            Criado por {ticket.userName} • {ticket.createdAt ? format(ticket.createdAt.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ''}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-foreground whitespace-pre-wrap">{ticket.description}</p>
+                        <div className="print:mb-4">
+                            <h4 className="hidden print:block text-xs font-bold uppercase text-muted-foreground mb-1">Descrição do Problema</h4>
+                            <p className="text-foreground whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
+                        </div>
                         {ticket.attachments && ticket.attachments.length > 0 && (
-                            <div className="mt-6">
-                                <h4 className="font-semibold mb-2 flex items-center gap-2"><Paperclip className="h-4 w-4"/> Anexos</h4>
-                                <ul className="list-disc list-inside space-y-1">
+                            <div className="mt-6 print:mt-4">
+                                <h4 className="font-semibold mb-2 flex items-center gap-2 print:text-black">
+                                    <Paperclip className="h-4 w-4 print:hidden"/> 
+                                    <span className="hidden print:inline font-bold">ANEXOS REGISTRADOS:</span>
+                                    <span className="print:hidden">Anexos</span>
+                                </h4>
+                                <ul className="list-disc list-inside space-y-1 text-sm print:text-xs">
                                     {ticket.attachments.map((url, index) => {
                                         const fileName = url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`;
                                         const decodedFileName = decodeURIComponent(fileName);
@@ -213,7 +233,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                                     href={url} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
-                                                    className="text-primary hover:underline"
+                                                    className="text-primary hover:underline print:text-black print:no-underline"
                                                 >
                                                     <span className="truncate">{decodedFileName.substring(decodedFileName.indexOf('_') + 1)}</span>
                                                 </a>
@@ -225,61 +245,63 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         )}
                     </CardContent>
                 </Card>
-                <Comments ticket={ticket} currentUser={user} supportUsers={supportUsers} />
+                <div className="print:break-inside-avoid">
+                    <Comments ticket={ticket} currentUser={user} supportUsers={supportUsers} />
+                </div>
             </div>
 
-            <div className="lg:col-span-1 space-y-6">
-                <Card>
+            <div className="lg:col-span-1 space-y-6 print:mt-8">
+                <Card className="print:shadow-none print:border-2">
                     <CardHeader>
-                        <CardTitle className="font-headline">Detalhes</CardTitle>
+                        <CardTitle className="font-headline">Detalhes Técnicos</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 text-sm">
+                    <CardContent className="space-y-4 text-sm print:text-xs">
                         <div className="flex items-center">
-                            <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <User className="h-4 w-4 mr-2 text-muted-foreground print:hidden" />
                             <strong>Solicitante:</strong>
                             <span className="ml-2">{ticket.userName || 'Desconhecido'}</span>
                         </div>
                          <div className="flex items-center">
-                            <Building className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <Building className="h-4 w-4 mr-2 text-muted-foreground print:hidden" />
                             <strong>Empresa:</strong>
                             <span className="ml-2">{ticket.company || 'Não informado'}</span>
                         </div>
                         <div className="flex items-center">
-                            <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <Briefcase className="h-4 w-4 mr-2 text-muted-foreground print:hidden" />
                             <strong>Setor:</strong>
                             <span className="ml-2">{ticket.department || 'Não informado'}</span>
                         </div>
                          <div className="flex items-center">
-                            <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <Phone className="h-4 w-4 mr-2 text-muted-foreground print:hidden" />
                             <strong>Contato:</strong>
                             <span className="ml-2">{ticket.contactNumber || 'Não informado'}</span>
                         </div>
                         {ticket.ccEmail && (
                             <div className="flex items-center">
-                                <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                                <Mail className="h-4 w-4 mr-2 text-muted-foreground print:hidden" />
                                 <strong>Cópia para:</strong>
                                 <span className="ml-2">{ticket.ccEmail}</span>
                             </div>
                         )}
                         <div className="flex items-center">
-                            <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <Shield className="h-4 w-4 mr-2 text-muted-foreground print:hidden" />
                             <strong>Atribuído a:</strong>
                             <span className="ml-2">{assignedNameToDisplay}</span>
                         </div>
                         <div className="flex items-center">
-                            <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <Tag className="h-4 w-4 mr-2 text-muted-foreground print:hidden" />
                             <strong>Prioridade:</strong>
                             <Badge variant={priorityMap[ticket.priority]?.variant || 'default'} className="ml-2">
                                 {priorityMap[ticket.priority]?.label || ticket.priority}
                             </Badge>
                         </div>
                         <div className="flex items-center">
-                            <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <Clock className="h-4 w-4 mr-2 text-muted-foreground print:hidden" />
                             <strong>Última atualização:</strong>
-                            <span className="ml-2">{ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}</span>
+                            <span className="ml-2">{ticket.updatedAt ? format(ticket.updatedAt.toDate(), "dd/MM/yyyy HH:mm") : ''}</span>
                         </div>
                          {ticket.deadline && ticket.status !== 'resolved' && (
-                            <div className="space-y-2 pt-2">
+                            <div className="space-y-2 pt-2 print:hidden">
                                 <div className="flex items-center font-medium">
                                     <CalendarClock className="h-4 w-4 mr-2 text-muted-foreground" />
                                     <span>Prazo de Resolução</span>
@@ -289,7 +311,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         )}
                     </CardContent>
                     {canEdit && (
-                         <CardFooter className="flex-col items-start gap-4">
+                         <CardFooter className="flex-col items-start gap-4 print:hidden">
                              <div className="w-full space-y-2">
                                 <p className="text-sm font-medium">Alterar Status</p>
                                 <Select onValueChange={(value) => handleStatusChange(value as any)} value={ticket.status} disabled={isUpdating || ticket.status === 'resolved'}>
@@ -355,11 +377,16 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                     )}
                 </Card>
 
-                {canEdit && user && <InternalNotes ticketId={ticket.id} currentUser={user} />}
+                {canEdit && user && <div className="print:hidden"><InternalNotes ticketId={ticket.id} currentUser={user} /></div>}
 
                 {ticket.status === 'resolved' && (
                     <RatingSection ticketId={ticket.id} ticketCreatorId={ticket.userId} currentUser={user} />
                 )}
+
+                <div className="hidden print:block text-center text-[10px] text-black mt-20 pt-8 border-t border-black">
+                    <p className="font-bold">Portal de Suporte - Registro de Atendimento</p>
+                    <p>Gerado por {user?.name} em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}</p>
+                </div>
             </div>
         </div>
     );

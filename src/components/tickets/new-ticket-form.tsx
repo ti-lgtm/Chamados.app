@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -52,6 +51,7 @@ const departmentOptions = [
     "Projetos",
     "Suprimentos",
     "Marketing",
+    "Qualidade",
 ] as const;
 
 const formSchema = z.object({
