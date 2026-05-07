@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 export type UserRole = 'user' | 'ti' | 'admin';
@@ -21,6 +22,7 @@ export interface Ticket {
   department: string;
   description: string;
   contactNumber?: string;
+  ccEmail?: string;
   status: 'open' | 'in_progress' | 'resolved' | 'awaiting_user' | 'awaiting_support';
   priority: 'low' | 'normal' | 'high';
   userId: string;
@@ -67,5 +69,3 @@ export interface InternalNote {
   message: string;
   createdAt: Timestamp;
 }
-
-    

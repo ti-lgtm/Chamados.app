@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -27,6 +28,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -57,6 +59,7 @@ const formSchema = z.object({
   company: z.string().min(2, { message: 'O nome da empresa é obrigatório.' }),
   department: z.enum(departmentOptions, { required_error: 'O setor é obrigatório.' }),
   contactNumber: z.string().min(10, { message: 'O número de contato é obrigatório e deve incluir o DDD.' }),
+  ccEmail: z.string().email({ message: 'Por favor, insira um e-mail válido.' }).optional().or(z.literal('')),
   description: z.string().min(10, { message: 'A descrição deve ter pelo menos 10 caracteres.' }),
   priority: z.enum(['low', 'normal', 'high'], { required_error: 'A prioridade é obrigatória.' }),
   attachments: z.custom<FileList>().optional(),
@@ -95,6 +98,7 @@ export function NewTicketForm() {
       title: '',
       company: '',
       contactNumber: '',
+      ccEmail: '',
       description: '',
       priority: 'normal',
     },
@@ -144,6 +148,7 @@ export function NewTicketForm() {
           company: values.company,
           department: values.department,
           contactNumber: values.contactNumber,
+          ccEmail: values.ccEmail || null,
           description: values.description,
           priority: values.priority,
           status: 'open' as const,
@@ -164,12 +169,13 @@ export function NewTicketForm() {
         return { id: newTicketRef.id, payload: ticketPayload };
       });
 
-      // 3. Trigger email notification for user
+      // 3. Trigger email notification for user and CC
       triggerTicketCreatedEmail({
         ticketNumber: newTicketData.payload.ticketNumber,
         title: newTicketData.payload.title,
         userName: newTicketData.payload.userName,
         userEmail: newTicketData.payload.userEmail,
+        ccEmail: newTicketData.payload.ccEmail || undefined,
         description: newTicketData.payload.description,
       });
 
@@ -272,19 +278,35 @@ export function NewTicketForm() {
             )}
             />
         </div>
-        <FormField
-            control={form.control}
-            name="contactNumber"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Número de Contato (com DDD)</FormLabel>
-                <FormControl>
-                    <Input placeholder="(XX) XXXXX-XXXX" {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <FormField
+                control={form.control}
+                name="contactNumber"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Número de Contato (com DDD)</FormLabel>
+                    <FormControl>
+                        <Input placeholder="(XX) XXXXX-XXXX" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="ccEmail"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>E-mail em Cópia (Gestor)</FormLabel>
+                    <FormControl>
+                        <Input placeholder="gestor@empresa.com" {...field} />
+                    </FormControl>
+                    <FormDescription>Opcional. Receberá uma cópia da abertura.</FormDescription>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
         <FormField
           control={form.control}
           name="description"
@@ -338,7 +360,7 @@ export function NewTicketForm() {
           )}
         />
 
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading} className="w-full sm:w-auto">
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Enviar Chamado
         </Button>
@@ -346,5 +368,3 @@ export function NewTicketForm() {
     </Form>
   );
 }
-
-    

@@ -1,3 +1,4 @@
+
 "use server";
 
 import { sendEmail } from "@/lib/email";
@@ -7,13 +8,19 @@ interface TicketCreatedPayload {
   title: string;
   userName: string;
   userEmail: string;
+  ccEmail?: string;
   description: string;
 }
 
 export async function triggerTicketCreatedEmail(payload: TicketCreatedPayload) {
   try {
+    const recipients = [payload.userEmail];
+    if (payload.ccEmail) {
+      recipients.push(payload.ccEmail);
+    }
+
     await sendEmail({
-      to: [payload.userEmail],
+      to: recipients,
       subject: `Chamado #${payload.ticketNumber}: ${payload.title}`,
       html_body: `
             <h1>Olá ${payload.userName},</h1>
