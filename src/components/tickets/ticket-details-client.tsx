@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -88,7 +89,6 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             toast({ title: "Status do chamado atualizado com sucesso!" });
             if (newStatus === 'resolved') {
                 const ticketUrl = `${window.location.origin}/tickets/${ticket.id}`;
-                // Fire and forget email action
                 triggerTicketResolvedEmail({
                     ticketNumber: ticket.ticketNumber,
                     ticketTitle: ticket.title,
@@ -179,7 +179,6 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     const assignedUser = supportUsers?.find(u => u.id === ticket.assignedTo);
     const assignedNameToDisplay = ticket.assignedUserName || assignedUser?.name || 'Ninguém';
 
-
     if (authLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
     return (
@@ -195,10 +194,12 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         <div className="flex justify-between items-start">
                              <CardTitle className="font-headline text-2xl">{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</CardTitle>
                              <div className="flex gap-2 print:hidden">
-                                <Button variant="outline" size="sm" onClick={() => window.print()}>
-                                    <Printer className="mr-2 h-4 w-4" />
-                                    Imprimir
-                                </Button>
+                                {canEdit && (
+                                    <Button variant="outline" size="sm" onClick={() => window.print()}>
+                                        <Printer className="mr-2 h-4 w-4" />
+                                        Imprimir
+                                    </Button>
+                                )}
                                 <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="whitespace-nowrap">
                                     {statusMap[ticket.status]?.label || ticket.status}
                                 </Badge>
@@ -300,15 +301,6 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                             <strong>Última atualização:</strong>
                             <span className="ml-2">{ticket.updatedAt ? format(ticket.updatedAt.toDate(), "dd/MM/yyyy HH:mm") : ''}</span>
                         </div>
-                         {ticket.deadline && ticket.status !== 'resolved' && (
-                            <div className="space-y-2 pt-2 print:hidden">
-                                <div className="flex items-center font-medium">
-                                    <CalendarClock className="h-4 w-4 mr-2 text-muted-foreground" />
-                                    <span>Prazo de Resolução</span>
-                                </div>
-                                <DeadlineIndicator createdAt={ticket.createdAt} deadline={ticket.deadline} status={ticket.status} />
-                            </div>
-                        )}
                     </CardContent>
                     {canEdit && (
                          <CardFooter className="flex-col items-start gap-4 print:hidden">

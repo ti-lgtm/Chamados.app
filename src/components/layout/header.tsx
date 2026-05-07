@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from "react";
@@ -11,6 +12,7 @@ import {
   User as UserIcon,
   CalendarDays,
   BarChart,
+  Clock,
 } from "lucide-react";
 import {
   Sheet,
@@ -90,6 +92,7 @@ export function AppHeader() {
     { href: "/schedules", label: "Agendamentos", icon: CalendarDays, roles: ['user', 'ti', 'admin'] },
     { href: "/tickets/new", label: "Novo Chamado", icon: PlusCircle, roles: ['user', 'ti', 'admin'] },
     { href: "/statistics", label: "Estatísticas", icon: BarChart, roles: ['ti', 'admin'] },
+    { href: "/admin/scheduled-tickets", label: "Auto Chamados", icon: Clock, roles: ['ti', 'admin'] },
     { href: "/admin/users", label: "Usuários", icon: Users, roles: ['admin'] },
   ];
 

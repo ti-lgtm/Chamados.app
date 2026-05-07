@@ -39,6 +39,18 @@ export interface Ticket {
   rating?: number;
 }
 
+export interface ScheduledTicket {
+  id: string;
+  title: string;
+  description: string;
+  department: string;
+  company: string;
+  priority: 'low' | 'normal' | 'high';
+  dayOfMonth: number;
+  lastRun?: Timestamp;
+  active: boolean;
+}
+
 export interface Comment {
   id: string;
   ticketId: string;

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -5,10 +6,14 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { AppHeader } from '@/components/layout/header';
 import { Loader2 } from 'lucide-react';
+import { useScheduledTicketsRunner } from '@/hooks/useScheduledTicketsRunner';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+
+  // Inicia o executor de chamados automáticos (apenas para TI/Admin)
+  useScheduledTicketsRunner(user);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -33,7 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return null; // or a redirect component
+    return null;
   }
 
   return (
