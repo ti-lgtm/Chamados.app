@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -381,12 +382,12 @@ function StatisticsPageContent() {
                         {attendantStats.length > 0 ? (
                              <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={attendantStats} layout="vertical" margin={{ left: 20, right: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                                    <XAxis type="number" allowDecimals={false} tick={{fontSize: 10}} />
-                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10, fill: '#000' }} />
-                                    <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" opacity={0.2} />
+                                    <XAxis type="number" allowDecimals={false} tick={{fontSize: 10, fill: 'currentColor'}} />
+                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10, fill: 'currentColor' }} />
+                                    <Tooltip cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }} />
                                     <Bar dataKey="tickets" name="Resolvidos" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]}>
-                                        <LabelList dataKey="tickets" position="right" className="fill-black font-bold text-[10px]" />
+                                        <LabelList dataKey="tickets" position="right" className="fill-foreground font-bold text-[10px] print:fill-black" />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -408,12 +409,12 @@ function StatisticsPageContent() {
                          {ratingStats.length > 0 ? (
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={ratingStats} margin={{ top: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#000' }} />
-                                    <YAxis allowDecimals={false} tick={{fontSize: 10}} />
-                                    <Tooltip cursor={{ fill: 'hsl(var(--muted))' }}/>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" opacity={0.2} />
+                                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'currentColor' }} />
+                                    <YAxis allowDecimals={false} tick={{fontSize: 10, fill: 'currentColor'}} />
+                                    <Tooltip cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}/>
                                     <Bar dataKey="count" name="Quantidade" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]}>
-                                        <LabelList dataKey="count" position="top" className="fill-black font-bold text-[10px]" />
+                                        <LabelList dataKey="count" position="top" className="fill-foreground font-bold text-[10px] print:fill-black" />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -435,12 +436,12 @@ function StatisticsPageContent() {
                         {departmentStats.length > 0 ? (
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={departmentStats} layout="vertical" margin={{ left: 20, right: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                                    <XAxis type="number" allowDecimals={false} tick={{fontSize: 10}} />
-                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10, fill: '#000' }} />
-                                    <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" opacity={0.2} />
+                                    <XAxis type="number" allowDecimals={false} tick={{fontSize: 10, fill: 'currentColor'}} />
+                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10, fill: 'currentColor' }} />
+                                    <Tooltip cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }} />
                                     <Bar dataKey="count" name="Chamados" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]}>
-                                        <LabelList dataKey="count" position="right" className="fill-black font-bold text-[10px]" />
+                                        <LabelList dataKey="count" position="right" className="fill-foreground font-bold text-[10px] print:fill-black" />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -462,12 +463,12 @@ function StatisticsPageContent() {
                         {assignedTicketsByAttendantStats.length > 0 ? (
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={assignedTicketsByAttendantStats} layout="vertical" margin={{ left: 20, right: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                                    <XAxis type="number" allowDecimals={false} tick={{fontSize: 10}}/>
-                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10, fill: '#000' }} />
-                                    <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} />
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" opacity={0.2} />
+                                    <XAxis type="number" allowDecimals={false} tick={{fontSize: 10, fill: 'currentColor'}}/>
+                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10, fill: 'currentColor' }} />
+                                    <Tooltip cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }} />
                                     <Bar dataKey="tickets" name="Atribuídos" fill="hsl(var(--chart-3))" radius={[0, 4, 4, 0]}>
-                                        <LabelList dataKey="tickets" position="right" className="fill-black font-bold text-[10px]" />
+                                        <LabelList dataKey="tickets" position="right" className="fill-foreground font-bold text-[10px] print:fill-black" />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
