@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, updateDoc, runTransaction, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, serverTimestamp, runTransaction, Timestamp } from 'firebase/firestore';
 import type { AppUser, ScheduledTicket } from '@/lib/types';
 
 /**
@@ -22,25 +22,25 @@ export function useScheduledTicketsRunner(user: AppUser | null) {
             const currentMonth = today.getMonth();
             const currentYear = today.getFullYear();
 
-            const q = query(
-                collection(firestore, 'scheduled_tickets'),
-                where('active', '==', true),
-                where('dayOfMonth', '==', currentDay)
-            );
+            try {
+                const q = query(
+                    collection(firestore, 'scheduled_tickets'),
+                    where('active', '==', true),
+                    where('dayOfMonth', '==', currentDay)
+                );
 
-            const snapshot = await getDocs(q);
-            
-            for (const docSnap of snapshot.docs) {
-                const data = docSnap.data() as ScheduledTicket;
-                const lastRun = data.lastRun?.toDate();
+                const snapshot = await getDocs(q);
+                
+                for (const docSnap of snapshot.docs) {
+                    const data = { id: docSnap.id, ...docSnap.data() } as ScheduledTicket;
+                    const lastRun = data.lastRun?.toDate();
 
-                // Verifica se já rodou este mês
-                const alreadyRunThisMonth = lastRun && 
-                    lastRun.getMonth() === currentMonth && 
-                    lastRun.getFullYear() === currentYear;
+                    // Verifica se já rodou este mês/ano
+                    const alreadyRunThisMonth = lastRun && 
+                        lastRun.getMonth() === currentMonth && 
+                        lastRun.getFullYear() === currentYear;
 
-                if (!alreadyRunThisMonth) {
-                    try {
+                    if (!alreadyRunThisMonth) {
                         await runTransaction(firestore, async (transaction) => {
                             // 1. Pega o contador de chamados
                             const counterRef = doc(firestore, 'counters', 'tickets');
@@ -50,9 +50,9 @@ export function useScheduledTicketsRunner(user: AppUser | null) {
                             // 2. Prepara o novo chamado
                             const newTicketRef = doc(collection(firestore, 'tickets'));
                             
-                            // Deadline de 4 dias úteis (simples)
-                            const deadline = new Date();
-                            deadline.setDate(deadline.getDate() + 4);
+                            // Deadline de 4 dias úteis
+                            const deadlineDate = new Date();
+                            deadlineDate.setDate(deadlineDate.getDate() + 4);
 
                             const ticketPayload = {
                                 ticketNumber: nextNumber,
@@ -67,23 +67,26 @@ export function useScheduledTicketsRunner(user: AppUser | null) {
                                 userEmail: 'suporte@sistema.com',
                                 createdAt: serverTimestamp(),
                                 updatedAt: serverTimestamp(),
-                                deadline: Timestamp.fromDate(deadline),
+                                deadline: Timestamp.fromDate(deadlineDate),
                                 assignedTo: null
                             };
 
-                            // 3. Executa as atualizações
+                            // 3. Executa as atualizações de forma atômica
                             transaction.update(counterRef, { lastNumber: nextNumber });
                             transaction.set(newTicketRef, ticketPayload);
                             transaction.update(docSnap.ref, { lastRun: serverTimestamp() });
                         });
-                        console.log(`Auto-chamado criado: ${data.title}`);
-                    } catch (err) {
-                        console.error("Erro ao processar auto-chamado:", err);
+                        console.log(`Auto-chamado criado com sucesso: ${data.title}`);
                     }
                 }
+            } catch (err) {
+                // Silencioso no log para não poluir, mas útil para debug se necessário
+                console.error("Erro no ScheduledTicketsRunner:", err);
             }
         };
 
+        // Verifica imediatamente ao carregar e quando o usuário loga
         checkScheduledTickets();
+
     }, [firestore, user]);
 }
