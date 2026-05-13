@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -54,17 +54,6 @@ const departmentOptions = [
     "Qualidade",
 ] as const;
 
-const formSchema = z.object({
-  title: z.string().min(5, { message: 'O título deve ter pelo menos 5 caracteres.' }),
-  company: z.string().min(2, { message: 'O nome da empresa é obrigatório.' }),
-  department: z.enum(departmentOptions, { required_error: 'O setor é obrigatório.' }),
-  contactNumber: z.string().min(10, { message: 'O número de contato é obrigatório e deve incluir o DDD.' }),
-  ccEmail: z.string().email({ message: 'Por favor, insira um e-mail válido.' }).optional().or(z.literal('')),
-  description: z.string().min(10, { message: 'A descrição deve ter pelo menos 10 caracteres.' }),
-  priority: z.enum(['low', 'normal', 'high'], { required_error: 'A prioridade é obrigatória.' }),
-  attachments: z.custom<FileList>().optional(),
-});
-
 function addBusinessDays(startDate: Date, days: number): Date {
   let date = new Date(startDate);
   let added = 0;
@@ -84,6 +73,29 @@ export function NewTicketForm() {
   const { toast } = useToast();
   const db = useFirestore();
   const [loading, setLoading] = useState(false);
+
+  // Define the schema inside the component to have access to user email for validation
+  const formSchema = useMemo(() => {
+    return z.object({
+      title: z.string().min(5, { message: 'O título deve ter pelo menos 5 caracteres.' }),
+      company: z.string().min(2, { message: 'O nome da empresa é obrigatório.' }),
+      department: z.enum(departmentOptions, { required_error: 'O setor é obrigatório.' }),
+      contactNumber: z.string().min(10, { message: 'O número de contato é obrigatório e deve incluir o DDD.' }),
+      ccEmail: z.string().email({ message: 'Por favor, insira um e-mail válido.' }).optional().or(z.literal('')),
+      description: z.string().min(10, { message: 'A descrição deve ter pelo menos 10 caracteres.' }),
+      priority: z.enum(['low', 'normal', 'high'], { required_error: 'A prioridade é obrigatória.' }),
+      attachments: z.custom<FileList>().optional(),
+    }).refine((data) => {
+      // Validation: ccEmail cannot be the same as the user's email
+      if (data.ccEmail && user?.email && data.ccEmail.toLowerCase().trim() === user.email.toLowerCase().trim()) {
+        return false;
+      }
+      return true;
+    }, {
+      message: "O e-mail do gestor não pode ser o seu próprio e-mail.",
+      path: ["ccEmail"],
+    });
+  }, [user?.email]);
 
   const supportUsersQuery = useMemoFirebase(() => {
     if (!db) return null;
