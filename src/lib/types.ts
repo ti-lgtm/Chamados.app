@@ -29,6 +29,7 @@ export interface Ticket {
   userName: string;
   userEmail: string;
   user?: AppUser;
+  requestedFor?: string;
   assignedTo: string | null;
   assignedUserName?: string | null;
   assignedUserEmail?: string | null;

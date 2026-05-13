@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, Calendar, ShieldAlert } from 'lucide-react';
 
 const departments = [
-    "Administrativo", "Arquivo", "Assistência Técnica", "Atendimento ao Cliente", 
+    "Administrativo", "Arquitetura", "Arquivo", "Assistência Técnica", "Atendimento ao Cliente", 
     "Auditoria", "Comercial", "Contabilidade", "Diretoria", "Financeiro", 
     "Gestão Pessoal", "Jurídico", "Obra", "Planejamento", "Projetos", 
     "Suprimentos", "Marketing", "Qualidade"

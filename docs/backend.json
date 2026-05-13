@@ -123,6 +123,10 @@
           "type": "string",
           "description": "Denormalized email of the user who created the ticket."
         },
+        "requestedFor": {
+          "type": "string",
+          "description": "Name of the person who requested the ticket, if opened on behalf of someone else."
+        },
         "assignedTo": {
           "type": "string",
           "description": "Reference to User. The user assigned to the ticket, if any. (Relationship: User 1:N Ticket)"

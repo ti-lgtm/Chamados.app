@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -13,6 +14,8 @@ import { uploadAttachments } from '@/app/actions/upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -36,6 +39,7 @@ import type { AppUser } from '@/lib/types';
 
 const departmentOptions = [
     "Administrativo",
+    "Arquitetura",
     "Arquivo",
     "Assistência Técnica",
     "Atendimento ao Cliente",
@@ -85,6 +89,8 @@ export function NewTicketForm() {
       description: z.string().min(10, { message: 'A descrição deve ter pelo menos 10 caracteres.' }),
       priority: z.enum(['low', 'normal', 'high'], { required_error: 'A prioridade é obrigatória.' }),
       attachments: z.custom<FileList>().optional(),
+      isForMe: z.enum(['yes', 'no'], { required_error: 'Por favor, informe se o chamado é para você.' }),
+      requestedFor: z.string().optional(),
     }).refine((data) => {
       // Validation: ccEmail cannot be the same as the user's email
       if (data.ccEmail && user?.email && data.ccEmail.toLowerCase().trim() === user.email.toLowerCase().trim()) {
@@ -94,6 +100,14 @@ export function NewTicketForm() {
     }, {
       message: "O e-mail do gestor não pode ser o seu próprio e-mail.",
       path: ["ccEmail"],
+    }).refine((data) => {
+      if (data.isForMe === 'no' && !data.requestedFor) {
+        return false;
+      }
+      return true;
+    }, {
+      message: "Por favor, informe para quem é o chamado.",
+      path: ["requestedFor"],
     });
   }, [user?.email]);
 
@@ -113,9 +127,12 @@ export function NewTicketForm() {
       ccEmail: '',
       description: '',
       priority: 'normal',
+      isForMe: 'yes',
+      requestedFor: '',
     },
   });
 
+  const isForMeValue = form.watch('isForMe');
   const fileRef = form.register('attachments');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -167,6 +184,7 @@ export function NewTicketForm() {
           userId: user.uid,
           userName: user.name,
           userEmail: user.email,
+          requestedFor: values.isForMe === 'no' ? values.requestedFor : null,
           assignedTo: null,
           assignedUserName: null,
           assignedUserEmail: null,
@@ -251,6 +269,52 @@ export function NewTicketForm() {
             </FormItem>
           )}
         />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+            <FormField
+              control={form.control}
+              name="isForMe"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>O chamado é para você?</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="yes" id="isForMe-yes" />
+                        <Label htmlFor="isForMe-yes">Sim</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="no" id="isForMe-no" />
+                        <Label htmlFor="isForMe-no">Não</Label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {isForMeValue === 'no' && (
+                <FormField
+                    control={form.control}
+                    name="requestedFor"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Solicitar para:</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Digite o nome de quem solicitou" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <FormField
             control={form.control}

@@ -118,7 +118,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
     {
       id: 'resolvido_encerrando',
       label: 'Resolvido e encerrando',
-      text: 'O problema reportado foi resolvido. Estamos marcando este chamado como "Resolvido". Caso o problema persista, por favor, nos informe respondendo a este chamado.',
+      text: 'O problema reportado foi resolvido. Estamos marcando este chamado como "Resolvido". Caso o problema persista, por favor, nos informe respondendo a este chamado.\n\nMotivo:',
     },
     {
       id: 'fornecedor_cadastrado',
