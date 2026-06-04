@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from "react";
@@ -19,7 +18,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuPortal,
-} from "@/Dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import {
     AlertDialog,
     AlertDialogAction,
