@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { AppUser, UserRole } from "@/lib/types";
 import { doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
@@ -40,7 +40,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Loader2, MailX, Mail, UserPen } from "lucide-react";
+import { MoreHorizontal, Loader2, MailX, Mail, UserPen, ShieldCheck, Trash2, KeyRound } from "lucide-react";
 
 interface UserActionsProps {
   user: WithId<AppUser>;
@@ -55,22 +55,32 @@ export function UserActions({ user }: UserActionsProps) {
     const [isEditNameDialogOpen, setIsEditNameDialogOpen] = useState(false);
     const [newName, setNewName] = useState(user.name);
 
-    const handleUpdateName = () => {
-        if (!newName.trim() || newName.trim() === user.name) {
+    // Sincroniza o estado do nome quando o diálogo abre ou o usuário muda
+    useEffect(() => {
+        if (isEditNameDialogOpen) {
+            setNewName(user.name);
+        }
+    }, [isEditNameDialogOpen, user.name]);
+
+    const handleUpdateName = async () => {
+        const trimmedName = newName.trim();
+        if (!trimmedName || trimmedName === user.name) {
             setIsEditNameDialogOpen(false);
             return;
         }
 
+        if (!firestore) return;
+
         setIsSubmitting(true);
         const userRef = doc(firestore, "users", user.id);
-        const updateData = { name: newName.trim() };
+        const updateData = { name: trimmedName };
 
         updateDoc(userRef, updateData)
             .then(() => {
                 toast({ title: "Nome atualizado com sucesso!" });
                 setIsEditNameDialogOpen(false);
             })
-            .catch(() => {
+            .catch((err) => {
                 toast({ title: "Erro ao atualizar nome", variant: "destructive" });
                  const permissionError = new FirestorePermissionError({
                     path: userRef.path,
@@ -83,6 +93,7 @@ export function UserActions({ user }: UserActionsProps) {
     };
 
     const handleUpdateRole = (role: UserRole) => {
+        if (!firestore) return;
         setIsSubmitting(true);
         const userRef = doc(firestore, "users", user.id);
         const updateData = { role };
@@ -102,6 +113,7 @@ export function UserActions({ user }: UserActionsProps) {
     };
 
     const handleUpdateStatus = (status: 'active' | 'suspended') => {
+        if (!firestore) return;
         setIsSubmitting(true);
         const userRef = doc(firestore, "users", user.id);
         const updateData = { status };
@@ -121,6 +133,7 @@ export function UserActions({ user }: UserActionsProps) {
     };
 
     const handlePasswordReset = () => {
+        if (!auth) return;
         setIsSubmitting(true);
         sendPasswordResetEmail(auth, user.email)
             .then(() => toast({ title: "E-mail de redefinição de senha enviado!" }))
@@ -129,6 +142,7 @@ export function UserActions({ user }: UserActionsProps) {
     }
     
     const handleToggleEmails = () => {
+        if (!firestore) return;
         setIsSubmitting(true);
         const userRef = doc(firestore, "users", user.id);
         const newStatus = !user.receivesEmails;
@@ -149,6 +163,7 @@ export function UserActions({ user }: UserActionsProps) {
     };
 
     const handleDeleteUser = () => {
+        if (!firestore) return;
         setIsSubmitting(true);
         const userRef = doc(firestore, "users", user.id);
 
@@ -184,7 +199,9 @@ export function UserActions({ user }: UserActionsProps) {
                     <UserPen className="mr-2 h-4 w-4" /> Editar Nome
                 </DropdownMenuItem>
                 <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>Alterar Função</DropdownMenuSubTrigger>
+                    <DropdownMenuSubTrigger>
+                        <ShieldCheck className="mr-2 h-4 w-4" /> Alterar Função
+                    </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                         <DropdownMenuSubContent>
                             <DropdownMenuItem onClick={() => handleUpdateRole("user")}>Usuário</DropdownMenuItem>
@@ -198,7 +215,9 @@ export function UserActions({ user }: UserActionsProps) {
                 ) : (
                     <DropdownMenuItem onClick={() => handleUpdateStatus('active')}>Reativar Usuário</DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={handlePasswordReset}>Enviar Redefinição de Senha</DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePasswordReset}>
+                    <KeyRound className="mr-2 h-4 w-4" /> Enviar Redefinição de Senha
+                </DropdownMenuItem>
                  {(user.role === 'ti' || user.role === 'admin') && (
                     <DropdownMenuItem onClick={handleToggleEmails}>
                         {user.receivesEmails !== false ? (
@@ -209,14 +228,17 @@ export function UserActions({ user }: UserActionsProps) {
                     </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={() => setIsDeleteDialogOpen(true)}>
-                    Excluir Usuário
+                <DropdownMenuItem 
+                    className="text-red-600 focus:text-red-600 focus:bg-red-50" 
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                    <Trash2 className="mr-2 h-4 w-4" /> Excluir Usuário
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
 
         <Dialog open={isEditNameDialogOpen} onOpenChange={setIsEditNameDialogOpen}>
-            <DialogContent>
+            <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
                 <DialogHeader>
                     <DialogTitle>Editar Nome do Usuário</DialogTitle>
                     <DialogDescription>
@@ -231,11 +253,14 @@ export function UserActions({ user }: UserActionsProps) {
                             value={newName} 
                             onChange={(e) => setNewName(e.target.value)} 
                             placeholder="Nome do usuário"
+                            disabled={isSubmitting}
                         />
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsEditNameDialogOpen(false)}>Cancelar</Button>
+                    <Button variant="outline" onClick={() => setIsEditNameDialogOpen(false)} disabled={isSubmitting}>
+                        Cancelar
+                    </Button>
                     <Button onClick={handleUpdateName} disabled={isSubmitting || !newName.trim()}>
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Salvar Alteração
@@ -247,18 +272,22 @@ export function UserActions({ user }: UserActionsProps) {
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Essa ação não pode ser desfeita. Isso excluirá permanentemente os dados do usuário
-                    do Firestore, mas não removerá a conta do Firebase Auth.
-                </AlertDialogDescription>
+                    <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Essa ação não pode ser desfeita. Isso excluirá permanentemente os dados do usuário
+                        do Firestore, mas não removerá a conta do Firebase Auth.
+                    </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sim, excluir usuário
-                </AlertDialogAction>
+                    <AlertDialogCancel disabled={isSubmitting}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={handleDeleteUser} 
+                        className="bg-destructive hover:bg-destructive/90"
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Sim, excluir usuário
+                    </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
