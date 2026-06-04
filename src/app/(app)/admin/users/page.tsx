@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
@@ -8,12 +9,14 @@ import type { AppUser } from '@/lib/types';
 import { UsersTable } from '@/components/admin/users-table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 
 export default function AdminUsersPage() {
     const { user: currentUser, loading: authLoading } = useAuth();
     const firestore = useFirestore();
+    const [searchTerm, setSearchTerm] = useState('');
 
     const usersQuery = useMemoFirebase(() => {
         if (firestore && currentUser?.role === 'admin') {
@@ -23,6 +26,17 @@ export default function AdminUsersPage() {
     }, [firestore, currentUser]);
 
     const { data: users, isLoading: usersLoading, error: usersError } = useCollection<AppUser>(usersQuery);
+
+    const filteredUsers = useMemo(() => {
+        if (!users) return [];
+        const term = searchTerm.toLowerCase().trim();
+        if (!term) return users;
+
+        return users.filter(u => 
+            u.name.toLowerCase().includes(term) || 
+            u.email.toLowerCase().includes(term)
+        );
+    }, [users, searchTerm]);
 
     const isLoading = authLoading || (currentUser?.role === 'admin' && usersLoading);
 
@@ -70,19 +84,30 @@ export default function AdminUsersPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-headline font-bold">Gerenciamento de Usuários</h1>
-                <p className="text-muted-foreground">Administre os usuários do sistema.</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-headline font-bold">Gerenciamento de Usuários</h1>
+                    <p className="text-muted-foreground">Administre os usuários do sistema.</p>
+                </div>
+                <div className="relative w-full sm:w-72">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Pesquisar por nome ou e-mail..." 
+                        className="pl-9"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
             </div>
             <Card>
                 <CardHeader>
                     <CardTitle>Todos os Usuários</CardTitle>
                     <CardDescription>
-                        Total de {users?.length || 0} usuários encontrados.
+                        Total de {filteredUsers.length} usuários {searchTerm ? 'encontrados' : 'cadastrados'}.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <UsersTable users={users || []} />
+                    <UsersTable users={filteredUsers} />
                 </CardContent>
             </Card>
         </div>

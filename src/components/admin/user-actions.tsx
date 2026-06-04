@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -18,7 +19,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuPortal,
-} from "@/components/ui/dropdown-menu";
+} from "@/Dropdown-menu";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -29,8 +30,18 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Loader2, MailX, Mail } from "lucide-react";
+import { MoreHorizontal, Loader2, MailX, Mail, UserPen } from "lucide-react";
 
 interface UserActionsProps {
   user: WithId<AppUser>;
@@ -42,6 +53,35 @@ export function UserActions({ user }: UserActionsProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isEditNameDialogOpen, setIsEditNameDialogOpen] = useState(false);
+    const [newName, setNewName] = useState(user.name);
+
+    const handleUpdateName = () => {
+        if (!newName.trim() || newName.trim() === user.name) {
+            setIsEditNameDialogOpen(false);
+            return;
+        }
+
+        setIsSubmitting(true);
+        const userRef = doc(firestore, "users", user.id);
+        const updateData = { name: newName.trim() };
+
+        updateDoc(userRef, updateData)
+            .then(() => {
+                toast({ title: "Nome atualizado com sucesso!" });
+                setIsEditNameDialogOpen(false);
+            })
+            .catch(() => {
+                toast({ title: "Erro ao atualizar nome", variant: "destructive" });
+                 const permissionError = new FirestorePermissionError({
+                    path: userRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            })
+            .finally(() => setIsSubmitting(false));
+    };
 
     const handleUpdateRole = (role: UserRole) => {
         setIsSubmitting(true);
@@ -141,6 +181,9 @@ export function UserActions({ user }: UserActionsProps) {
             <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Ações</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setIsEditNameDialogOpen(true)}>
+                    <UserPen className="mr-2 h-4 w-4" /> Editar Nome
+                </DropdownMenuItem>
                 <DropdownMenuSub>
                     <DropdownMenuSubTrigger>Alterar Função</DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
@@ -172,6 +215,35 @@ export function UserActions({ user }: UserActionsProps) {
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
+
+        <Dialog open={isEditNameDialogOpen} onOpenChange={setIsEditNameDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Editar Nome do Usuário</DialogTitle>
+                    <DialogDescription>
+                        Altere o nome exibido para este usuário no sistema.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Nome Completo</Label>
+                        <Input 
+                            id="name" 
+                            value={newName} 
+                            onChange={(e) => setNewName(e.target.value)} 
+                            placeholder="Nome do usuário"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsEditNameDialogOpen(false)}>Cancelar</Button>
+                    <Button onClick={handleUpdateName} disabled={isSubmitting || !newName.trim()}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Salvar Alteração
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogContent>
