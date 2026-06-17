@@ -13,7 +13,7 @@ import {
   doc,
   updateDoc,
 } from 'firebase/firestore';
-import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, WithId } from '@/firebase';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import type { AppUser, Comment as CommentType, Ticket } from '@/lib/types';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -24,13 +24,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Loader2, Send, Paperclip, X } from 'lucide-react';
+import { Loader2, Send, Paperclip, X, User, UserPen, MessageSquare } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { triggerNewCommentEmail } from '@/app/actions/email';
 import { uploadAttachments } from '@/app/actions/upload';
 import { Input } from '../ui/input';
+import { cn } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -42,7 +43,7 @@ import {
 interface CommentsProps {
   ticket: Ticket;
   currentUser: AppUser | null;
-  supportUsers?: WithId<AppUser>[] | null;
+  supportUsers?: any[] | null;
 }
 
 const commentSchema = z
@@ -238,10 +239,9 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
         attachmentUrls = await uploadAttachments(formData);
       }
     } catch (uploadError: any) {
-      console.error('Upload error:', uploadError);
       toast({
         title: 'Erro ao fazer upload dos anexos',
-        description: uploadError.message || "Ocorreu um erro inesperado. Verifique o console para mais detalhes.",
+        description: uploadError.message || "Ocorreu um erro inesperado.",
         variant: 'destructive',
       });
       setIsSubmitting(false);
@@ -269,88 +269,38 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
       .then(() => {
         form.reset({ message: '', attachments: undefined });
 
-        // Update ticket status logic
         if (ticket.status !== 'resolved') {
           const ticketRef = doc(firestore, 'tickets', ticketId);
-          
           let newStatus = ticket.status;
-          
           if (currentUser.uid === ticket.userId) {
-            // User is commenting
-            // Only move to awaiting_support if it was already assigned or in a flow.
-            // If it's still 'open', it stays 'open' to avoid jumping to "in progress" filters.
             if (ticket.status !== 'open') {
               newStatus = 'awaiting_support';
             }
           } else {
-            // Support is commenting
             newStatus = 'awaiting_user';
           }
 
           if (newStatus !== ticket.status) {
-            const updateData = {
-              status: newStatus,
-              updatedAt: serverTimestamp(),
-            };
-
-            updateDoc(ticketRef, updateData).catch((err) => {
-              const permissionError = new FirestorePermissionError({
-                path: ticketRef.path,
-                operation: 'update',
-                requestResourceData: updateData,
-              });
-              errorEmitter.emit('permission-error', permissionError);
-              toast({
-                title: 'Erro ao atualizar status do chamado',
-                variant: 'destructive',
-              });
-            });
+            updateDoc(ticketRef, { status: newStatus, updatedAt: serverTimestamp() });
           }
         }
 
-        let recipientEmail: string | undefined | null = null;
-        let recipientName: string | undefined | null = null;
-        let shouldSendEmail = true;
+        let recipientEmail = currentUser.uid === ticket.userId ? ticket.assignedUserEmail : ticket.userEmail;
+        let recipientName = currentUser.uid === ticket.userId ? ticket.assignedUserName : ticket.userName;
 
-        if (currentUser.uid === ticket.userId) { // User is commenting, notify assigned support
-          recipientEmail = ticket.assignedUserEmail;
-          recipientName = ticket.assignedUserName;
-
-          if (ticket.assignedTo && supportUsers) {
-            const assignedSupportUser = supportUsers.find(su => su.id === ticket.assignedTo);
-            if (assignedSupportUser && assignedSupportUser.receivesEmails === false) {
-              shouldSendEmail = false;
-            }
-          }
-        } else { // Support is commenting, notify user
-          recipientEmail = ticket.userEmail;
-          recipientName = ticket.userName;
-        }
-
-        if (shouldSendEmail && recipientEmail && recipientName) {
-          const emailMessage =
-            values.message ||
-            (attachmentUrls.length > 0
-              ? 'Um novo anexo foi adicionado.'
-              : 'Nova atividade no chamado.');
+        if (recipientEmail && recipientName) {
           triggerNewCommentEmail({
             recipientEmail,
             recipientName,
             ticketNumber: ticket.ticketNumber,
             ticketTitle: ticket.title,
             commenterName: currentUser.name,
-            commentMessage: emailMessage,
+            commentMessage: values.message || (attachmentUrls.length > 0 ? 'Anexo enviado.' : 'Nova atividade.'),
           });
         }
       })
       .catch((error) => {
         toast({ title: 'Erro ao enviar comentário', variant: 'destructive' });
-        const contextualError = new FirestorePermissionError({
-          operation: 'create',
-          path: `tickets/${ticketId}/comments`,
-          requestResourceData: commentData,
-        });
-        errorEmitter.emit('permission-error', contextualError);
       })
       .finally(() => {
         setIsSubmitting(false);
@@ -358,222 +308,189 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-headline">Histórico de Comentários</CardTitle>
+    <Card className="border-none shadow-none bg-transparent">
+      <CardHeader className="px-0">
+        <CardTitle className="font-headline text-xl flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            Histórico de Conversas
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4 max-h-96 overflow-y-auto pr-4">
+      <CardContent className="px-0 space-y-8">
+        <div className="relative space-y-6 before:absolute before:inset-0 before:ml-[135px] before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-border/20 before:via-border before:to-border/20">
           {loading &&
             Array.from({ length: 2 }).map((_, i) => (
-              <div className="flex items-start space-x-4" key={i}>
+              <div className="flex items-center space-x-4" key={i}>
+                <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="space-y-2 flex-1">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
+                <Skeleton className="h-20 flex-1" />
               </div>
             ))}
           {!loading && comments.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Nenhum comentário ainda.
+            <p className="text-sm text-muted-foreground text-center py-10">
+              Nenhuma interação registrada ainda.
             </p>
           )}
           {!loading &&
-            comments.map((comment) => (
-              <div key={comment.id} className="flex items-start space-x-4">
-                <Avatar>
-                  <AvatarImage src={comment.userAvatarUrl} />
-                  <AvatarFallback>
-                    {comment.userName ? getInitials(comment.userName) : '?'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold">{comment.userName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {comment.createdAt
-                        ? formatDistanceToNow(comment.createdAt.toDate(), {
-                            addSuffix: true,
-                            locale: ptBR,
-                          })
-                        : ''}
-                    </p>
-                  </div>
-                  {comment.message && (
-                    <p className="text-sm text-foreground whitespace-pre-wrap">
-                      {comment.message}
-                    </p>
-                  )}
-                   {comment.attachments && comment.attachments.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-4">
-                      {comment.attachments.map((url, index) => {
-                        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
-                        if (isImage) {
-                          return (
-                            <a
-                              key={index}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="relative block w-32 h-24 rounded-md overflow-hidden border hover:opacity-80 transition-opacity"
-                            >
-                              <Image
-                                src={url}
-                                alt={`Anexo ${index + 1}`}
-                                layout="fill"
-                                className="object-cover"
-                              />
-                            </a>
-                          );
-                        }
-                        return null;
-                      })}
-                      {comment.attachments.map((url, index) => {
-                        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
-                        if (!isImage) {
-                          const fileName = url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`;
-                          const decodedFileName = decodeURIComponent(fileName);
-                          return (
-                            <a
-                              key={index}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex w-full items-center gap-2 text-sm text-muted-foreground hover:text-primary hover:underline bg-muted/50 p-2 rounded-md"
-                            >
-                              <Paperclip className="h-4 w-4 flex-shrink-0" />
-                              <span className="truncate">
-                                {decodedFileName.substring(
-                                  decodedFileName.indexOf('_') + 1
-                                )}
-                              </span>
-                            </a>
-                          );
-                        }
-                        return null;
-                      })}
+            comments.map((comment) => {
+                const isSupport = comment.userId !== ticket.userId;
+                return (
+                    <div key={comment.id} className="relative flex items-center group">
+                        <div className="flex items-center w-full">
+                            {/* Timestamp Column */}
+                            <div className="w-[120px] text-right pr-4 shrink-0">
+                                <p className="text-[10px] font-mono font-bold text-muted-foreground uppercase leading-tight">
+                                    {comment.createdAt ? format(comment.createdAt.toDate(), "dd/MM/yyyy") : '--/--/----'}
+                                </p>
+                                <p className="text-[10px] font-mono text-muted-foreground">
+                                    {comment.createdAt ? format(comment.createdAt.toDate(), "HH:mm") : '--:--'}
+                                </p>
+                            </div>
+
+                            {/* Timeline Node */}
+                            <div className={cn(
+                                "flex items-center justify-center w-8 h-8 rounded-full border-2 z-10 shrink-0 transition-colors shadow-sm",
+                                isSupport ? "bg-primary border-primary text-primary-foreground" : "bg-background border-border text-muted-foreground"
+                            )}>
+                                {isSupport ? <UserPen className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                            </div>
+
+                            {/* Message Bubble */}
+                            <div className="flex-1 ml-4 relative">
+                                <div className={cn(
+                                    "p-4 rounded-lg border shadow-sm text-sm relative transition-all hover:shadow-md",
+                                    isSupport 
+                                        ? "bg-accent/5 border-primary/20 dark:bg-primary/5" 
+                                        : "bg-card border-border"
+                                )}>
+                                    {/* Bubble Arrow */}
+                                    <div className={cn(
+                                        "absolute top-1/2 -left-2 -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[8px]",
+                                        isSupport ? "border-r-primary/20" : "border-r-border"
+                                    )} />
+
+                                    <div className="mb-2 flex items-center justify-between gap-2">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            <span className={cn(
+                                                "font-bold uppercase text-[10px] tracking-wider",
+                                                isSupport ? "text-primary" : "text-muted-foreground"
+                                            )}>
+                                                {isSupport ? 'Atendente' : 'Solicitante'}
+                                            </span>
+                                            <span className="font-bold text-[11px] truncate max-w-[150px] sm:max-w-none">
+                                                {comment.userName.toUpperCase()}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground italic">
+                                                {isSupport ? 'registrou um apontamento.' : 'enviou uma mensagem.'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {comment.message && (
+                                        <div className="text-sm leading-relaxed whitespace-pre-wrap font-medium">
+                                            {comment.message}
+                                        </div>
+                                    )}
+
+                                    {comment.attachments && comment.attachments.length > 0 && (
+                                        <div className="mt-4 flex flex-wrap gap-3">
+                                            {comment.attachments.map((url, idx) => {
+                                                const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+                                                return isImage ? (
+                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="relative w-24 h-24 rounded-md overflow-hidden border hover:opacity-80 transition-opacity">
+                                                        <Image src={url} alt="Anexo" layout="fill" className="object-cover" />
+                                                    </a>
+                                                ) : (
+                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] bg-muted/50 p-2 rounded-md hover:bg-muted transition-colors">
+                                                        <Paperclip className="h-3 w-3" />
+                                                        <span className="truncate max-w-[100px]">{decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'Anexo')}</span>
+                                                    </a>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            ))}
+                );
+            })}
         </div>
 
-        {currentUser && (isSupportStaff || !isResolved) ? (
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="flex items-start space-x-4"
-            >
-              <Avatar>
-                <AvatarImage src={currentUser.avatarUrl} />
-                <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1 space-y-2">
-                <FormField
-                  control={form.control}
-                  name="message"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Adicionar um comentário ou colar uma imagem..."
-                          {...field}
-                          rows={3}
-                          onPaste={handlePaste}
+        {currentUser && (isSupportStaff || !isResolved) && (
+          <div className="pt-6 border-t border-dashed">
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="flex gap-4">
+                    <Avatar className="h-10 w-10 shrink-0 border">
+                        <AvatarImage src={currentUser.avatarUrl} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold">{getInitials(currentUser.name)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 space-y-4">
+                        <FormField
+                        control={form.control}
+                        name="message"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormControl>
+                                <Textarea
+                                placeholder="Descreva aqui o apontamento ou cole uma imagem..."
+                                {...field}
+                                rows={4}
+                                onPaste={handlePaste}
+                                className="resize-none focus-visible:ring-primary shadow-inner"
+                                />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                {isSupportStaff && (
-                  <Select onValueChange={handleCannedResponse}>
-                    <SelectTrigger className="text-sm text-muted-foreground h-9 w-full sm:w-auto">
-                      <SelectValue placeholder="Inserir resposta rápida..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cannedResponses.map((res) => (
-                        <SelectItem
-                          key={res.id}
-                          value={res.id}
-                          className="text-sm"
-                        >
-                          {res.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                <FormField
-                  control={form.control}
-                  name="attachments"
-                  render={() => (
-                    <FormItem>
-                      <FormLabel className="sr-only">Anexos</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="file"
-                          multiple
-                          {...fileRef}
-                          className="text-sm"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                                {isSupportStaff && (
+                                    <Select onValueChange={handleCannedResponse}>
+                                        <SelectTrigger className="h-9 text-xs w-full sm:w-[200px]">
+                                            <SelectValue placeholder="Respostas rápidas" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {cannedResponses.map((res) => (
+                                                <SelectItem key={res.id} value={res.id} className="text-xs">{res.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                                <div className="relative w-full sm:w-auto">
+                                    <Input type="file" multiple {...fileRef} className="h-9 text-xs opacity-0 absolute inset-0 cursor-pointer z-20" />
+                                    <Button type="button" variant="outline" size="sm" className="h-9 text-xs w-full">
+                                        <Paperclip className="h-3 w-3 mr-2" />
+                                        Anexar Arquivos
+                                    </Button>
+                                </div>
+                            </div>
+                            <Button type="submit" size="sm" disabled={isSubmitting} className="w-full sm:w-auto shadow-md">
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                                Registrar Apontamento
+                            </Button>
+                        </div>
 
-                {attachments && attachments.length > 0 && (
-                  <div className="space-y-2 pt-2">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Anexos a serem enviados:
-                    </p>
-                    <ul className="space-y-1">
-                      {Array.from(attachments).map((file, index) => (
-                        <li
-                          key={index}
-                          className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded-md"
-                        >
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <Paperclip className="h-4 w-4 flex-shrink-0" />
-                            <span className="truncate">{file.name}</span>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 flex-shrink-0"
-                            onClick={() => handleRemoveAttachment(index)}
-                          >
-                            <X className="h-4 w-4" />
-                            <span className="sr-only">Remover anexo</span>
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="flex justify-end">
-                  <Button type="submit" size="sm" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="mr-2 h-4 w-4" />
-                    )}
-                    Enviar
-                  </Button>
+                        {attachments && attachments.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                                {Array.from(attachments).map((file, index) => (
+                                    <div key={index} className="flex items-center justify-between text-[11px] bg-muted/50 p-2 rounded border border-dashed">
+                                        <span className="truncate max-w-[150px]">{file.name}</span>
+                                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleRemoveAttachment(index)}>
+                                            <X className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
-              </div>
-            </form>
-          </Form>
-        ) : isResolved ? (
-          <div className="text-center text-sm text-muted-foreground p-4 border-t">
-            Comentários estão desabilitados para chamados resolvidos.
+                </form>
+            </Form>
           </div>
-        ) : null}
+        )}
       </CardContent>
     </Card>
   );
