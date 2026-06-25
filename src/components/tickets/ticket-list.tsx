@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DeadlineIndicator } from "./deadline-indicator";
-import { Star } from "lucide-react";
+import { Star, ShoppingCart, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TicketListProps {
@@ -21,6 +22,9 @@ const statusMap: { [key: string]: { label: string; variant: "default" | "seconda
     awaiting_user: { label: 'Aguardando Usuário', variant: 'outline' },
     awaiting_support: { label: 'Aguardando Suporte', variant: 'outline' },
     resolved: { label: 'Resolvido', variant: 'secondary' },
+    in_quotation: { label: 'Em Cotação', variant: 'outline' },
+    purchased: { label: 'Comprado', variant: 'default' },
+    delivered: { label: 'Entregue', variant: 'secondary' },
 };
 
 const priorityMap: { [key: string]: { label: string; variant: "default" | "secondary" | "destructive" | "outline" } } = {
@@ -35,9 +39,9 @@ export function TicketList({ tickets }: TicketListProps) {
     return (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center h-80">
             <div className="text-3xl">🎟️</div>
-            <h3 className="mt-4 text-lg font-semibold font-headline">Nenhum chamado encontrado</h3>
+            <h3 className="mt-4 text-lg font-semibold font-headline">Nenhum registro encontrado</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-                Parece que não há nenhum chamado para exibir com o filtro selecionado.
+                Parece que não há nenhum chamado ou compra para exibir.
             </p>
         </div>
     );
@@ -50,9 +54,16 @@ export function TicketList({ tickets }: TicketListProps) {
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                 <div className="order-2 sm:order-1">
-                    <CardTitle className="font-headline text-lg hover:text-primary">
-                        <Link href={`/tickets/${ticket.id}`}>{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</Link>
-                    </CardTitle>
+                    <div className="flex items-center gap-2 mb-1">
+                        {ticket.type === 'purchase' ? (
+                            <Badge variant="outline" className="text-[10px] bg-primary/5 text-primary border-primary/20"><ShoppingCart className="h-3 w-3 mr-1"/> COMPRA</Badge>
+                        ) : (
+                            <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground"><Wrench className="h-3 w-3 mr-1"/> SUPORTE</Badge>
+                        )}
+                        <CardTitle className="font-headline text-lg hover:text-primary">
+                            <Link href={`/tickets/${ticket.id}`}>{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</Link>
+                        </CardTitle>
+                    </div>
                     <CardDescription className="flex flex-wrap items-center text-xs">
                         <span>Criado por {ticket.userName} • {ticket.createdAt ? formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}</span>
                         {ticket.assignedUserName && (
@@ -75,12 +86,16 @@ export function TicketList({ tickets }: TicketListProps) {
           </CardHeader>
           <CardContent>
             <p className="line-clamp-2 text-sm text-muted-foreground">{ticket.description}</p>
-             {ticket.deadline && ticket.createdAt && ticket.status !== 'resolved' && (
-                <div className="mt-4 space-y-2">
-                    <p className="text-xs font-semibold text-muted-foreground">PRAZO</p>
-                    <DeadlineIndicator createdAt={ticket.createdAt} deadline={ticket.deadline} status={ticket.status} />
-                </div>
-            )}
+             <div className="mt-4">
+                <DeadlineIndicator 
+                    createdAt={ticket.createdAt} 
+                    deadline={ticket.deadline} 
+                    status={ticket.status}
+                    type={ticket.type}
+                    purchaseDate={ticket.purchaseDate}
+                    expectedDeliveryDate={ticket.expectedDeliveryDate}
+                />
+             </div>
           </CardContent>
           <CardFooter className="flex justify-between items-center">
             <Button asChild variant="secondary" size="sm">

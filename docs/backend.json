@@ -2,388 +2,49 @@
 {
   "entities": {
     "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the application.",
       "properties": {
-        "uid": {
-          "type": "string",
-          "description": "Unique identifier for the user (Firebase UID)."
-        },
-        "name": {
-          "type": "string",
-          "description": "The user's full name."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's email address.",
-          "format": "email"
-        },
-        "role": {
-          "type": "string",
-          "description": "The user's role (user, ti, or admin).",
-          "format": "string"
-        },
-        "status": {
-          "type": "string",
-          "description": "The user's status (active or suspended).",
-          "enum": [
-            "active",
-            "suspended"
-          ]
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp of when the user was created.",
-          "format": "date-time"
-        },
-        "avatarUrl": {
-          "type": "string",
-          "description": "URL of the user's avatar image.",
-          "format": "uri"
-        },
-        "receivesEmails": {
-          "type": "boolean",
-          "description": "Indicates if the user wants to receive email notifications from the portal. Applies mainly to support/admin staff."
-        }
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "avatarUrl": { "type": "string", "format": "uri" },
+        "receivesEmails": { "type": "boolean" }
       },
-      "required": [
-        "uid",
-        "name",
-        "email",
-        "role",
-        "createdAt",
-        "status"
-      ]
+      "required": ["uid", "name", "email", "role", "createdAt", "status"]
     },
     "Ticket": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Ticket",
       "type": "object",
-      "description": "Represents a support ticket.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ticket."
-        },
-        "ticketNumber": {
-          "type": "number",
-          "description": "A sequential number for the ticket."
-        },
-        "title": {
-          "type": "string",
-          "description": "The title of the ticket."
-        },
-        "company": {
-          "type": "string",
-          "description": "The company of the user who created the ticket."
-        },
-        "department": {
-          "type": "string",
-          "description": "The department of the user who created the ticket."
-        },
-        "service": {
-          "type": "string",
-          "description": "The category of technical service requested."
-        },
-        "description": {
-          "type": "string",
-          "description": "A detailed description of the issue."
-        },
-        "contactNumber": {
-          "type": "string",
-          "description": "The contact phone number for the user."
-        },
-        "ccEmail": {
-          "type": "string",
-          "description": "Optional email to receive a copy of notifications.",
-          "format": "email"
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the ticket (open, in_progress, resolved, awaiting_user, awaiting_support).",
-          "enum": [
-            "open",
-            "in_progress",
-            "resolved",
-            "awaiting_user",
-            "awaiting_support"
-          ]
-        },
-        "priority": {
-          "type": "string",
-          "description": "The priority of the ticket (low, normal, high)."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. The user who created the ticket. (Relationship: User 1:N Ticket)"
-        },
-        "userName": {
-          "type": "string",
-          "description": "Denormalized name of the user who created the ticket."
-        },
-        "userEmail": {
-          "type": "string",
-          "description": "Denormalized email of the user who created the ticket."
-        },
-        "requestedFor": {
-          "type": "string",
-          "description": "Name of the person who requested the ticket, if opened on behalf of someone else."
-        },
-        "assignedTo": {
-          "type": "string",
-          "description": "Reference to User. The user assigned to the ticket, if any. (Relationship: User 1:N Ticket)"
-        },
-        "assignedUserName": {
-          "type": "string",
-          "description": "Denormalized name of the user the ticket is assigned to."
-        },
-        "assignedUserEmail": {
-          "type": "string",
-          "description": "Denormalized email of the user the ticket is assigned to."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp of when the ticket was created.",
-          "format": "date-time"
-        },
-        "deadline": {
-          "type": "string",
-          "description": "Timestamp for when the ticket is due.",
-          "format": "date-time"
-        },
-        "rating": {
-          "type": "number",
-          "description": "The rating given to the ticket after resolution (1 to 5)."
-        }
-      },
-      "required": [
-        "id",
-        "ticketNumber",
-        "title",
-        "company",
-        "department",
-        "service",
-        "description",
-        "status",
-        "priority",
-        "userId",
-        "userName",
-        "userEmail",
-        "createdAt"
-      ]
-    },
-    "ScheduledTicket": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Scheduled Ticket",
-      "type": "object",
-      "description": "Defines a recurring ticket template.",
       "properties": {
         "id": { "type": "string" },
+        "ticketNumber": { "type": "number" },
+        "type": { "type": "string", "enum": ["support", "purchase"] },
         "title": { "type": "string" },
-        "description": { "type": "string" },
+        "company": { "type": "string" },
         "department": { "type": "string" },
         "service": { "type": "string" },
-        "company": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "in_progress", "resolved", "awaiting_user", "awaiting_support", "in_quotation", "purchased", "delivered"] },
         "priority": { "type": "string" },
-        "dayOfMonth": { "type": "number" },
-        "lastRun": { "type": "string", "format": "date-time" },
-        "active": { "type": "boolean" }
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expectedDeliveryDate": { "type": "string", "format": "date-time" },
+        "purchaseDate": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "title", "description", "department", "service", "company", "priority", "dayOfMonth", "active"]
-    },
-    "Comment": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Comment",
-      "type": "object",
-      "description": "Represents a comment on a ticket.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the comment."
-        },
-        "ticketId": {
-          "type": "string",
-          "description": "Reference to Ticket. The ticket the comment belongs to. (Relationship: Ticket 1:N Comment)"
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. The user who created the comment. (Relationship: User 1:N Comment)"
-        },
-        "message": {
-          "type": "string",
-          "description": "The content of the comment."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp of when the comment was created.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "ticketId",
-        "userId",
-        "message",
-        "createdAt"
-      ]
-    },
-    "Rating": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Rating",
-      "type": "object",
-      "description": "Represents a rating for a ticket.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the rating."
-        },
-        "ticketId": {
-          "type": "string",
-          "description": "Reference to Ticket. The ticket being rated. (Relationship: Ticket 1:N Rating)"
-        },
-        "rating": {
-          "type": "number",
-          "description": "The rating given (1 to 5).",
-          "format": "number"
-        },
-        "comment": {
-          "type": "string",
-          "description": "Optional comment associated with the rating."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp of when the rating was created.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "ticketId",
-        "rating",
-        "createdAt"
-      ]
-    },
-    "Counter": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Counter",
-      "type": "object",
-      "description": "A generic counter for generating sequential IDs.",
-      "properties": {
-        "lastNumber": {
-          "type": "number",
-          "description": "The last number that was used."
-        }
-      },
-      "required": [
-        "lastNumber"
-      ]
-    },
-    "InternalNote": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Internal Note",
-      "type": "object",
-      "description": "Represents a private note on a ticket, visible only to support staff.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the note."
-        },
-        "ticketId": {
-          "type": "string",
-          "description": "Reference to Ticket."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User who created the note."
-        },
-        "userName": {
-          "type": "string",
-          "description": "Denormalized name of the user."
-        },
-        "userAvatarUrl": {
-          "type": "string",
-          "description": "Denormalized avatar of the user."
-        },
-        "message": {
-          "type": "string",
-          "description": "The content of the note."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of creation."
-        }
-      },
-      "required": [
-        "id",
-        "ticketId",
-        "userId",
-        "userName",
-        "message",
-        "createdAt"
-      ]
+      "required": ["id", "ticketNumber", "type", "title", "status", "userId", "createdAt"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "google"
-    ]
+    "providers": ["password", "google"]
   },
   "firestore": {
     "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores user profiles."
-        }
-      },
-      {
-        "path": "/tickets/{ticketId}",
-        "definition": {
-          "entityName": "Ticket",
-          "schema": {
-            "$ref": "#/backend/entities/Ticket"
-          },
-          "description": "Stores support tickets."
-        }
-      },
-       {
-        "path": "/scheduled_tickets/{id}",
-        "definition": {
-          "entityName": "ScheduledTicket",
-          "schema": {
-            "$ref": "#/backend/entities/ScheduledTicket"
-          },
-          "description": "Stores recurring ticket templates."
-        }
-      },
-      {
-        "path": "/tickets/{ticketId}/comments/{commentId}",
-        "definition": {
-          "entityName": "Comment",
-          "schema": {
-            "$ref": "#/backend/entities/Comment"
-          },
-          "description": "Stores comments associated with a ticket."
-        }
-      },
-      {
-        "path": "/counters/{counterId}",
-        "definition": {
-          "entityName": "Counter",
-          "schema": {
-            "$ref": "#/backend/entities/Counter"
-          },
-          "description": "Stores global counters."
-        }
-      }
+      { "path": "/users/{userId}", "definition": { "entityName": "User", "description": "Stores user profiles." } },
+      { "path": "/tickets/{ticketId}", "definition": { "entityName": "Ticket", "description": "Stores support tickets and purchases." } }
     ]
   }
 }

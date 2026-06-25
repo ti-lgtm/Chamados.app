@@ -2,6 +2,7 @@
 import type { Timestamp } from 'firebase/firestore';
 
 export type UserRole = 'user' | 'ti' | 'admin';
+export type TicketType = 'support' | 'purchase';
 
 export interface AppUser {
   uid: string;
@@ -17,6 +18,7 @@ export interface AppUser {
 export interface Ticket {
   id: string;
   ticketNumber: number;
+  type: TicketType;
   title: string;
   company: string;
   department: string;
@@ -24,7 +26,7 @@ export interface Ticket {
   description: string;
   contactNumber?: string;
   ccEmail?: string;
-  status: 'open' | 'in_progress' | 'resolved' | 'awaiting_user' | 'awaiting_support';
+  status: 'open' | 'in_progress' | 'resolved' | 'awaiting_user' | 'awaiting_support' | 'in_quotation' | 'purchased' | 'delivered';
   priority: 'low' | 'normal' | 'high';
   userId: string;
   userName: string;
@@ -36,6 +38,8 @@ export interface Ticket {
   assignedUserEmail?: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  purchaseDate?: Timestamp;
+  expectedDeliveryDate?: Timestamp;
   attachments?: string[];
   deadline?: Timestamp;
   rating?: number;

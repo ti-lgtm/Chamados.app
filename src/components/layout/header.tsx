@@ -13,6 +13,7 @@ import {
   CalendarDays,
   BarChart,
   Clock,
+  ShoppingCart,
 } from "lucide-react";
 import {
   Sheet,
@@ -42,7 +43,7 @@ const NavLink = ({ href, children, isDashboard = false }: { href: string; childr
     const pathname = usePathname();
     let isActive = false;
     if (isDashboard) {
-        isActive = pathname === '/dashboard' || (pathname.startsWith('/tickets/') && !pathname.startsWith('/tickets/new'));
+        isActive = pathname === '/dashboard' || (pathname.startsWith('/tickets/') && !pathname.startsWith('/tickets/new') && !pathname.startsWith('/purchases/new'));
     } else {
         isActive = pathname.startsWith(href);
     }
@@ -89,6 +90,7 @@ export function AppHeader() {
 
   const navItems = [
     { href: "/dashboard", label: "Chamados", icon: TicketIconAlt, roles: ['user', 'ti', 'admin'], isDashboard: true },
+    { href: "/purchases/new", label: "Compras", icon: ShoppingCart, roles: ['user', 'ti', 'admin'] },
     { href: "/schedules", label: "Agendamentos", icon: CalendarDays, roles: ['user', 'ti', 'admin'] },
     { href: "/tickets/new", label: "Novo Chamado", icon: PlusCircle, roles: ['user', 'ti', 'admin'] },
     { href: "/statistics", label: "Estatísticas", icon: BarChart, roles: ['ti', 'admin'] },
@@ -96,7 +98,7 @@ export function AppHeader() {
     { href: "/admin/users", label: "Usuários", icon: Users, roles: ['admin'] },
   ];
 
-  const availableNavItems = navItems.filter(item => user && item.roles.includes(user.role));
+  const availableNavItems = navItems.filter(item => user && item.roles.includes(item.roles.length > 0 ? user.role : ''));
 
   return (
     <header className="relative sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6 print:hidden">
