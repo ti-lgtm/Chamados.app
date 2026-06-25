@@ -30,7 +30,7 @@ import {
   FormLabel,
   FormMessage,
   FormDescription,
-} from '@/components/form';
+} from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Info } from 'lucide-react';
 import { triggerTicketCreatedEmail, triggerTicketCreatedSupportEmail } from '@/app/actions/email';
