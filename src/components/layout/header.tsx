@@ -90,7 +90,7 @@ export function AppHeader() {
   const navItems = [
     { href: "/dashboard", label: "Chamados", icon: TicketIconAlt, roles: ['user', 'ti', 'admin'], isDashboard: true },
     { href: "/schedules", label: "Agendamentos", icon: CalendarDays, roles: ['user', 'ti', 'admin'] },
-    { href: "/tickets/new", label: "Novo Chamado / Compra", icon: PlusCircle, roles: ['user', 'ti', 'admin'] },
+    { href: "/tickets/new", label: "Novo Chamado", icon: PlusCircle, roles: ['user', 'ti', 'admin'] },
     { href: "/statistics", label: "Estatísticas", icon: BarChart, roles: ['ti', 'admin'] },
     { href: "/admin/scheduled-tickets", label: "Auto Chamados", icon: Clock, roles: ['ti', 'admin'] },
     { href: "/admin/users", label: "Usuários", icon: Users, roles: ['admin'] },
