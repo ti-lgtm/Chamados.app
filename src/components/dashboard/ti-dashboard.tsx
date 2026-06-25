@@ -18,13 +18,17 @@ import {
   CheckCircle,
   Search,
   User,
+  ShoppingCart,
 } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -45,7 +49,6 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // The sound is from a reliable open-source assets library.
     audioRef.current = new Audio(
       'https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3'
     );
@@ -53,7 +56,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
   }, []);
 
   const stats = useMemo(() => {
-    const open = allTickets.filter((t) => t.status === 'open').length;
+    const open = allTickets.filter((t) => t.status === 'open' && t.type === 'support').length;
     const inProgress = allTickets.filter(
       (t) => t.status === 'in_progress'
     ).length;
@@ -63,16 +66,20 @@ export function TiDashboard({ user }: TiDashboardProps) {
     const awaitingSupport = allTickets.filter(
       (t) => t.status === 'awaiting_support'
     ).length;
-    const resolved = allTickets.filter((t) => t.status === 'resolved').length;
+    const resolved = allTickets.filter((t) => t.status === 'resolved' || t.status === 'delivered').length;
     const myTickets = allTickets.filter((t) => t.assignedTo === user.uid).length;
     const myInProgress = allTickets.filter(
       (t) =>
         t.assignedTo === user.uid &&
         (t.status === 'in_progress' ||
           t.status === 'awaiting_user' ||
-          t.status === 'awaiting_support')
+          t.status === 'awaiting_support' ||
+          t.status === 'in_quotation' ||
+          t.status === 'purchased')
     ).length;
-    const totalInProgress = inProgress + awaitingUser + awaitingSupport;
+    const totalInProgress = inProgress + awaitingUser + awaitingSupport + allTickets.filter(t => t.status === 'in_quotation' || t.status === 'purchased').length;
+    const totalPurchases = allTickets.filter(t => t.type === 'purchase').length;
+
     return {
       open,
       inProgress,
@@ -82,6 +89,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
       awaitingSupport,
       totalInProgress,
       myInProgress,
+      totalPurchases,
     };
   }, [allTickets, user.uid]);
 
@@ -118,7 +126,6 @@ export function TiDashboard({ user }: TiDashboardProps) {
                 (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
             )[0];
             
-            // Play sound
             if (audioRef.current) {
               audioRef.current.play().catch((e) => {
                 if (e.name !== 'AbortError') {
@@ -130,7 +137,6 @@ export function TiDashboard({ user }: TiDashboardProps) {
               });
             }
 
-            // Show notification
             if (
               typeof window !== 'undefined' &&
               'Notification' in window &&
@@ -201,7 +207,9 @@ export function TiDashboard({ user }: TiDashboardProps) {
             ticket.assignedTo === user.uid &&
             (ticket.status === 'in_progress' ||
               ticket.status === 'awaiting_user' ||
-              ticket.status === 'awaiting_support')
+              ticket.status === 'awaiting_support' ||
+              ticket.status === 'in_quotation' ||
+              ticket.status === 'purchased')
         );
         break;
       case 'in_progress':
@@ -209,7 +217,14 @@ export function TiDashboard({ user }: TiDashboardProps) {
           (ticket) =>
             ticket.status === 'in_progress' ||
             ticket.status === 'awaiting_user' ||
-            ticket.status === 'awaiting_support'
+            ticket.status === 'awaiting_support' ||
+            ticket.status === 'in_quotation' ||
+            ticket.status === 'purchased'
+        );
+        break;
+      case 'purchases':
+        statusFilteredTickets = tickets.filter(
+          (ticket) => ticket.type === 'purchase'
         );
         break;
       default:
@@ -223,10 +238,13 @@ export function TiDashboard({ user }: TiDashboardProps) {
       if (sortBy === 'status') {
         const statusOrder = {
           in_progress: 1,
+          in_quotation: 1,
+          purchased: 1,
           awaiting_support: 1,
           open: 2,
           awaiting_user: 3,
           resolved: 4,
+          delivered: 4,
         };
         const statusA =
           statusOrder[a.status as keyof typeof statusOrder] || 99;
@@ -280,10 +298,10 @@ export function TiDashboard({ user }: TiDashboardProps) {
           onClick={() => setStatusFilter('in_progress')}
         />
         <StatsCard
-          title="Resolvidos"
-          value={loading ? <Skeleton className="h-8 w-12" /> : stats.resolved}
-          icon={CheckCircle}
-          onClick={() => setStatusFilter('resolved')}
+          title="Compras Ativas"
+          value={loading ? <Skeleton className="h-8 w-12" /> : stats.totalPurchases}
+          icon={ShoppingCart}
+          onClick={() => setStatusFilter('purchases')}
         />
       </div>
 
@@ -291,29 +309,33 @@ export function TiDashboard({ user }: TiDashboardProps) {
         <div className="flex flex-col sm:flex-row gap-2 justify-between items-center">
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[240px]">
+              <SelectTrigger className="w-full sm:w-[260px]">
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="my_in_progress">
-                  Meus em Atendimento ({loading ? '...' : stats.myInProgress})
-                </SelectItem>
-                <SelectItem value="mine">
-                  Meus Chamados (Todos) ({loading ? '...' : stats.myTickets})
-                </SelectItem>
-                <SelectItem value="open">
-                  Abertos (Todos) ({loading ? '...' : stats.open})
-                </SelectItem>
-                <SelectItem value="in_progress">
-                  Em Atendimento (Todos) (
-                  {loading ? '...' : stats.totalInProgress})
-                </SelectItem>
-                <SelectItem value="resolved">
-                  Resolvidos (Todos) ({loading ? '...' : stats.resolved})
-                </SelectItem>
-                <SelectItem value="all">
-                  Todos os Chamados ({loading ? '...' : allTickets.length})
-                </SelectItem>
+                <SelectGroup>
+                    <SelectLabel>Geral</SelectLabel>
+                    <SelectItem value="all">Todos os Chamados ({loading ? '...' : allTickets.length})</SelectItem>
+                    <SelectItem value="my_in_progress">Meus em Atendimento ({loading ? '...' : stats.myInProgress})</SelectItem>
+                    <SelectItem value="mine">Meus Chamados (Todos) ({loading ? '...' : stats.myTickets})</SelectItem>
+                </SelectGroup>
+                <SelectSeparator />
+                <SelectGroup>
+                    <SelectLabel>Suporte Técnico</SelectLabel>
+                    <SelectItem value="open">Abertos ({loading ? '...' : stats.open})</SelectItem>
+                    <SelectItem value="in_progress">Em Atendimento ({loading ? '...' : stats.inProgress})</SelectItem>
+                    <SelectItem value="awaiting_user">Aguardando Usuário ({loading ? '...' : stats.awaitingUser})</SelectItem>
+                    <SelectItem value="awaiting_support">Aguardando Suporte ({loading ? '...' : stats.awaitingSupport})</SelectItem>
+                    <SelectItem value="resolved">Resolvidos ({loading ? '...' : allTickets.filter(t => t.status === 'resolved').length})</SelectItem>
+                </SelectGroup>
+                <SelectSeparator />
+                <SelectGroup>
+                    <SelectLabel>Compras de TI</SelectLabel>
+                    <SelectItem value="purchases">Todas as Compras ({loading ? '...' : stats.totalPurchases})</SelectItem>
+                    <SelectItem value="in_quotation">Em Cotação</SelectItem>
+                    <SelectItem value="purchased">Comprado (Em Trânsito)</SelectItem>
+                    <SelectItem value="delivered">Entregue / Finalizado</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={setSortBy}>

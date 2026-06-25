@@ -7,10 +7,19 @@ import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError }
 import type { AppUser, Ticket } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { TicketList } from '@/components/tickets/ticket-list';
-import { PlusCircle, Star, Search } from 'lucide-react';
+import { PlusCircle, Star, Search, ShoppingCart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+    Select, 
+    SelectContent, 
+    SelectGroup, 
+    SelectItem, 
+    SelectLabel, 
+    SelectSeparator, 
+    SelectTrigger, 
+    SelectValue 
+} from '@/components/ui/select';
 
 interface UserDashboardProps {
   user: AppUser;
@@ -71,7 +80,9 @@ export function UserDashboard({ user }: UserDashboardProps) {
       );
     }
     
-    if (statusFilter !== 'all') {
+    if (statusFilter === 'purchases') {
+        tickets = tickets.filter(ticket => ticket.type === 'purchase');
+    } else if (statusFilter !== 'all') {
         tickets = tickets.filter(ticket => ticket.status === statusFilter);
     }
 
@@ -79,10 +90,13 @@ export function UserDashboard({ user }: UserDashboardProps) {
         if (sortBy === 'status') {
             const statusOrder = { 
                 'in_progress': 1, 
+                'in_quotation': 1,
+                'purchased': 1,
                 'awaiting_support': 1, 
                 'open': 2, 
                 'awaiting_user': 3, 
-                'resolved': 4 
+                'resolved': 4,
+                'delivered': 4 
             };
             const statusA = statusOrder[a.status as keyof typeof statusOrder] || 99;
             const statusB = statusOrder[b.status as keyof typeof statusOrder] || 99;
@@ -103,7 +117,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
   }, [allTickets, statusFilter, searchTerm, sortBy]);
 
   const unratedTickets = useMemo(() => {
-    return allTickets.filter(ticket => ticket.status === 'resolved' && !ticket.rating);
+    return allTickets.filter(ticket => (ticket.status === 'resolved' || ticket.status === 'delivered') && !ticket.rating);
   }, [allTickets]);
 
   return (
@@ -134,16 +148,31 @@ export function UserDashboard({ user }: UserDashboardProps) {
         <div className="flex flex-col sm:flex-row gap-2 justify-between items-center">
              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[220px]">
                       <SelectValue placeholder="Filtrar por status" />
                   </SelectTrigger>
                   <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="open">Aberto</SelectItem>
-                      <SelectItem value="in_progress">Em Atendimento</SelectItem>
-                      <SelectItem value="awaiting_user">Aguardando Você</SelectItem>
-                      <SelectItem value="awaiting_support">Aguardando Suporte</SelectItem>
-                      <SelectItem value="resolved">Resolvido</SelectItem>
+                      <SelectGroup>
+                          <SelectLabel>Geral</SelectLabel>
+                          <SelectItem value="all">Todos</SelectItem>
+                      </SelectGroup>
+                      <SelectSeparator />
+                      <SelectGroup>
+                          <SelectLabel>Suporte</SelectLabel>
+                          <SelectItem value="open">Aberto</SelectItem>
+                          <SelectItem value="in_progress">Em Atendimento</SelectItem>
+                          <SelectItem value="awaiting_user">Aguardando Você</SelectItem>
+                          <SelectItem value="awaiting_support">Aguardando Suporte</SelectItem>
+                          <SelectItem value="resolved">Resolvido</SelectItem>
+                      </SelectGroup>
+                      <SelectSeparator />
+                      <SelectGroup>
+                          <SelectLabel>Compras</SelectLabel>
+                          <SelectItem value="purchases">Todas as Compras</SelectItem>
+                          <SelectItem value="in_quotation">Em Cotação</SelectItem>
+                          <SelectItem value="purchased">Comprado</SelectItem>
+                          <SelectItem value="delivered">Entregue</SelectItem>
+                      </SelectGroup>
                   </SelectContent>
               </Select>
               <Select value={sortBy} onValueChange={setSortBy}>
