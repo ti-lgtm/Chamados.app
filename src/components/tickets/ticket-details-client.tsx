@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
@@ -117,10 +117,28 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             toast({ title: "Selecione a data prevista de entrega.", variant: "destructive" });
             return;
         }
-        handleStatusChange('purchased', {
+
+        const extraData = {
             expectedDeliveryDate: Timestamp.fromDate(new Date(deliveryDate)),
-            purchaseDate: serverTimestamp()
-        });
+        };
+
+        // Se o status já for comprado, apenas atualizamos a data
+        if (ticket.status === 'purchased') {
+            setIsUpdating(true);
+            updateDoc(ticketRef!, { ...extraData, updatedAt: serverTimestamp() })
+                .then(() => {
+                    toast({ title: "Data de entrega atualizada!" });
+                    setIsDeliveryDialogOpen(false);
+                })
+                .catch(() => toast({ title: "Erro ao atualizar data", variant: "destructive" }))
+                .finally(() => setIsUpdating(false));
+        } else {
+            // Caso contrário, seguimos o fluxo normal de mudança de status para comprado
+            handleStatusChange('purchased', {
+                ...extraData,
+                purchaseDate: serverTimestamp()
+            });
+        }
     };
 
     if (authLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -191,10 +209,23 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         <div className="flex items-center"><Briefcase className="h-4 w-4 mr-2 text-muted-foreground" /><strong>Setor:</strong><span className="ml-2">{ticket.department}</span></div>
                         <div className="flex items-center"><Tag className="h-4 w-4 mr-2 text-muted-foreground" /><strong>Prioridade:</strong><Badge variant={priorityMap[ticket.priority]?.variant || 'default'} className="ml-2">{priorityMap[ticket.priority]?.label || ticket.priority}</Badge></div>
                         {ticket.expectedDeliveryDate && (
-                            <div className="flex items-center text-primary font-bold">
+                            <div className="flex items-center text-primary font-bold group">
                                 <Calendar className="h-4 w-4 mr-2" />
                                 <strong>Previsão de Entrega:</strong>
                                 <span className="ml-2">{format(ticket.expectedDeliveryDate.toDate(), "dd/MM/yyyy")}</span>
+                                {canEdit && (
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-6 w-6 ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => {
+                                            setDeliveryDate(format(ticket.expectedDeliveryDate!.toDate(), "yyyy-MM-dd"));
+                                            setIsDeliveryDialogOpen(true);
+                                        }}
+                                    >
+                                        <Pencil className="h-3 w-3" />
+                                    </Button>
+                                )}
                             </div>
                         )}
                     </CardContent>
@@ -262,8 +293,12 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Informar Previsão de Entrega</DialogTitle>
-                        <DialogDescription>Ao marcar como comprado, o usuário verá uma barra de progresso até a chegada.</DialogDescription>
+                        <DialogTitle>{ticket.status === 'purchased' ? 'Atualizar Previsão de Entrega' : 'Informar Previsão de Entrega'}</DialogTitle>
+                        <DialogDescription>
+                            {ticket.status === 'purchased' 
+                                ? 'Informe a nova data caso ocorra algum atraso ou alteração no prazo.' 
+                                : 'Ao marcar como comprado, o usuário verá uma barra de progresso até a chegada.'}
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="py-4 space-y-2">
                         <Label>Data Prevista</Label>
@@ -271,7 +306,10 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsDeliveryDialogOpen(false)}>Cancelar</Button>
-                        <Button onClick={confirmPurchaseStatus} disabled={isUpdating}>Confirmar Compra</Button>
+                        <Button onClick={confirmPurchaseStatus} disabled={isUpdating}>
+                            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {ticket.status === 'purchased' ? 'Atualizar Data' : 'Confirmar Compra'}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
