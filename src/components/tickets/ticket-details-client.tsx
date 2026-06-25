@@ -118,8 +118,12 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             return;
         }
 
+        // Parse date as local to avoid timezone offset issues (off-by-one day)
+        const [year, month, day] = deliveryDate.split('-').map(Number);
+        const date = new Date(year, month - 1, day, 12, 0, 0); // Noon to be safe
+
         const extraData = {
-            expectedDeliveryDate: Timestamp.fromDate(new Date(deliveryDate)),
+            expectedDeliveryDate: Timestamp.fromDate(date),
         };
 
         // Se o status já for comprado, apenas atualizamos a data
