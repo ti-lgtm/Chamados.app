@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -98,13 +97,13 @@ export function NewTicketForm() {
 
   const formSchema = useMemo(() => {
     return z.object({
-      title: z.string().min(5, { message: 'O título deve ter pelo menos 5 caracteres.' }),
+      title: z.string().min(5, { message: 'O título é obrigatório e deve ter pelo menos 5 caracteres.' }),
       company: z.string().min(2, { message: 'O nome da empresa é obrigatório.' }),
       department: z.enum(departmentOptions, { required_error: 'O setor é obrigatório.' }),
       service: z.enum(serviceOptions, { required_error: 'O serviço é obrigatório.' }),
       contactNumber: z.string().min(10, { message: 'O número de contato é obrigatório e deve incluir o DDD.' }),
       ccEmail: z.string().email({ message: 'Por favor, insira um e-mail válido.' }).optional().or(z.literal('')),
-      description: z.string().min(10, { message: 'A descrição deve ter pelo menos 10 caracteres.' }),
+      description: z.string().min(10, { message: 'A descrição detalhada é obrigatória (mín. 10 caracteres).' }),
       priority: z.enum(['low', 'normal', 'high'], { required_error: 'A prioridade é obrigatória.' }),
       attachments: z.custom<FileList>().optional(),
       isForMe: z.enum(['yes', 'no'], { required_error: 'Por favor, informe se o chamado é para você.' }),
@@ -258,7 +257,7 @@ export function NewTicketForm() {
                     <FormItem>
                     <FormLabel className="flex items-center gap-2">
                         {isPurchase ? <ShoppingCart className="h-4 w-4 text-primary" /> : <Wrench className="h-4 w-4 text-primary" />}
-                        Tipo de Serviço
+                        Tipo de Serviço <span className="text-destructive">*</span>
                     </FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
@@ -288,7 +287,9 @@ export function NewTicketForm() {
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{isPurchase ? 'O que você precisa comprar?' : 'Título do Chamado'}</FormLabel>
+              <FormLabel>
+                {isPurchase ? 'O que você precisa comprar?' : 'Título do Chamado'} <span className="text-destructive">*</span>
+              </FormLabel>
               <FormControl>
                 <Input placeholder={isPurchase ? "Ex: Mouse sem fio e Teclado Mecânico" : "Ex: Problema com a impressora do 2º andar"} {...field} />
               </FormControl>
@@ -303,7 +304,9 @@ export function NewTicketForm() {
               name="isForMe"
               render={({ field }) => (
                 <FormItem className="space-y-3">
-                  <FormLabel>{isPurchase ? 'A compra é para você?' : 'O chamado é para você?'}</FormLabel>
+                  <FormLabel>
+                    {isPurchase ? 'A compra é para você?' : 'O chamado é para você?'} <span className="text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -331,7 +334,9 @@ export function NewTicketForm() {
                     name="requestedFor"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>{isPurchase ? 'Comprar para:' : 'Solicitar para:'}</FormLabel>
+                            <FormLabel>
+                                {isPurchase ? 'Comprar para:' : 'Solicitar para:'} <span className="text-destructive">*</span>
+                            </FormLabel>
                             <FormControl>
                                 <Input placeholder="Digite o nome do destinatário" {...field} />
                             </FormControl>
@@ -348,7 +353,7 @@ export function NewTicketForm() {
             name="company"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Empresa</FormLabel>
+                <FormLabel>Empresa <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
                   <Input placeholder="Nome da empresa vinculada" {...field} />
                 </FormControl>
@@ -361,7 +366,7 @@ export function NewTicketForm() {
             name="department"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Setor</FormLabel>
+                <FormLabel>Setor <span className="text-destructive">*</span></FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                     <SelectTrigger>
@@ -388,7 +393,7 @@ export function NewTicketForm() {
                 name="contactNumber"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Número de Contato (com DDD)</FormLabel>
+                    <FormLabel>Número de Contato (com DDD) <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                         <Input placeholder="(XX) XXXXX-XXXX" {...field} />
                     </FormControl>
@@ -401,7 +406,7 @@ export function NewTicketForm() {
                 name="priority"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>{isPurchase ? 'Urgência da Compra' : 'Prioridade'}</FormLabel>
+                    <FormLabel>{isPurchase ? 'Urgência da Compra' : 'Prioridade'} <span className="text-destructive">*</span></FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                         <SelectTrigger>
@@ -450,7 +455,7 @@ export function NewTicketForm() {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{isPurchase ? 'Descrição Detalhada / Justificativa' : 'Descrição do Problema'}</FormLabel>
+              <FormLabel>{isPurchase ? 'Descrição Detalhada / Justificativa' : 'Descrição do Problema'} <span className="text-destructive">*</span></FormLabel>
               <FormControl>
                 <Textarea
                   placeholder={isPurchase ? "Descreva os itens necessários e o motivo da solicitação." : "Descreva o problema em detalhes."}
