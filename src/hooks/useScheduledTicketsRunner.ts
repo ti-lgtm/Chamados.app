@@ -60,6 +60,7 @@ export function useScheduledTicketsRunner(user: AppUser | null) {
                                 description: data.description,
                                 company: data.company,
                                 department: data.department,
+                                service: data.service || 'OUTROS',
                                 priority: data.priority,
                                 status: 'open',
                                 userId: 'system',

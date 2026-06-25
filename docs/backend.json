@@ -83,6 +83,10 @@
           "type": "string",
           "description": "The department of the user who created the ticket."
         },
+        "service": {
+          "type": "string",
+          "description": "The category of technical service requested."
+        },
         "description": {
           "type": "string",
           "description": "A detailed description of the issue."
@@ -160,6 +164,7 @@
         "title",
         "company",
         "department",
+        "service",
         "description",
         "status",
         "priority",
@@ -179,13 +184,14 @@
         "title": { "type": "string" },
         "description": { "type": "string" },
         "department": { "type": "string" },
+        "service": { "type": "string" },
         "company": { "type": "string" },
         "priority": { "type": "string" },
         "dayOfMonth": { "type": "number" },
         "lastRun": { "type": "string", "format": "date-time" },
         "active": { "type": "boolean" }
       },
-      "required": ["id", "title", "description", "department", "company", "priority", "dayOfMonth", "active"]
+      "required": ["id", "title", "description", "department", "service", "company", "priority", "dayOfMonth", "active"]
     },
     "Comment": {
       "$schema": "http://json-schema.org/draft-07/schema#",

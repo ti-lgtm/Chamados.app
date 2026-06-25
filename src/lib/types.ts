@@ -20,6 +20,7 @@ export interface Ticket {
   title: string;
   company: string;
   department: string;
+  service: string;
   description: string;
   contactNumber?: string;
   ccEmail?: string;
@@ -45,6 +46,7 @@ export interface ScheduledTicket {
   title: string;
   description: string;
   department: string;
+  service: string;
   company: string;
   priority: 'low' | 'normal' | 'high';
   dayOfMonth: number;

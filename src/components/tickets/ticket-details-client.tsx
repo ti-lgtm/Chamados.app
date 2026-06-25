@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, CalendarClock, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, CalendarClock, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
@@ -278,6 +278,11 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                             <Briefcase className="h-4 w-4 mr-2 text-muted-foreground print:hidden" />
                             <strong>Setor:</strong>
                             <span className="ml-2">{ticket.department || 'Não informado'}</span>
+                        </div>
+                        <div className="flex items-center">
+                            <Wrench className="h-4 w-4 mr-2 text-muted-foreground print:hidden" />
+                            <strong>Serviço:</strong>
+                            <span className="ml-2 font-medium">{ticket.service || 'Não especificado'}</span>
                         </div>
                          <div className="flex items-center">
                             <Phone className="h-4 w-4 mr-2 text-muted-foreground print:hidden" />

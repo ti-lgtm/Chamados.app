@@ -23,6 +23,12 @@ const departments = [
     "Suprimentos", "Marketing", "Qualidade"
 ];
 
+const services = [
+    "BACKUP", "CONTA DE USUÁRIO", "CRIAÇÃO DE ACESSO", "DESENVOLVIMENTO", "E-MAIL", 
+    "EQUIPAMENTOS", "IMPRESSORA", "LEGADO", "PASTAS E COMPARTILHAMENTOS", 
+    "REDE/INTRANET", "SISTEMAS", "SOFTWARES", "TELEFONIA", "OUTROS"
+];
+
 export default function ScheduledTicketsPage() {
     const { user } = useAuth();
     const firestore = useFirestore();
@@ -41,6 +47,7 @@ export default function ScheduledTicketsPage() {
         description: '',
         company: '',
         department: 'Administrativo',
+        service: 'OUTROS',
         priority: 'normal' as const,
         dayOfMonth: 1,
     });
@@ -64,6 +71,7 @@ export default function ScheduledTicketsPage() {
                     description: '',
                     company: '',
                     department: 'Administrativo',
+                    service: 'OUTROS',
                     priority: 'normal',
                     dayOfMonth: 1,
                 });
@@ -132,6 +140,12 @@ export default function ScheduledTicketsPage() {
                                 {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                             </SelectContent>
                         </Select>
+                        <Select value={newTicket.service} onValueChange={v => setNewTicket({...newTicket, service: v})}>
+                            <SelectTrigger><SelectValue placeholder="Serviço" /></SelectTrigger>
+                            <SelectContent>
+                                {services.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
                         <Select value={newTicket.priority} onValueChange={(v: any) => setNewTicket({...newTicket, priority: v})}>
                             <SelectTrigger><SelectValue placeholder="Prioridade" /></SelectTrigger>
                             <SelectContent>
@@ -177,20 +191,22 @@ export default function ScheduledTicketsPage() {
                                 <TableHead>Título</TableHead>
                                 <TableHead>Dia</TableHead>
                                 <TableHead>Setor</TableHead>
+                                <TableHead>Serviço</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
-                                <TableRow><TableCell colSpan={5} className="text-center py-8"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+                                <TableRow><TableCell colSpan={6} className="text-center py-8"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
                             ) : scheduledTickets?.length === 0 ? (
-                                <TableRow><TableCell colSpan={5} className="text-center py-8">Nenhum auto chamado configurado.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={6} className="text-center py-8">Nenhum auto chamado configurado.</TableCell></TableRow>
                             ) : scheduledTickets?.map(t => (
                                 <TableRow key={t.id}>
                                     <TableCell className="font-medium">{t.title}</TableCell>
                                     <TableCell>Todo dia {t.dayOfMonth}</TableCell>
                                     <TableCell>{t.department}</TableCell>
+                                    <TableCell className="text-xs font-mono">{t.service}</TableCell>
                                     <TableCell>
                                         <Badge 
                                             variant={t.active ? "default" : "secondary"}

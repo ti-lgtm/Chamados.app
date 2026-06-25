@@ -58,6 +58,23 @@ const departmentOptions = [
     "Qualidade",
 ] as const;
 
+const serviceOptions = [
+    "BACKUP",
+    "CONTA DE USUÁRIO",
+    "CRIAÇÃO DE ACESSO",
+    "DESENVOLVIMENTO",
+    "E-MAIL",
+    "EQUIPAMENTOS",
+    "IMPRESSORA",
+    "LEGADO",
+    "PASTAS E COMPARTILHAMENTOS",
+    "REDE/INTRANET",
+    "SISTEMAS",
+    "SOFTWARES",
+    "TELEFONIA",
+    "OUTROS",
+] as const;
+
 function addBusinessDays(startDate: Date, days: number): Date {
   let date = new Date(startDate);
   let added = 0;
@@ -84,6 +101,7 @@ export function NewTicketForm() {
       title: z.string().min(5, { message: 'O título deve ter pelo menos 5 caracteres.' }),
       company: z.string().min(2, { message: 'O nome da empresa é obrigatório.' }),
       department: z.enum(departmentOptions, { required_error: 'O setor é obrigatório.' }),
+      service: z.enum(serviceOptions, { required_error: 'O serviço é obrigatório.' }),
       contactNumber: z.string().min(10, { message: 'O número de contato é obrigatório e deve incluir o DDD.' }),
       ccEmail: z.string().email({ message: 'Por favor, insira um e-mail válido.' }).optional().or(z.literal('')),
       description: z.string().min(10, { message: 'A descrição deve ter pelo menos 10 caracteres.' }),
@@ -176,6 +194,7 @@ export function NewTicketForm() {
           title: values.title,
           company: values.company,
           department: values.department,
+          service: values.service,
           contactNumber: values.contactNumber,
           ccEmail: values.ccEmail || null,
           description: values.description,
@@ -354,7 +373,32 @@ export function NewTicketForm() {
             )}
             />
         </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <FormField
+                control={form.control}
+                name="service"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Serviço</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo de serviço" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {serviceOptions.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                    {option}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
             <FormField
                 control={form.control}
                 name="contactNumber"
@@ -368,21 +412,23 @@ export function NewTicketForm() {
                     </FormItem>
                 )}
             />
-            <FormField
-                control={form.control}
-                name="ccEmail"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>E-mail em Cópia (Gestor)</FormLabel>
-                    <FormControl>
-                        <Input placeholder="gestor@empresa.com" {...field} />
-                    </FormControl>
-                    <FormDescription>Opcional. Receberá uma cópia da abertura.</FormDescription>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
         </div>
+
+        <FormField
+            control={form.control}
+            name="ccEmail"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>E-mail em Cópia (Gestor)</FormLabel>
+                <FormControl>
+                    <Input placeholder="gestor@empresa.com" {...field} />
+                </FormControl>
+                <FormDescription>Opcional. Receberá uma cópia da abertura.</FormDescription>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
+
         <FormField
           control={form.control}
           name="description"
