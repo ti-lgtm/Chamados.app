@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -31,7 +30,7 @@ import {
   FormLabel,
   FormMessage,
   FormDescription,
-} from '@/components/ui/form';
+} from '@/components/form';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Info } from 'lucide-react';
 import { triggerTicketCreatedEmail, triggerTicketCreatedSupportEmail } from '@/app/actions/email';
@@ -424,7 +423,7 @@ export function NewTicketForm() {
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-50 border border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800 animate-in fade-in slide-in-from-right-2 duration-500">
                         <Info className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
                         <span className="text-[10px] font-bold text-yellow-700 dark:text-yellow-400 uppercase tracking-tight">
-                            Gestores: não preencher se o chamado for seu
+                            Gestores: não preencher
                         </span>
                     </div>
                 </div>
