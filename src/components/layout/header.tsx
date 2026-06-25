@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from "react";
@@ -43,7 +42,7 @@ const NavLink = ({ href, children, isDashboard = false }: { href: string; childr
     const pathname = usePathname();
     let isActive = false;
     if (isDashboard) {
-        isActive = pathname === '/dashboard' || (pathname.startsWith('/tickets/') && !pathname.startsWith('/tickets/new') && !pathname.startsWith('/purchases/new'));
+        isActive = pathname === '/dashboard' || (pathname.startsWith('/tickets/') && !pathname.startsWith('/tickets/new'));
     } else {
         isActive = pathname.startsWith(href);
     }
@@ -90,9 +89,8 @@ export function AppHeader() {
 
   const navItems = [
     { href: "/dashboard", label: "Chamados", icon: TicketIconAlt, roles: ['user', 'ti', 'admin'], isDashboard: true },
-    { href: "/purchases/new", label: "Compras", icon: ShoppingCart, roles: ['user', 'ti', 'admin'] },
     { href: "/schedules", label: "Agendamentos", icon: CalendarDays, roles: ['user', 'ti', 'admin'] },
-    { href: "/tickets/new", label: "Novo Chamado", icon: PlusCircle, roles: ['user', 'ti', 'admin'] },
+    { href: "/tickets/new", label: "Novo Chamado / Compra", icon: PlusCircle, roles: ['user', 'ti', 'admin'] },
     { href: "/statistics", label: "Estatísticas", icon: BarChart, roles: ['ti', 'admin'] },
     { href: "/admin/scheduled-tickets", label: "Auto Chamados", icon: Clock, roles: ['ti', 'admin'] },
     { href: "/admin/users", label: "Usuários", icon: Users, roles: ['admin'] },

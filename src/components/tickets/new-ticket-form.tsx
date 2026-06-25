@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -32,7 +32,7 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Info } from 'lucide-react';
+import { Loader2, Info, ShoppingCart, Wrench } from 'lucide-react';
 import { triggerTicketCreatedEmail, triggerTicketCreatedSupportEmail } from '@/app/actions/email';
 import type { AppUser } from '@/lib/types';
 
@@ -58,6 +58,7 @@ const departmentOptions = [
 ] as const;
 
 const serviceOptions = [
+    "COMPRA",
     "BACKUP",
     "CONTA DE USUÁRIO",
     "CRIAÇÃO DE ACESSO",
@@ -94,7 +95,6 @@ export function NewTicketForm() {
   const db = useFirestore();
   const [loading, setLoading] = useState(false);
 
-  // Define the schema inside the component to have access to user email for validation
   const formSchema = useMemo(() => {
     return z.object({
       title: z.string().min(5, { message: 'O título deve ter pelo menos 5 caracteres.' }),
@@ -109,7 +109,6 @@ export function NewTicketForm() {
       isForMe: z.enum(['yes', 'no'], { required_error: 'Por favor, informe se o chamado é para você.' }),
       requestedFor: z.string().optional(),
     }).refine((data) => {
-      // Validation: ccEmail cannot be the same as the user's email
       if (data.ccEmail && user?.email && data.ccEmail.toLowerCase().trim() === user.email.toLowerCase().trim()) {
         return false;
       }
@@ -128,13 +127,6 @@ export function NewTicketForm() {
     });
   }, [user?.email]);
 
-  const supportUsersQuery = useMemoFirebase(() => {
-    if (!db) return null;
-    return query(collection(db, 'users'), where('role', 'in', ['ti', 'admin']));
-  }, [db]);
-
-  const { data: supportUsers } = useCollection<AppUser>(supportUsersQuery);
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -149,47 +141,44 @@ export function NewTicketForm() {
     },
   });
 
+  const selectedService = form.watch('service');
   const isForMeValue = form.watch('isForMe');
   const fileRef = form.register('attachments');
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !db) {
-      toast({
-        title: 'Erro de autenticação ou configuração',
-        description: 'Você precisa estar logado e o Firebase deve estar configurado corretamente.',
-        variant: 'destructive',
-      });
-      return;
-    }
+  const isPurchase = selectedService === 'COMPRA';
 
+  const supportUsersQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, 'users'), where('role', 'in', ['ti', 'admin']));
+  }, [db]);
+
+  const { data: supportUsers } = useCollection<AppUser>(supportUsersQuery);
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user || !db) return;
     setLoading(true);
 
     try {
-      // 1. Handle attachments upload using Vercel Blob
       let attachmentUrls: string[] = [];
       if (values.attachments && values.attachments.length > 0) {
         const formData = new FormData();
-        Array.from(values.attachments).forEach(file => {
-          formData.append('attachments', file);
-        });
+        Array.from(values.attachments).forEach(file => formData.append('attachments', file));
         attachmentUrls = await uploadAttachments(formData);
       }
 
-      // 2. Proceed with Firestore transaction to create the ticket
       const newTicketData = await runTransaction(db, async (transaction) => {
         const counterRef = doc(db, 'counters', 'tickets');
         const counterDoc = await transaction.get(counterRef);
-        
         const newNumber = (counterDoc.data()?.lastNumber || 0) + 1;
         
         transaction.set(counterRef, { lastNumber: newNumber }, { merge: true });
 
         const newTicketRef = doc(collection(db, "tickets"));
-
-        const deadlineDate = addBusinessDays(new Date(), 4);
+        const deadlineDate = isPurchase ? null : addBusinessDays(new Date(), 4);
         
         const ticketPayload = {
           ticketNumber: newNumber,
+          type: isPurchase ? 'purchase' : 'support',
           title: values.title,
           company: values.company,
           department: values.department,
@@ -209,15 +198,13 @@ export function NewTicketForm() {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           attachments: attachmentUrls,
-          deadline: Timestamp.fromDate(deadlineDate),
+          deadline: deadlineDate ? Timestamp.fromDate(deadlineDate) : null,
         };
 
         transaction.set(newTicketRef, ticketPayload);
-
         return { id: newTicketRef.id, payload: ticketPayload };
       });
 
-      // 3. Trigger email notification for user and CC
       triggerTicketCreatedEmail({
         ticketNumber: newTicketData.payload.ticketNumber,
         title: newTicketData.payload.title,
@@ -227,7 +214,6 @@ export function NewTicketForm() {
         description: newTicketData.payload.description,
       });
 
-      // 4. Trigger email notification for support team
       if (supportUsers && supportUsers.length > 0) {
         const supportEmails = supportUsers
           .filter(su => su.receivesEmails !== false)
@@ -246,26 +232,14 @@ export function NewTicketForm() {
       }
 
       toast({
-        title: `Chamado #${newTicketData.payload.ticketNumber} criado com sucesso!`,
-        description: 'Sua solicitação foi enviada para a equipe de TI.',
+        title: `${isPurchase ? 'Solicitação de Compra' : 'Chamado'} #${newTicketData.payload.ticketNumber} criado!`,
+        description: isPurchase ? 'Sua solicitação de compra foi enviada para cotação.' : 'Sua solicitação foi enviada para a equipe de TI.',
       });
-      router.push(`/tickets/${newTicketData.id}`);
+      router.push(`/tickets/${newTicketTicketData.id}`);
 
     } catch (error: any) {
-      console.error('Erro ao criar chamado:', error);
-      
-      const description = error.message || 'Ocorreu um erro inesperado ao criar seu chamado. Tente novamente.';
-
-      toast({
-        title: 'Erro ao criar chamado',
-        description,
-        variant: 'destructive',
-      });
-
-      if (error instanceof FirestorePermissionError) {
-          errorEmitter.emit('permission-error', error);
-      }
-
+      toast({ title: 'Erro ao criar solicitação', variant: 'destructive' });
+      if (error instanceof FirestorePermissionError) errorEmitter.emit('permission-error', error);
     } finally {
       setLoading(false);
     }
@@ -274,14 +248,48 @@ export function NewTicketForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        
+        <div className="bg-muted/30 p-4 rounded-lg border border-dashed mb-6">
+            <FormField
+                control={form.control}
+                name="service"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                        {isPurchase ? <ShoppingCart className="h-4 w-4 text-primary" /> : <Wrench className="h-4 w-4 text-primary" />}
+                        Tipo de Serviço
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger className={isPurchase ? "border-primary/50 bg-primary/5" : ""}>
+                            <SelectValue placeholder="Selecione o tipo de serviço" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {serviceOptions.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                    {option === 'COMPRA' ? '🛒 SOLICITAÇÃO DE COMPRA' : option}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormDescription>
+                        {isPurchase ? "Você está abrindo uma solicitação de material. O fluxo de SLA de suporte não será aplicado." : "Selecione a categoria técnica do seu problema."}
+                    </FormDescription>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
+
         <FormField
           control={form.control}
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Título</FormLabel>
+              <FormLabel>{isPurchase ? 'O que você precisa comprar?' : 'Título do Chamado'}</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Problema com a impressora do 2º andar" {...field} />
+                <Input placeholder={isPurchase ? "Ex: Mouse sem fio e Teclado Mecânico" : "Ex: Problema com a impressora do 2º andar"} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -294,7 +302,7 @@ export function NewTicketForm() {
               name="isForMe"
               render={({ field }) => (
                 <FormItem className="space-y-3">
-                  <FormLabel>O chamado é para você?</FormLabel>
+                  <FormLabel>{isPurchase ? 'A compra é para você?' : 'O chamado é para você?'}</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -322,9 +330,9 @@ export function NewTicketForm() {
                     name="requestedFor"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Solicitar para:</FormLabel>
+                            <FormLabel>{isPurchase ? 'Comprar para:' : 'Solicitar para:'}</FormLabel>
                             <FormControl>
-                                <Input placeholder="Digite o nome de quem solicitou" {...field} />
+                                <Input placeholder="Digite o nome do destinatário" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -341,7 +349,7 @@ export function NewTicketForm() {
               <FormItem>
                 <FormLabel>Empresa</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nome da sua empresa" {...field} />
+                  <Input placeholder="Nome da empresa vinculada" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -356,7 +364,7 @@ export function NewTicketForm() {
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                     <SelectTrigger>
-                        <SelectValue placeholder="Selecione o seu setor" />
+                        <SelectValue placeholder="Selecione o setor" />
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -376,30 +384,6 @@ export function NewTicketForm() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <FormField
                 control={form.control}
-                name="service"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Serviço</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo de serviço" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {serviceOptions.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                    {option}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
                 name="contactNumber"
                 render={({ field }) => (
                     <FormItem>
@@ -411,40 +395,64 @@ export function NewTicketForm() {
                     </FormItem>
                 )}
             />
+            <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>{isPurchase ? 'Urgência da Compra' : 'Prioridade'}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selecione o nível" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        <SelectItem value="low">Baixa</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="high">Alta</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
         </div>
 
-        <FormField
-            control={form.control}
-            name="ccEmail"
-            render={({ field }) => (
-                <FormItem>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <FormLabel>E-mail em Cópia (Gestor)</FormLabel>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-50 border border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800 animate-in fade-in slide-in-from-right-2 duration-500">
-                        <Info className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
-                        <span className="text-[10px] font-bold text-yellow-700 dark:text-yellow-400 uppercase tracking-tight">
-                            Gestores: não preencher
-                        </span>
+        {!isPurchase && (
+            <FormField
+                control={form.control}
+                name="ccEmail"
+                render={({ field }) => (
+                    <FormItem>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <FormLabel>E-mail em Cópia (Gestor)</FormLabel>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-50 border border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800">
+                            <Info className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
+                            <span className="text-[10px] font-bold text-yellow-700 dark:text-yellow-400 uppercase tracking-tight">
+                                Gestores: não preencher
+                            </span>
+                        </div>
                     </div>
-                </div>
-                <FormControl>
-                    <Input placeholder="gestor@empresa.com" {...field} />
-                </FormControl>
-                <FormDescription>Opcional. Receberá uma cópia da abertura.</FormDescription>
-                <FormMessage />
-                </FormItem>
-            )}
-        />
+                    <FormControl>
+                        <Input placeholder="gestor@empresa.com" {...field} />
+                    </FormControl>
+                    <FormDescription>Opcional. Receberá uma cópia da abertura.</FormDescription>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        )}
 
         <FormField
           control={form.control}
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Descrição</FormLabel>
+              <FormLabel>{isPurchase ? 'Descrição Detalhada / Justificativa' : 'Descrição do Problema'}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Descreva o problema em detalhes, incluindo mensagens de erro, se houver."
+                  placeholder={isPurchase ? "Descreva os itens necessários e o motivo da solicitação." : "Descreva o problema em detalhes."}
                   rows={6}
                   {...field}
                 />
@@ -453,34 +461,13 @@ export function NewTicketForm() {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="priority"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Prioridade</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o nível de prioridade" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="low">Baixa</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
         <FormField
           control={form.control}
           name="attachments"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Anexos</FormLabel>
+              <FormLabel>{isPurchase ? 'Anexar Orçamentos ou Fotos' : 'Anexos'}</FormLabel>
               <FormControl>
                 <Input type="file" multiple {...fileRef} />
               </FormControl>
@@ -491,7 +478,7 @@ export function NewTicketForm() {
 
         <Button type="submit" disabled={loading} className="w-full sm:w-auto">
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Enviar Chamado
+          {isPurchase ? 'Enviar Solicitação de Compra' : 'Abrir Chamado'}
         </Button>
       </form>
     </Form>
