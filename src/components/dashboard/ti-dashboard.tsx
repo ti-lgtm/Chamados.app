@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -56,7 +57,8 @@ export function TiDashboard({ user }: TiDashboardProps) {
   }, []);
 
   const stats = useMemo(() => {
-    const open = allTickets.filter((t) => t.status === 'open' && t.type === 'support').length;
+    // Agora conta tanto chamados de suporte quanto compras que estão com status 'open'
+    const open = allTickets.filter((t) => t.status === 'open').length;
     const inProgress = allTickets.filter(
       (t) => t.status === 'in_progress'
     ).length;
