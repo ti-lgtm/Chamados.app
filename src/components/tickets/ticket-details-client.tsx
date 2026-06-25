@@ -21,6 +21,7 @@ import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "../ui/dialog";
 
 interface TicketDetailsClientProps {

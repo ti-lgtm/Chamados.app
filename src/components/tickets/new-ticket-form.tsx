@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -235,7 +236,7 @@ export function NewTicketForm() {
         title: `${isPurchase ? 'Solicitação de Compra' : 'Chamado'} #${newTicketData.payload.ticketNumber} criado!`,
         description: isPurchase ? 'Sua solicitação de compra foi enviada para cotação.' : 'Sua solicitação foi enviada para a equipe de TI.',
       });
-      router.push(`/tickets/${newTicketTicketData.id}`);
+      router.push(`/tickets/${newTicketData.id}`);
 
     } catch (error: any) {
       toast({ title: 'Erro ao criar solicitação', variant: 'destructive' });
