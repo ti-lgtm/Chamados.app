@@ -79,7 +79,6 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     const handleStatusChange = async (newStatus: any, extraData: any = {}) => {
         if (!ticketRef) return;
         
-        // Se for compra e for marcado como comprado, pedir a data
         if (ticket.type === 'purchase' && newStatus === 'purchased' && !extraData.expectedDeliveryDate) {
             setIsDeliveryDialogOpen(true);
             return;
@@ -118,15 +117,13 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             return;
         }
 
-        // Parse date as local to avoid timezone offset issues (off-by-one day)
         const [year, month, day] = deliveryDate.split('-').map(Number);
-        const date = new Date(year, month - 1, day, 12, 0, 0); // Noon to be safe
+        const date = new Date(year, month - 1, day, 12, 0, 0);
 
         const extraData = {
             expectedDeliveryDate: Timestamp.fromDate(date),
         };
 
-        // Se o status já for comprado, apenas atualizamos a data
         if (ticket.status === 'purchased') {
             setIsUpdating(true);
             updateDoc(ticketRef!, { ...extraData, updatedAt: serverTimestamp() })
@@ -137,12 +134,40 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                 .catch(() => toast({ title: "Erro ao atualizar data", variant: "destructive" }))
                 .finally(() => setIsUpdating(false));
         } else {
-            // Caso contrário, seguimos o fluxo normal de mudança de status para comprado
             handleStatusChange('purchased', {
                 ...extraData,
                 purchaseDate: serverTimestamp()
             });
         }
+    };
+
+    const handleAttendantChange = (attendantId: string) => {
+        if (!ticketRef) return;
+        
+        const attendantUser = supportUsers?.find(su => su.id === attendantId);
+        const isAssigning = attendantId !== 'null';
+        
+        const updateData: any = { 
+            assignedTo: isAssigning ? attendantId : null,
+            assignedUserName: attendantUser ? attendantUser.name : null,
+            assignedUserEmail: attendantUser ? attendantUser.email : null,
+            updatedAt: serverTimestamp()
+        };
+
+        // Se o chamado estiver 'aberto' e for atribuído a alguém, muda o status automaticamente
+        if (isAssigning && ticket.status === 'open') {
+            updateData.status = ticket.type === 'purchase' ? 'in_quotation' : 'in_progress';
+        }
+
+        setIsUpdating(true);
+        updateDoc(ticketRef, updateData)
+            .then(() => {
+                toast({ title: isAssigning ? "Atendente atribuído!" : "Atendente removido!" });
+            })
+            .catch(() => {
+                toast({ title: "Erro ao atribuir atendente", variant: "destructive" });
+            })
+            .finally(() => setIsUpdating(false));
     };
 
     if (authLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -261,14 +286,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                              </div>
                              <div className="w-full space-y-2">
                                 <p className="text-sm font-medium">Responsável</p>
-                                <Select onValueChange={(v) => {
-                                    const user = supportUsers?.find(su => su.id === v);
-                                    updateDoc(ticketRef!, { 
-                                        assignedTo: v === 'null' ? null : v,
-                                        assignedUserName: user ? user.name : null,
-                                        assignedUserEmail: user ? user.email : null
-                                    });
-                                }} value={ticket.assignedTo || 'null'}>
+                                <Select onValueChange={handleAttendantChange} value={ticket.assignedTo || 'null'} disabled={isUpdating}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="null">Ninguém</SelectItem>
