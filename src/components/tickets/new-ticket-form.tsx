@@ -33,7 +33,7 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 import { triggerTicketCreatedEmail, triggerTicketCreatedSupportEmail } from '@/app/actions/email';
 import type { AppUser } from '@/lib/types';
 
@@ -419,7 +419,15 @@ export function NewTicketForm() {
             name="ccEmail"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>E-mail em Cópia (Gestor)</FormLabel>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <FormLabel>E-mail em Cópia (Gestor)</FormLabel>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-50 border border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800 animate-in fade-in slide-in-from-right-2 duration-500">
+                        <Info className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
+                        <span className="text-[10px] font-bold text-yellow-700 dark:text-yellow-400 uppercase tracking-tight">
+                            Gestores: não preencher se o chamado for seu
+                        </span>
+                    </div>
+                </div>
                 <FormControl>
                     <Input placeholder="gestor@empresa.com" {...field} />
                 </FormControl>
