@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
