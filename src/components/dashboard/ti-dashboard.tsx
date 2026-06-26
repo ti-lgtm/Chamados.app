@@ -58,37 +58,27 @@ export function TiDashboard({ user }: TiDashboardProps) {
 
   const stats = useMemo(() => {
     // Filtros de Suporte
-    const open = allTickets.filter((t) => t.type === 'support' && t.status === 'open').length;
-    const inProgress = allTickets.filter((t) => t.type === 'support' && t.status === 'in_progress').length;
-    const awaitingUser = allTickets.filter((t) => t.type === 'support' && t.status === 'awaiting_user').length;
-    const awaitingSupport = allTickets.filter((t) => t.type === 'support' && t.status === 'awaiting_support').length;
+    const openSupport = allTickets.filter((t) => t.type === 'support' && t.status === 'open').length;
+    const inProgressSupport = allTickets.filter((t) => t.type === 'support' && t.status === 'in_progress').length;
+    const awaitingUserSupport = allTickets.filter((t) => t.type === 'support' && t.status === 'awaiting_user').length;
+    const awaitingSupportSupport = allTickets.filter((t) => t.type === 'support' && t.status === 'awaiting_support').length;
     
     // Filtros de Compras
-    const totalPurchases = allTickets.filter(t => t.type === 'purchase' && t.status !== 'delivered').length;
+    const activePurchases = allTickets.filter(t => t.type === 'purchase' && t.status !== 'delivered').length;
     
-    // Meus Chamados (Focado em Suporte, mas mantendo histórico técnico)
-    const myTickets = allTickets.filter((t) => t.assignedTo === user.uid).length;
-    const myInProgress = allTickets.filter(
-      (t) =>
-        t.assignedTo === user.uid &&
-        (t.status === 'in_progress' ||
-          t.status === 'awaiting_user' ||
-          t.status === 'awaiting_support' ||
-          t.status === 'in_quotation' ||
-          t.status === 'purchased')
-    ).length;
+    // Meus Chamados (Apenas Suporte para manter a separação solicitada)
+    const mySupportTickets = allTickets.filter((t) => t.type === 'support' && t.assignedTo === user.uid).length;
 
-    const totalSupportInProgress = inProgress + awaitingUser + awaitingSupport;
+    const totalSupportInProgress = inProgressSupport + awaitingUserSupport + awaitingSupportSupport;
 
     return {
-      open,
-      inProgress,
-      myTickets,
-      awaitingUser,
-      awaitingSupport,
+      open: openSupport,
+      inProgress: inProgressSupport,
+      myTickets: mySupportTickets,
+      awaitingUser: awaitingUserSupport,
+      awaitingSupport: awaitingSupportSupport,
       totalSupportInProgress,
-      myInProgress,
-      totalPurchases,
+      totalPurchases: activePurchases,
     };
   }, [allTickets, user.uid]);
 
@@ -193,27 +183,25 @@ export function TiDashboard({ user }: TiDashboardProps) {
     let statusFilteredTickets;
     switch (statusFilter) {
       case 'all':
-        // Todos os chamados técnicos de suporte
         statusFilteredTickets = tickets.filter(t => t.type === 'support');
         break;
       case 'mine':
         statusFilteredTickets = tickets.filter(
-          (ticket) => ticket.assignedTo === user.uid
+          (ticket) => ticket.type === 'support' && ticket.assignedTo === user.uid
         );
         break;
       case 'my_in_progress':
         statusFilteredTickets = tickets.filter(
           (ticket) =>
             ticket.assignedTo === user.uid &&
+            ticket.type === 'support' &&
             (ticket.status === 'in_progress' ||
               ticket.status === 'awaiting_user' ||
-              ticket.status === 'awaiting_support' ||
-              ticket.status === 'in_quotation' ||
-              ticket.status === 'purchased')
+              ticket.status === 'awaiting_support')
         );
         break;
       case 'in_progress':
-        // Em atendimento (Suporte)
+        // Em atendimento (Suporte) - Inclui todos os status de atendimento ativo
         statusFilteredTickets = tickets.filter(
           (ticket) =>
             ticket.type === 'support' &&
@@ -228,24 +216,22 @@ export function TiDashboard({ user }: TiDashboardProps) {
         );
         break;
       case 'open':
-        // Abertos (Suporte apenas)
         statusFilteredTickets = tickets.filter(t => t.type === 'support' && t.status === 'open');
         break;
       case 'in_quotation':
       case 'purchased':
       case 'delivered':
-        // Status específicos de compra
         statusFilteredTickets = tickets.filter(t => t.type === 'purchase' && t.status === statusFilter);
         break;
       case 'awaiting_user':
       case 'awaiting_support':
       case 'resolved':
-        // Status específicos de suporte
         statusFilteredTickets = tickets.filter(t => t.type === 'support' && t.status === statusFilter);
         break;
       default:
+        // Mantém a regra de esconder compras se não for um filtro de compras
         statusFilteredTickets = tickets.filter(
-          (ticket) => ticket.status === statusFilter
+          (ticket) => ticket.status === statusFilter && ticket.type === 'support'
         );
         break;
     }
@@ -332,16 +318,16 @@ export function TiDashboard({ user }: TiDashboardProps) {
                 <SelectGroup>
                     <SelectLabel>Geral</SelectLabel>
                     <SelectItem value="all">Todos os Chamados de Suporte</SelectItem>
-                    <SelectItem value="my_in_progress">Meus em Atendimento (Todos)</SelectItem>
+                    <SelectItem value="my_in_progress">Meus em Atendimento</SelectItem>
                     <SelectItem value="mine">Meus Chamados (Histórico)</SelectItem>
                 </SelectGroup>
                 <SelectSeparator />
                 <SelectGroup>
                     <SelectLabel>Suporte Técnico</SelectLabel>
                     <SelectItem value="open">Abertos ({loading ? '...' : stats.open})</SelectItem>
-                    <SelectItem value="in_progress">Em Atendimento Suporte ({loading ? '...' : stats.inProgress})</SelectItem>
-                    <SelectItem value="awaiting_user">Aguardando Usuário</SelectItem>
-                    <SelectItem value="awaiting_support">Aguardando Suporte</SelectItem>
+                    <SelectItem value="in_progress">Em Atendimento ({loading ? '...' : stats.totalSupportInProgress})</SelectItem>
+                    <SelectItem value="awaiting_user">Aguardando Usuário ({loading ? '...' : stats.awaitingUser})</SelectItem>
+                    <SelectItem value="awaiting_support">Aguardando Suporte ({loading ? '...' : stats.awaitingSupport})</SelectItem>
                     <SelectItem value="resolved">Resolvidos</SelectItem>
                 </SelectGroup>
                 <SelectSeparator />
