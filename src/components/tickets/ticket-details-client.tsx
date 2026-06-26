@@ -51,7 +51,9 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     const [ticket, setTicket] = useState<Ticket>(initialTicket);
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
+    const [isPriorityDialogOpen, setIsPriorityDialogOpen] = useState(false);
     const [deliveryDate, setDeliveryDate] = useState("");
+    const [newPriority, setNewPriority] = useState<'low' | 'normal' | 'high'>(ticket.priority);
 
     const canEdit = user?.role === 'ti' || user?.role === 'admin';
 
@@ -70,7 +72,9 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         if (!ticketRef) return;
         const unsub = onSnapshot(ticketRef, (doc) => {
             if(doc.exists()) {
-                setTicket({ id: doc.id, ...doc.data() } as Ticket);
+                const data = { id: doc.id, ...doc.data() } as Ticket;
+                setTicket(data);
+                setNewPriority(data.priority);
             }
         });
         return () => unsub();
@@ -140,6 +144,23 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             });
         }
     };
+
+    const handlePriorityChange = () => {
+        if (!ticketRef) return;
+        setIsUpdating(true);
+        updateDoc(ticketRef, { 
+            priority: newPriority,
+            updatedAt: serverTimestamp() 
+        })
+        .then(() => {
+            toast({ title: "Prioridade atualizada com sucesso!" });
+            setIsPriorityDialogOpen(false);
+        })
+        .catch(() => {
+            toast({ title: "Erro ao atualizar prioridade", variant: "destructive" });
+        })
+        .finally(() => setIsUpdating(false));
+    }
 
     const handleAttendantChange = (attendantId: string) => {
         if (!ticketRef) return;
@@ -297,8 +318,20 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
 
                         <div className="flex items-start gap-3">
                             <Tag className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                            <div className="flex flex-col">
-                                <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Prioridade</span>
+                            <div className="flex flex-col w-full">
+                                <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1 flex items-center justify-between">
+                                    Prioridade
+                                    {canEdit && (
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-5 w-5 -mt-1"
+                                            onClick={() => setIsPriorityDialogOpen(true)}
+                                        >
+                                            <Pencil className="h-3 w-3" />
+                                        </Button>
+                                    )}
+                                </span>
                                 <Badge variant={priorityMap[ticket.priority]?.variant || 'default'} className="w-fit mt-1">
                                     {priorityMap[ticket.priority]?.label || ticket.priority}
                                 </Badge>
@@ -386,6 +419,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                 {(ticket.status === 'resolved' || ticket.status === 'delivered') && <RatingSection ticketId={ticket.id} ticketCreatorId={ticket.userId} currentUser={user} />}
             </div>
 
+            {/* Dialog de Data de Entrega */}
             <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
@@ -405,6 +439,38 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         <Button onClick={confirmPurchaseStatus} disabled={isUpdating}>
                             {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {ticket.status === 'purchased' ? 'Atualizar Data' : 'Confirmar Compra'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog de Prioridade */}
+            <Dialog open={isPriorityDialogOpen} onOpenChange={setIsPriorityDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Alterar Prioridade</DialogTitle>
+                        <DialogDescription>
+                            Ajuste o nível de urgência deste chamado. Isso altera a percepção de prioridade na fila técnica.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-2">
+                        <Label>Nova Prioridade</Label>
+                        <Select value={newPriority} onValueChange={(v: any) => setNewPriority(v)}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="low">Baixa</SelectItem>
+                                <SelectItem value="normal">Normal</SelectItem>
+                                <SelectItem value="high">Alta / Urgente</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsPriorityDialogOpen(false)}>Cancelar</Button>
+                        <Button onClick={handlePriorityChange} disabled={isUpdating}>
+                            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Salvar Prioridade
                         </Button>
                     </DialogFooter>
                 </DialogContent>
