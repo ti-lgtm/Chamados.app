@@ -57,18 +57,16 @@ export function TiDashboard({ user }: TiDashboardProps) {
   }, []);
 
   const stats = useMemo(() => {
-    // Agora conta tanto chamados de suporte quanto compras que estão com status 'open'
-    const open = allTickets.filter((t) => t.status === 'open').length;
-    const inProgress = allTickets.filter(
-      (t) => t.status === 'in_progress'
-    ).length;
-    const awaitingUser = allTickets.filter(
-      (t) => t.status === 'awaiting_user'
-    ).length;
-    const awaitingSupport = allTickets.filter(
-      (t) => t.status === 'awaiting_support'
-    ).length;
-    const resolved = allTickets.filter((t) => t.status === 'resolved' || t.status === 'delivered').length;
+    // Filtros de Suporte
+    const open = allTickets.filter((t) => t.type === 'support' && t.status === 'open').length;
+    const inProgress = allTickets.filter((t) => t.type === 'support' && t.status === 'in_progress').length;
+    const awaitingUser = allTickets.filter((t) => t.type === 'support' && t.status === 'awaiting_user').length;
+    const awaitingSupport = allTickets.filter((t) => t.type === 'support' && t.status === 'awaiting_support').length;
+    
+    // Filtros de Compras
+    const totalPurchases = allTickets.filter(t => t.type === 'purchase' && t.status !== 'delivered').length;
+    
+    // Meus Chamados (Focado em Suporte, mas mantendo histórico técnico)
     const myTickets = allTickets.filter((t) => t.assignedTo === user.uid).length;
     const myInProgress = allTickets.filter(
       (t) =>
@@ -79,17 +77,16 @@ export function TiDashboard({ user }: TiDashboardProps) {
           t.status === 'in_quotation' ||
           t.status === 'purchased')
     ).length;
-    const totalInProgress = inProgress + awaitingUser + awaitingSupport + allTickets.filter(t => t.status === 'in_quotation' || t.status === 'purchased').length;
-    const totalPurchases = allTickets.filter(t => t.type === 'purchase').length;
+
+    const totalSupportInProgress = inProgress + awaitingUser + awaitingSupport;
 
     return {
       open,
       inProgress,
-      resolved,
       myTickets,
       awaitingUser,
       awaitingSupport,
-      totalInProgress,
+      totalSupportInProgress,
       myInProgress,
       totalPurchases,
     };
@@ -196,7 +193,8 @@ export function TiDashboard({ user }: TiDashboardProps) {
     let statusFilteredTickets;
     switch (statusFilter) {
       case 'all':
-        statusFilteredTickets = tickets;
+        // Todos os chamados técnicos de suporte
+        statusFilteredTickets = tickets.filter(t => t.type === 'support');
         break;
       case 'mine':
         statusFilteredTickets = tickets.filter(
@@ -215,19 +213,35 @@ export function TiDashboard({ user }: TiDashboardProps) {
         );
         break;
       case 'in_progress':
+        // Em atendimento (Suporte)
         statusFilteredTickets = tickets.filter(
           (ticket) =>
-            ticket.status === 'in_progress' ||
-            ticket.status === 'awaiting_user' ||
-            ticket.status === 'awaiting_support' ||
-            ticket.status === 'in_quotation' ||
-            ticket.status === 'purchased'
+            ticket.type === 'support' &&
+            (ticket.status === 'in_progress' ||
+             ticket.status === 'awaiting_user' ||
+             ticket.status === 'awaiting_support')
         );
         break;
       case 'purchases':
         statusFilteredTickets = tickets.filter(
-          (ticket) => ticket.type === 'purchase'
+          (ticket) => ticket.type === 'purchase' && ticket.status !== 'delivered'
         );
+        break;
+      case 'open':
+        // Abertos (Suporte apenas)
+        statusFilteredTickets = tickets.filter(t => t.type === 'support' && t.status === 'open');
+        break;
+      case 'in_quotation':
+      case 'purchased':
+      case 'delivered':
+        // Status específicos de compra
+        statusFilteredTickets = tickets.filter(t => t.type === 'purchase' && t.status === statusFilter);
+        break;
+      case 'awaiting_user':
+      case 'awaiting_support':
+      case 'resolved':
+        // Status específicos de suporte
+        statusFilteredTickets = tickets.filter(t => t.type === 'support' && t.status === statusFilter);
         break;
       default:
         statusFilteredTickets = tickets.filter(
@@ -272,7 +286,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
       {user.role === 'ti' && (
         <div>
           <p className="text-muted-foreground">
-            Visão geral de todos os chamados do sistema.
+            Gestão técnica de chamados e solicitações de materiais.
           </p>
         </div>
       )}
@@ -285,16 +299,16 @@ export function TiDashboard({ user }: TiDashboardProps) {
           onClick={() => setStatusFilter('mine')}
         />
         <StatsCard
-          title="Abertos"
+          title="Chamados Abertos"
           value={loading ? <Skeleton className="h-8 w-12" /> : stats.open}
           icon={CircleIcon}
           variant={!loading && stats.open > 0 ? 'destructive' : 'default'}
           onClick={() => setStatusFilter('open')}
         />
         <StatsCard
-          title="Total em Atendimento"
+          title="Atendimento (Suporte)"
           value={
-            loading ? <Skeleton className="h-8 w-12" /> : stats.totalInProgress
+            loading ? <Skeleton className="h-8 w-12" /> : stats.totalSupportInProgress
           }
           icon={GanttChart}
           onClick={() => setStatusFilter('in_progress')}
@@ -312,31 +326,31 @@ export function TiDashboard({ user }: TiDashboardProps) {
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-[260px]">
-                <SelectValue placeholder="Filtrar por status" />
+                <SelectValue placeholder="Filtrar por tipo e status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                     <SelectLabel>Geral</SelectLabel>
-                    <SelectItem value="all">Todos os Chamados ({loading ? '...' : allTickets.length})</SelectItem>
-                    <SelectItem value="my_in_progress">Meus em Atendimento ({loading ? '...' : stats.myInProgress})</SelectItem>
-                    <SelectItem value="mine">Meus Chamados (Todos) ({loading ? '...' : stats.myTickets})</SelectItem>
+                    <SelectItem value="all">Todos os Chamados de Suporte</SelectItem>
+                    <SelectItem value="my_in_progress">Meus em Atendimento (Todos)</SelectItem>
+                    <SelectItem value="mine">Meus Chamados (Histórico)</SelectItem>
                 </SelectGroup>
                 <SelectSeparator />
                 <SelectGroup>
                     <SelectLabel>Suporte Técnico</SelectLabel>
                     <SelectItem value="open">Abertos ({loading ? '...' : stats.open})</SelectItem>
-                    <SelectItem value="in_progress">Em Atendimento ({loading ? '...' : stats.inProgress})</SelectItem>
-                    <SelectItem value="awaiting_user">Aguardando Usuário ({loading ? '...' : stats.awaitingUser})</SelectItem>
-                    <SelectItem value="awaiting_support">Aguardando Suporte ({loading ? '...' : stats.awaitingSupport})</SelectItem>
-                    <SelectItem value="resolved">Resolvidos ({loading ? '...' : allTickets.filter(t => t.status === 'resolved').length})</SelectItem>
+                    <SelectItem value="in_progress">Em Atendimento Suporte ({loading ? '...' : stats.inProgress})</SelectItem>
+                    <SelectItem value="awaiting_user">Aguardando Usuário</SelectItem>
+                    <SelectItem value="awaiting_support">Aguardando Suporte</SelectItem>
+                    <SelectItem value="resolved">Resolvidos</SelectItem>
                 </SelectGroup>
                 <SelectSeparator />
                 <SelectGroup>
                     <SelectLabel>Compras de TI</SelectLabel>
-                    <SelectItem value="purchases">Todas as Compras ({loading ? '...' : stats.totalPurchases})</SelectItem>
+                    <SelectItem value="purchases">Compras Ativas ({loading ? '...' : stats.totalPurchases})</SelectItem>
                     <SelectItem value="in_quotation">Em Cotação</SelectItem>
                     <SelectItem value="purchased">Comprado (Em Trânsito)</SelectItem>
-                    <SelectItem value="delivered">Entregue / Finalizado</SelectItem>
+                    <SelectItem value="delivered">Entregue (Finalizado)</SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>

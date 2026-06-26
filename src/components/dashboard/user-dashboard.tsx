@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -82,8 +83,16 @@ export function UserDashboard({ user }: UserDashboardProps) {
     
     if (statusFilter === 'purchases') {
         tickets = tickets.filter(ticket => ticket.type === 'purchase');
-    } else if (statusFilter !== 'all') {
-        tickets = tickets.filter(ticket => ticket.status === statusFilter);
+    } else if (statusFilter === 'all') {
+        // Por padrão, esconde compras na aba "Todos" para evitar confusão com chamados
+        tickets = tickets.filter(ticket => ticket.type === 'support');
+    } else {
+        // Se for um filtro de status específico, garante que o tipo está correto
+        const isPurchaseStatus = ['in_quotation', 'purchased', 'delivered'].includes(statusFilter);
+        tickets = tickets.filter(ticket => 
+            ticket.status === statusFilter && 
+            (isPurchaseStatus ? ticket.type === 'purchase' : ticket.type === 'support')
+        );
     }
 
     return tickets.sort((a, b) => {
@@ -154,7 +163,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
                   <SelectContent>
                       <SelectGroup>
                           <SelectLabel>Geral</SelectLabel>
-                          <SelectItem value="all">Todos</SelectItem>
+                          <SelectItem value="all">Todos os Chamados</SelectItem>
                       </SelectGroup>
                       <SelectSeparator />
                       <SelectGroup>
