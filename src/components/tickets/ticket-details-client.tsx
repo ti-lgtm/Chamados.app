@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2 } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
@@ -230,38 +230,112 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             </div>
 
             <div className="lg:col-span-1 space-y-6">
-                <Card className="print:shadow-none print:border-2">
-                    <CardHeader><CardTitle className="font-headline">Dados da {isPurchase ? 'Compra' : 'Solicitação'}</CardTitle></CardHeader>
+                <Card className="print:shadow-none print:border-2 overflow-hidden">
+                    <CardHeader><CardTitle className="font-headline text-lg">Dados da {isPurchase ? 'Compra' : 'Solicitação'}</CardTitle></CardHeader>
                     <CardContent className="space-y-4 text-sm">
-                        <div className="flex items-center"><User className="h-4 w-4 mr-2 text-muted-foreground" /><strong>Solicitante:</strong><span className="ml-2">{ticket.userName}</span></div>
-                        <div className="flex items-center"><Building className="h-4 w-4 mr-2 text-muted-foreground" /><strong>Empresa:</strong><span className="ml-2">{ticket.company}</span></div>
-                        <div className="flex items-center"><Briefcase className="h-4 w-4 mr-2 text-muted-foreground" /><strong>Setor:</strong><span className="ml-2">{ticket.department}</span></div>
-                        <div className="flex items-center"><Tag className="h-4 w-4 mr-2 text-muted-foreground" /><strong>Prioridade:</strong><Badge variant={priorityMap[ticket.priority]?.variant || 'default'} className="ml-2">{priorityMap[ticket.priority]?.label || ticket.priority}</Badge></div>
+                        <div className="flex items-start gap-3">
+                            <User className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                            <div className="flex flex-col">
+                                <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Solicitante</span>
+                                <span>{ticket.userName}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                            <Building className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                            <div className="flex flex-col">
+                                <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Empresa</span>
+                                <span>{ticket.company}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                            <Briefcase className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                            <div className="flex flex-col">
+                                <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Setor</span>
+                                <span>{ticket.department}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                            <Settings2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                            <div className="flex flex-col">
+                                <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Tipo de Serviço</span>
+                                <span className="font-medium">{ticket.service}</span>
+                            </div>
+                        </div>
+
+                        {ticket.contactNumber && (
+                            <div className="flex items-start gap-3">
+                                <Phone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <div className="flex flex-col">
+                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Contato</span>
+                                    <span className="font-medium">{ticket.contactNumber}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {ticket.requestedFor && (
+                            <div className="flex items-start gap-3">
+                                <UserPlus className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <div className="flex flex-col">
+                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">{isPurchase ? 'Comprar para' : 'Solicitado para'}</span>
+                                    <span className="font-medium text-primary">{ticket.requestedFor}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {ticket.ccEmail && (
+                            <div className="flex items-start gap-3">
+                                <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <div className="flex flex-col">
+                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">E-mail em Cópia (Gestor)</span>
+                                    <span className="text-xs break-all">{ticket.ccEmail}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex items-start gap-3">
+                            <Tag className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                            <div className="flex flex-col">
+                                <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Prioridade</span>
+                                <Badge variant={priorityMap[ticket.priority]?.variant || 'default'} className="w-fit mt-1">
+                                    {priorityMap[ticket.priority]?.label || ticket.priority}
+                                </Badge>
+                            </div>
+                        </div>
+
                         {ticket.expectedDeliveryDate && (
-                            <div className="flex items-center text-primary font-bold group">
-                                <Calendar className="h-4 w-4 mr-2" />
-                                <strong>Previsão de Entrega:</strong>
-                                <span className="ml-2">{format(ticket.expectedDeliveryDate.toDate(), "dd/MM/yyyy")}</span>
-                                {canEdit && (
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-6 w-6 ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onClick={() => {
-                                            setDeliveryDate(format(ticket.expectedDeliveryDate!.toDate(), "yyyy-MM-dd"));
-                                            setIsDeliveryDialogOpen(true);
-                                        }}
-                                    >
-                                        <Pencil className="h-3 w-3" />
-                                    </Button>
-                                )}
+                            <div className="p-3 bg-primary/5 rounded-md border border-primary/20 space-y-1">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-primary font-bold">
+                                        <Calendar className="h-4 w-4" />
+                                        <span className="text-xs uppercase">Previsão de Entrega</span>
+                                    </div>
+                                    {canEdit && (
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-6 w-6"
+                                            onClick={() => {
+                                                setDeliveryDate(format(ticket.expectedDeliveryDate!.toDate(), "yyyy-MM-dd"));
+                                                setIsDeliveryDialogOpen(true);
+                                            }}
+                                        >
+                                            <Pencil className="h-3 w-3" />
+                                        </Button>
+                                    )}
+                                </div>
+                                <p className="text-lg font-bold text-primary pl-6">
+                                    {format(ticket.expectedDeliveryDate.toDate(), "dd/MM/yyyy")}
+                                </p>
                             </div>
                         )}
                     </CardContent>
                     {canEdit && (
-                         <CardFooter className="flex-col items-start gap-4 print:hidden">
+                         <CardFooter className="flex-col items-start gap-4 print:hidden border-t pt-6 bg-muted/20">
                              <div className="w-full space-y-2">
-                                <p className="text-sm font-medium">Status do Fluxo</p>
+                                <p className="text-xs font-bold uppercase text-muted-foreground">Status do Fluxo</p>
                                 <Select onValueChange={(v) => handleStatusChange(v)} value={ticket.status} disabled={isUpdating}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
@@ -285,7 +359,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                 </Select>
                              </div>
                              <div className="w-full space-y-2">
-                                <p className="text-sm font-medium">Responsável</p>
+                                <p className="text-xs font-bold uppercase text-muted-foreground">Responsável</p>
                                 <Select onValueChange={handleAttendantChange} value={ticket.assignedTo || 'null'} disabled={isUpdating}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
