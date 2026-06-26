@@ -57,17 +57,17 @@ export function TiDashboard({ user }: TiDashboardProps) {
   }, []);
 
   const stats = useMemo(() => {
-    // Filtros de Suporte
-    const openSupport = allTickets.filter((t) => t.type === 'support' && t.status === 'open').length;
-    const inProgressSupport = allTickets.filter((t) => t.type === 'support' && t.status === 'in_progress').length;
-    const awaitingUserSupport = allTickets.filter((t) => t.type === 'support' && t.status === 'awaiting_user').length;
-    const awaitingSupportSupport = allTickets.filter((t) => t.type === 'support' && t.status === 'awaiting_support').length;
+    // Filtros de Suporte (Trata tickets sem 'type' como suporte)
+    const openSupport = allTickets.filter((t) => t.type !== 'purchase' && t.status === 'open').length;
+    const inProgressSupport = allTickets.filter((t) => t.type !== 'purchase' && t.status === 'in_progress').length;
+    const awaitingUserSupport = allTickets.filter((t) => t.type !== 'purchase' && t.status === 'awaiting_user').length;
+    const awaitingSupportSupport = allTickets.filter((t) => t.type !== 'purchase' && t.status === 'awaiting_support').length;
     
-    // Filtros de Compras
+    // Filtros de Compras (Apenas quem é explicitamente compra)
     const activePurchases = allTickets.filter(t => t.type === 'purchase' && t.status !== 'delivered').length;
     
-    // Meus Chamados (Apenas Suporte para manter a separação solicitada)
-    const mySupportTickets = allTickets.filter((t) => t.type === 'support' && t.assignedTo === user.uid).length;
+    // Meus Chamados (Suporte)
+    const mySupportTickets = allTickets.filter((t) => t.type !== 'purchase' && t.assignedTo === user.uid).length;
 
     const totalSupportInProgress = inProgressSupport + awaitingUserSupport + awaitingSupportSupport;
 
@@ -183,28 +183,28 @@ export function TiDashboard({ user }: TiDashboardProps) {
     let statusFilteredTickets;
     switch (statusFilter) {
       case 'all':
-        statusFilteredTickets = tickets.filter(t => t.type === 'support');
+        // Todos os chamados que não são compras
+        statusFilteredTickets = tickets.filter(t => t.type !== 'purchase');
         break;
       case 'mine':
         statusFilteredTickets = tickets.filter(
-          (ticket) => ticket.type === 'support' && ticket.assignedTo === user.uid
+          (ticket) => ticket.type !== 'purchase' && ticket.assignedTo === user.uid
         );
         break;
       case 'my_in_progress':
         statusFilteredTickets = tickets.filter(
           (ticket) =>
             ticket.assignedTo === user.uid &&
-            ticket.type === 'support' &&
+            ticket.type !== 'purchase' &&
             (ticket.status === 'in_progress' ||
               ticket.status === 'awaiting_user' ||
               ticket.status === 'awaiting_support')
         );
         break;
       case 'in_progress':
-        // Em atendimento (Suporte) - Inclui todos os status de atendimento ativo
         statusFilteredTickets = tickets.filter(
           (ticket) =>
-            ticket.type === 'support' &&
+            ticket.type !== 'purchase' &&
             (ticket.status === 'in_progress' ||
              ticket.status === 'awaiting_user' ||
              ticket.status === 'awaiting_support')
@@ -216,7 +216,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
         );
         break;
       case 'open':
-        statusFilteredTickets = tickets.filter(t => t.type === 'support' && t.status === 'open');
+        statusFilteredTickets = tickets.filter(t => t.type !== 'purchase' && t.status === 'open');
         break;
       case 'in_quotation':
       case 'purchased':
@@ -226,12 +226,12 @@ export function TiDashboard({ user }: TiDashboardProps) {
       case 'awaiting_user':
       case 'awaiting_support':
       case 'resolved':
-        statusFilteredTickets = tickets.filter(t => t.type === 'support' && t.status === statusFilter);
+        statusFilteredTickets = tickets.filter(t => t.type !== 'purchase' && t.status === statusFilter);
         break;
       default:
         // Mantém a regra de esconder compras se não for um filtro de compras
         statusFilteredTickets = tickets.filter(
-          (ticket) => ticket.status === statusFilter && ticket.type === 'support'
+          (ticket) => ticket.status === statusFilter && ticket.type !== 'purchase'
         );
         break;
     }

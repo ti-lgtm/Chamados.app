@@ -84,14 +84,13 @@ export function UserDashboard({ user }: UserDashboardProps) {
     if (statusFilter === 'purchases') {
         tickets = tickets.filter(ticket => ticket.type === 'purchase');
     } else if (statusFilter === 'all') {
-        // Por padrão, esconde compras na aba "Todos" para evitar confusão com chamados
-        tickets = tickets.filter(ticket => ticket.type === 'support');
+        // Trata chamados legados (sem type) como suporte
+        tickets = tickets.filter(ticket => ticket.type !== 'purchase');
     } else {
-        // Se for um filtro de status específico, garante que o tipo está correto
         const isPurchaseStatus = ['in_quotation', 'purchased', 'delivered'].includes(statusFilter);
         tickets = tickets.filter(ticket => 
             ticket.status === statusFilter && 
-            (isPurchaseStatus ? ticket.type === 'purchase' : ticket.type === 'support')
+            (isPurchaseStatus ? ticket.type === 'purchase' : ticket.type !== 'purchase')
         );
     }
 
