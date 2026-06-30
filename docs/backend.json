@@ -12,7 +12,8 @@
         "status": { "type": "string", "enum": ["active", "suspended"] },
         "createdAt": { "type": "string", "format": "date-time" },
         "avatarUrl": { "type": "string", "format": "uri" },
-        "receivesEmails": { "type": "boolean" }
+        "receivesEmails": { "type": "boolean" },
+        "notificationSoundUrl": { "type": "string", "format": "uri" }
       },
       "required": ["uid", "name", "email", "role", "createdAt", "status"]
     },

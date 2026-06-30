@@ -13,6 +13,7 @@ export interface AppUser {
   createdAt: Timestamp;
   avatarUrl?: string;
   receivesEmails?: boolean;
+  notificationSoundUrl?: string;
 }
 
 export interface Ticket {

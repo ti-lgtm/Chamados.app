@@ -49,35 +49,30 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const prevTicketsRef = useRef<Ticket[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Define o som a partir das configurações do usuário ou o padrão
+  const notificationSoundUrl = user.notificationSoundUrl || 'https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3';
+
   useEffect(() => {
-    audioRef.current = new Audio(
-      'https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3'
-    );
+    audioRef.current = new Audio(notificationSoundUrl);
     audioRef.current.volume = 0.5;
-  }, []);
+  }, [notificationSoundUrl]);
 
   const stats = useMemo(() => {
-    // Filtros de Suporte (Trata tickets sem 'type' como suporte)
-    const openSupport = allTickets.filter((t) => t.type !== 'purchase' && t.status === 'open').length;
-    const inProgressSupport = allTickets.filter((t) => t.type !== 'purchase' && t.status === 'in_progress').length;
-    const awaitingUserSupport = allTickets.filter((t) => t.type !== 'purchase' && t.status === 'awaiting_user').length;
-    const awaitingSupportSupport = allTickets.filter((t) => t.type !== 'purchase' && t.status === 'awaiting_support').length;
+    const openAll = allTickets.filter((t) => t.status === 'open');
+    const openSupport = openAll.filter(t => t.type !== 'purchase').length;
     
-    // Filtros de Compras (Apenas quem é explicitamente compra)
+    const inProgressSupport = allTickets.filter((t) => 
+        t.type !== 'purchase' && 
+        (t.status === 'in_progress' || t.status === 'awaiting_user' || t.status === 'awaiting_support')
+    ).length;
+    
     const activePurchases = allTickets.filter(t => t.type === 'purchase' && t.status !== 'delivered').length;
-    
-    // Meus Chamados (Suporte)
     const mySupportTickets = allTickets.filter((t) => t.type !== 'purchase' && t.assignedTo === user.uid).length;
-
-    const totalSupportInProgress = inProgressSupport + awaitingUserSupport + awaitingSupportSupport;
 
     return {
       open: openSupport,
       inProgress: inProgressSupport,
       myTickets: mySupportTickets,
-      awaitingUser: awaitingUserSupport,
-      awaitingSupport: awaitingSupportSupport,
-      totalSupportInProgress,
       totalPurchases: activePurchases,
     };
   }, [allTickets, user.uid]);
@@ -182,10 +177,6 @@ export function TiDashboard({ user }: TiDashboardProps) {
 
     let statusFilteredTickets;
     switch (statusFilter) {
-      case 'all':
-        // Todos os chamados que não são compras
-        statusFilteredTickets = tickets.filter(t => t.type !== 'purchase');
-        break;
       case 'mine':
         statusFilteredTickets = tickets.filter(
           (ticket) => ticket.type !== 'purchase' && ticket.assignedTo === user.uid
@@ -229,9 +220,8 @@ export function TiDashboard({ user }: TiDashboardProps) {
         statusFilteredTickets = tickets.filter(t => t.type !== 'purchase' && t.status === statusFilter);
         break;
       default:
-        // Mantém a regra de esconder compras se não for um filtro de compras
         statusFilteredTickets = tickets.filter(
-          (ticket) => ticket.status === statusFilter && ticket.type !== 'purchase'
+          (ticket) => ticket.type !== 'purchase'
         );
         break;
     }
@@ -294,7 +284,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
         <StatsCard
           title="Atendimento (Suporte)"
           value={
-            loading ? <Skeleton className="h-8 w-12" /> : stats.totalSupportInProgress
+            loading ? <Skeleton className="h-8 w-12" /> : stats.inProgress
           }
           icon={GanttChart}
           onClick={() => setStatusFilter('in_progress')}
@@ -317,7 +307,6 @@ export function TiDashboard({ user }: TiDashboardProps) {
               <SelectContent>
                 <SelectGroup>
                     <SelectLabel>Geral</SelectLabel>
-                    <SelectItem value="all">Todos os Chamados de Suporte</SelectItem>
                     <SelectItem value="my_in_progress">Meus em Atendimento</SelectItem>
                     <SelectItem value="mine">Meus Chamados (Histórico)</SelectItem>
                 </SelectGroup>
@@ -325,9 +314,9 @@ export function TiDashboard({ user }: TiDashboardProps) {
                 <SelectGroup>
                     <SelectLabel>Suporte Técnico</SelectLabel>
                     <SelectItem value="open">Abertos ({loading ? '...' : stats.open})</SelectItem>
-                    <SelectItem value="in_progress">Em Atendimento ({loading ? '...' : stats.totalSupportInProgress})</SelectItem>
-                    <SelectItem value="awaiting_user">Aguardando Usuário ({loading ? '...' : stats.awaitingUser})</SelectItem>
-                    <SelectItem value="awaiting_support">Aguardando Suporte ({loading ? '...' : stats.awaitingSupport})</SelectItem>
+                    <SelectItem value="in_progress">Em Atendimento ({loading ? '...' : stats.inProgress})</SelectItem>
+                    <SelectItem value="awaiting_user">Aguardando Usuário</SelectItem>
+                    <SelectItem value="awaiting_support">Aguardando Suporte</SelectItem>
                     <SelectItem value="resolved">Resolvidos</SelectItem>
                 </SelectGroup>
                 <SelectSeparator />
