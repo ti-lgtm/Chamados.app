@@ -9,8 +9,9 @@ import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase
 import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Loader2, Bell, Volume2, Play, Trash2 } from 'lucide-react';
@@ -222,9 +223,9 @@ export default function ProfilePage() {
             <CardContent className="space-y-6">
                 <div className="space-y-4">
                     <div className="flex flex-col gap-2">
-                        <FormLabel className="flex items-center gap-2">
+                        <Label className="flex items-center gap-2">
                             <Volume2 className="h-4 w-4" /> Som de Alerta (Novo Chamado)
-                        </FormLabel>
+                        </Label>
                         <div className="flex items-center gap-3">
                             <div className="relative flex-1">
                                 <Input 
@@ -248,9 +249,9 @@ export default function ProfilePage() {
                                 </Button>
                             )}
                         </div>
-                        <FormDescription>
+                        <p className="text-sm text-muted-foreground">
                             Este som será reproduzido apenas para você quando um novo chamado chegar no dashboard.
-                        </FormDescription>
+                        </p>
                     </div>
                 </div>
                 <audio ref={audioPreviewRef} className="hidden" />
