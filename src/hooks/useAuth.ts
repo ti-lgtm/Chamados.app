@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -22,24 +23,31 @@ export const useAuth = (): AuthContextType => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Se o estado inicial do Firebase Auth ainda estiver carregando, mantemos o estado de loading.
     if (authLoading) {
       setLoading(true);
       return;
     }
+
+    // Se não há usuário autenticado no Firebase, paramos o carregamento e limpamos o usuário.
     if (!firebaseUser) {
       setUser(null);
       setLoading(false);
       return;
     }
 
-    if (!firestore) {
+    // Se temos usuário mas o Firestore ainda não está disponível, aguardamos.
+    if (!firestore || !firebaseAuth) {
         return;
     }
 
+    // Inscreve-se para mudanças no documento de perfil do usuário no Firestore.
     const userDocRef = doc(firestore, 'users', firebaseUser.uid);
     const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const userData = docSnap.data() as AppUser;
+        
+        // Verifica se a conta está suspensa.
         if (userData.status === 'suspended') {
             toast({
                 title: "Conta Suspensa",
@@ -49,20 +57,22 @@ export const useAuth = (): AuthContextType => {
             signOut(firebaseAuth);
             setUser(null);
         } else {
+            // Sucesso: atualiza o estado local com os dados do Firestore.
             setUser({
               uid: firebaseUser.uid,
               ...userData
             });
         }
       } else {
-        // This can happen if the user exists in Auth but not in Firestore.
-        // The login/signup flow should handle creating the doc, but as a fallback,
-        // we sign them out to prevent being in a broken state.
-        signOut(firebaseAuth);
+        // Se o documento não existe, NÃO deslogamos o usuário do Firebase Auth.
+        // Isso evita deslogues em massa por erros de rede ou atrasos na criação do documento.
+        // O layout ou as páginas tratarão o estado user=null redirecionando se necessário.
         setUser(null);
       }
       setLoading(false);
     }, (error) => {
+        // Em caso de erro de permissão ou rede, apenas registramos no console.
+        // Não forçamos o logout para não quebrar a sessão por falhas temporárias.
         console.error("Error fetching user document in useAuth:", error);
         setUser(null);
         setLoading(false);
