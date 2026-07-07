@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -16,6 +17,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import {
   useAuth as useFirebaseAuth,
   useFirestore,
+  useFirebase,
   errorEmitter,
   FirestorePermissionError,
 } from "@/firebase";
@@ -85,6 +87,7 @@ export function LoginForm() {
   const router = useRouter();
   const auth = useFirebaseAuth();
   const db = useFirestore();
+  const { user: currentUser, isUserLoading } = useFirebase();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -102,13 +105,15 @@ export function LoginForm() {
   });
 
   const setupUserProfile = useCallback(async (user: any) => {
+    if (!user || !db || !auth) return false;
+    
     if (!user.email) {
       setError('Não foi possível obter o e-mail da sua conta Google.');
-      await signOut(auth!);
+      await signOut(auth);
       return false;
     }
 
-    const userDocRef = doc(db!, 'users', user.uid);
+    const userDocRef = doc(db, 'users', user.uid);
     const userDoc = await getDoc(userDocRef);
 
     if (!userDoc.exists()) {
@@ -132,37 +137,45 @@ export function LoginForm() {
           requestResourceData: userData,
         });
         errorEmitter.emit('permission-error', permissionError);
-        await signOut(auth!);
-        setError('Falha ao configurar o perfil do usuário. Tente novamente.');
+        await signOut(auth);
+        setError('Falha ao configurar o perfil do usuário no banco de dados.');
         return false;
       }
     }
     return true;
   }, [auth, db]);
 
+  // Se o usuário já estiver logado, redireciona imediatamente
+  useEffect(() => {
+    if (!isUserLoading && currentUser) {
+      router.push('/dashboard');
+    }
+  }, [currentUser, isUserLoading, router]);
+
   useEffect(() => {
     if (!auth) return;
 
-    // getRedirectResult deve ser chamado sempre que o componente montar para capturar o retorno do Google
+    setLoading(true);
     getRedirectResult(auth)
       .then(async (result) => {
         if (result?.user) {
-          setLoading(true);
           const success = await setupUserProfile(result.user);
           if (success) {
             toast({ title: 'Login com Google bem-sucedido!' });
             router.push('/dashboard');
           }
-          setLoading(false);
         }
       })
       .catch((err) => {
         console.error('Erro no retorno do login Google:', err);
         if (err.code === 'auth/unauthorized-domain') {
-          setError('Domínio não autorizado. Você precisa adicionar este endereço nas configurações de domínios autorizados do Firebase Console.');
-        } else if (err.code === 'auth/popup-blocked') {
-          setError('O redirecionamento falhou. Certifique-se de que os cookies de terceiros não estão bloqueados.');
+          setError('Domínio não autorizado no Firebase Console. Adicione este endereço aos domínios permitidos.');
+        } else {
+          setError('Erro ao processar login com Google. Tente novamente.');
         }
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }, [auth, router, setupUserProfile, toast]);
 
@@ -178,34 +191,10 @@ export function LoginForm() {
       );
       const user = userCredential.user;
 
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (!userDoc.exists()) {
-        const userData = {
-          uid: user.uid,
-          name: user.displayName || values.email.split('@')[0],
-          email: user.email,
-          role: 'user' as const,
-          status: 'active' as const,
-          createdAt: serverTimestamp(),
-          receivesEmails: true,
-        };
-
-        try {
-          await setDoc(userDocRef, userData);
-        } catch (firestoreError) {
-          const permissionError = new FirestorePermissionError({
-            path: userDocRef.path,
-            operation: 'create',
-            requestResourceData: userData,
-          });
-          errorEmitter.emit('permission-error', permissionError);
-          await signOut(auth);
-          setError('Falha ao configurar o perfil do usuário. Tente novamente.');
-          setLoading(false);
-          return;
-        }
+      const success = await setupUserProfile(user);
+      if (!success) {
+        setLoading(false);
+        return;
       }
 
       toast({
@@ -215,7 +204,6 @@ export function LoginForm() {
       router.push('/dashboard');
     } catch (error: any) {
       setError('E-mail ou senha inválidos. Por favor, tente novamente.');
-    } finally {
       setLoading(false);
     }
   }
@@ -223,15 +211,16 @@ export function LoginForm() {
   async function handleGoogleSignIn() {
     if (!auth) return;
     setError(null);
+    setLoading(true);
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
-      // signInWithRedirect é o método mais estável para evitar bloqueios de popup
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error('Erro ao iniciar login com Google:', error);
-      setError('Falha ao iniciar o login com Google. Tente usar e-mail e senha.');
+      setError('Falha ao iniciar o login com Google.');
+      setLoading(false);
     }
   }
 
@@ -250,17 +239,10 @@ export function LoginForm() {
       setIsResetDialogOpen(false);
       setResetEmail('');
     } catch (error: any) {
-      if (error.code === 'auth/user-not-found') {
-        toast({
-          title: 'Nenhum usuário encontrado com este e-mail.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Erro ao enviar e-mail de redefinição.',
-          variant: 'destructive',
-        });
-      }
+      toast({
+        title: 'Erro ao enviar e-mail de redefinição.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSendingReset(false);
     }
