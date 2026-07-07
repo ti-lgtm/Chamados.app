@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   sendPasswordResetEmail,
   signOut,
@@ -100,6 +101,72 @@ export function LoginForm() {
     },
   });
 
+  // Lógica compartilhada para configurar o perfil do usuário
+  const setupUserProfile = useCallback(async (user: any) => {
+    if (!user.email) {
+      setError('Não foi possível obter o e-mail da sua conta Google.');
+      await signOut(auth);
+      return false;
+    }
+
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (!userDoc.exists()) {
+      const userData = {
+        uid: user.uid,
+        name: user.displayName || user.email.split('@')[0],
+        email: user.email,
+        role: 'user' as const,
+        status: 'active' as const,
+        createdAt: serverTimestamp(),
+        avatarUrl: user.photoURL || null,
+        receivesEmails: true,
+      };
+
+      try {
+        await setDoc(userDocRef, userData);
+      } catch (firestoreError) {
+        const permissionError = new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'create',
+          requestResourceData: userData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        await signOut(auth);
+        setError('Falha ao configurar o perfil do usuário. Tente novamente.');
+        return false;
+      }
+    }
+    return true;
+  }, [auth, db]);
+
+  // Verifica o resultado do redirecionamento ao carregar a página
+  useEffect(() => {
+    if (!auth) return;
+
+    setLoading(true);
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result?.user) {
+          const success = await setupUserProfile(result.user);
+          if (success) {
+            toast({ title: 'Login com Google bem-sucedido!' });
+            router.push('/dashboard');
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Erro no processamento do redirecionamento:', err);
+        if (err.code === 'auth/account-exists-with-different-credential') {
+            setError('Uma conta já existe com este e-mail, mas com um método de login diferente.');
+        } else if (err.code === 'auth/unauthorized-domain') {
+            setError('Este domínio não está autorizado para fazer login nas configurações do Firebase.');
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [auth, router, setupUserProfile, toast]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
     setError(null);
@@ -154,81 +221,17 @@ export function LoginForm() {
   }
 
   async function handleGoogleSignIn() {
-    setLoading(true);
     setError(null);
     const provider = new GoogleAuthProvider();
+    // Forçar a seleção de conta para evitar que o navegador bloqueie o redirecionamento automático
+    provider.setCustomParameters({ prompt: 'select_account' });
+    
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      if (!user.email) {
-        setError(
-          'Não foi possível obter o e-mail da sua conta Google. Tente outro método de login.'
-        );
-        await signOut(auth);
-        setLoading(false);
-        return;
-      }
-
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (!userDoc.exists()) {
-        const userData = {
-          uid: user.uid,
-          name: user.displayName || user.email.split('@')[0],
-          email: user.email,
-          role: 'user' as const,
-          status: 'active' as const,
-          createdAt: serverTimestamp(),
-          avatarUrl: user.photoURL || null,
-          receivesEmails: true,
-        };
-
-        try {
-          await setDoc(userDocRef, userData);
-        } catch (firestoreError) {
-          const permissionError = new FirestorePermissionError({
-            path: userDocRef.path,
-            operation: 'create',
-            requestResourceData: userData,
-          });
-          errorEmitter.emit('permission-error', permissionError);
-          await signOut(auth);
-          setError(
-            'Falha ao configurar o perfil do usuário com Google. Tente novamente.'
-          );
-          setLoading(false);
-          return;
-        }
-      }
-
-      toast({
-        title: 'Login com Google bem-sucedido!',
-        description: 'Redirecionando para o painel.',
-      });
-      router.push('/dashboard');
+      // Usando Redirecionamento em vez de Popup para máxima compatibilidade
+      await signInWithRedirect(auth, provider);
     } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
-        // Don't show an error if the user just closes the popup.
-      } else if (
-        error.code === 'auth/account-exists-with-different-credential'
-      ) {
-        setError(
-          'Uma conta já existe com este e-mail, mas com um método de login diferente. Por favor, faça login usando o método original.'
-        );
-      } else if (error.code === 'auth/unauthorized-domain') {
-        setError(
-          "Este domínio não está autorizado para fazer login. Adicione-o na lista de 'Domínios autorizados' nas configurações de Autenticação do seu projeto Firebase."
-        );
-      } else {
-        console.error('Google Sign-In Error:', error);
-        setError(
-          'Falha ao fazer login com o Google. Verifique se os pop-ups estão habilitados e tente novamente.'
-        );
-      }
-    } finally {
-      setLoading(false);
+      console.error('Erro ao iniciar login com Google:', error);
+      setError('Falha ao iniciar o login com Google. Tente usar e-mail e senha.');
     }
   }
 
@@ -278,7 +281,7 @@ export function LoginForm() {
         onClick={handleGoogleSignIn}
         disabled={loading}
       >
-        <GoogleIcon className="mr-2 h-4 w-4" />
+        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
         Entrar com Google
       </Button>
 
@@ -395,5 +398,3 @@ export function LoginForm() {
     </div>
   );
 }
-
-    
