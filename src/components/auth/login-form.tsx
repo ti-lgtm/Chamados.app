@@ -101,15 +101,14 @@ export function LoginForm() {
     },
   });
 
-  // Lógica compartilhada para configurar o perfil do usuário
   const setupUserProfile = useCallback(async (user: any) => {
     if (!user.email) {
       setError('Não foi possível obter o e-mail da sua conta Google.');
-      await signOut(auth);
+      await signOut(auth!);
       return false;
     }
 
-    const userDocRef = doc(db, 'users', user.uid);
+    const userDocRef = doc(db!, 'users', user.uid);
     const userDoc = await getDoc(userDocRef);
 
     if (!userDoc.exists()) {
@@ -133,7 +132,7 @@ export function LoginForm() {
           requestResourceData: userData,
         });
         errorEmitter.emit('permission-error', permissionError);
-        await signOut(auth);
+        await signOut(auth!);
         setError('Falha ao configurar o perfil do usuário. Tente novamente.');
         return false;
       }
@@ -141,33 +140,34 @@ export function LoginForm() {
     return true;
   }, [auth, db]);
 
-  // Verifica o resultado do redirecionamento ao carregar a página
   useEffect(() => {
     if (!auth) return;
 
-    setLoading(true);
+    // getRedirectResult deve ser chamado sempre que o componente montar para capturar o retorno do Google
     getRedirectResult(auth)
       .then(async (result) => {
         if (result?.user) {
+          setLoading(true);
           const success = await setupUserProfile(result.user);
           if (success) {
             toast({ title: 'Login com Google bem-sucedido!' });
             router.push('/dashboard');
           }
+          setLoading(false);
         }
       })
       .catch((err) => {
-        console.error('Erro no processamento do redirecionamento:', err);
-        if (err.code === 'auth/account-exists-with-different-credential') {
-            setError('Uma conta já existe com este e-mail, mas com um método de login diferente.');
-        } else if (err.code === 'auth/unauthorized-domain') {
-            setError('Este domínio não está autorizado para fazer login nas configurações do Firebase.');
+        console.error('Erro no retorno do login Google:', err);
+        if (err.code === 'auth/unauthorized-domain') {
+          setError('Domínio não autorizado. Você precisa adicionar este endereço nas configurações de domínios autorizados do Firebase Console.');
+        } else if (err.code === 'auth/popup-blocked') {
+          setError('O redirecionamento falhou. Certifique-se de que os cookies de terceiros não estão bloqueados.');
         }
-      })
-      .finally(() => setLoading(false));
+      });
   }, [auth, router, setupUserProfile, toast]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth || !db) return;
     setLoading(true);
     setError(null);
     try {
@@ -221,13 +221,13 @@ export function LoginForm() {
   }
 
   async function handleGoogleSignIn() {
+    if (!auth) return;
     setError(null);
     const provider = new GoogleAuthProvider();
-    // Forçar a seleção de conta para evitar que o navegador bloqueie o redirecionamento automático
     provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
-      // Usando Redirecionamento em vez de Popup para máxima compatibilidade
+      // signInWithRedirect é o método mais estável para evitar bloqueios de popup
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error('Erro ao iniciar login com Google:', error);
@@ -236,7 +236,7 @@ export function LoginForm() {
   }
 
   const handlePasswordReset = async () => {
-    if (!resetEmail) {
+    if (!auth || !resetEmail) {
       toast({ title: 'Por favor, insira seu e-mail.', variant: 'destructive' });
       return;
     }
@@ -271,7 +271,7 @@ export function LoginForm() {
       {error && (
         <Alert variant="destructive">
           <AlertTitle>Erro no Login</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       )}
 
