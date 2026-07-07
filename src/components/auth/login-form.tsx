@@ -7,8 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   signInWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   GoogleAuthProvider,
   sendPasswordResetEmail,
   signOut,
@@ -145,39 +144,11 @@ export function LoginForm() {
     return true;
   }, [auth, db]);
 
-  // Se o usuário já estiver logado, redireciona imediatamente
   useEffect(() => {
     if (!isUserLoading && currentUser) {
       router.push('/dashboard');
     }
   }, [currentUser, isUserLoading, router]);
-
-  useEffect(() => {
-    if (!auth) return;
-
-    setLoading(true);
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result?.user) {
-          const success = await setupUserProfile(result.user);
-          if (success) {
-            toast({ title: 'Login com Google bem-sucedido!' });
-            router.push('/dashboard');
-          }
-        }
-      })
-      .catch((err) => {
-        console.error('Erro no retorno do login Google:', err);
-        if (err.code === 'auth/unauthorized-domain') {
-          setError('Domínio não autorizado no Firebase Console. Adicione este endereço aos domínios permitidos.');
-        } else {
-          setError('Erro ao processar login com Google. Tente novamente.');
-        }
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [auth, router, setupUserProfile, toast]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth || !db) return;
@@ -216,10 +187,23 @@ export function LoginForm() {
     provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
-      await signInWithRedirect(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        const success = await setupUserProfile(result.user);
+        if (success) {
+          toast({ title: 'Login com Google bem-sucedido!' });
+          router.push('/dashboard');
+        }
+      }
     } catch (error: any) {
-      console.error('Erro ao iniciar login com Google:', error);
-      setError('Falha ao iniciar o login com Google.');
+      console.error('Erro ao fazer login com Google:', error);
+      if (error.code === 'auth/popup-blocked') {
+        setError('O pop-up de login foi bloqueado pelo navegador. Por favor, permita pop-ups para este site.');
+      } else {
+        setError('Falha ao fazer login com Google. Tente novamente.');
+      }
+      setLoading(false);
+    } finally {
       setLoading(false);
     }
   }
