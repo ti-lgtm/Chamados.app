@@ -75,7 +75,7 @@ const serviceOptions = [
     "OUTROS",
 ] as const;
 
-function addBusinessDays(startDate: Date, days: number): Date {
+export function addBusinessDays(startDate: Date, days: number): Date {
   let date = new Date(startDate);
   let added = 0;
   while (added < days) {
@@ -174,7 +174,10 @@ export function NewTicketForm() {
         transaction.set(counterRef, { lastNumber: newNumber }, { merge: true });
 
         const newTicketRef = doc(collection(db, "tickets"));
-        const deadlineDate = isPurchase ? null : addBusinessDays(new Date(), 4);
+        
+        // SLA: Alta = 1 dia, Normal = 3 dias, Baixa = 7 dias
+        const slaDays = values.priority === 'high' ? 1 : values.priority === 'normal' ? 3 : 7;
+        const deadlineDate = isPurchase ? null : addBusinessDays(new Date(), slaDays);
         
         const ticketPayload = {
           ticketNumber: newNumber,

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -24,6 +23,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "../ui/dialog";
+import { addBusinessDays } from "./new-ticket-form";
 
 interface TicketDetailsClientProps {
     initialTicket: Ticket;
@@ -151,12 +151,22 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     const handlePriorityChange = () => {
         if (!ticketRef) return;
         setIsUpdating(true);
-        updateDoc(ticketRef, { 
+        
+        // Recalcular SLA baseado na nova prioridade (Alta: 1d, Normal: 3d, Baixa: 7d)
+        // O prazo é contado a partir da criação original do chamado
+        const slaDays = newPriority === 'high' ? 1 : newPriority === 'normal' ? 3 : 7;
+        const creationDate = ticket.createdAt?.toDate() || new Date();
+        const newDeadline = ticket.type === 'purchase' ? null : addBusinessDays(creationDate, slaDays);
+
+        const updateData = { 
             priority: newPriority,
+            deadline: newDeadline ? Timestamp.fromDate(newDeadline) : null,
             updatedAt: serverTimestamp() 
-        })
+        };
+
+        updateDoc(ticketRef, updateData)
         .then(() => {
-            toast({ title: "Prioridade atualizada com sucesso!" });
+            toast({ title: "Prioridade e SLA atualizados!" });
             setIsPriorityDialogOpen(false);
         })
         .catch(() => {
@@ -477,7 +487,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                         <DialogHeader>
                             <DialogTitle>Alterar Prioridade</DialogTitle>
                             <DialogDescription>
-                                Ajuste o nível de urgência deste chamado. Isso altera a percepção de prioridade na fila técnica.
+                                Ajuste o nível de urgência deste chamado. O prazo de SLA será recalculado automaticamente a partir da data de abertura.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-2">
@@ -487,9 +497,9 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="low">Baixa</SelectItem>
-                                    <SelectItem value="normal">Normal</SelectItem>
-                                    <SelectItem value="high">Alta / Urgente</SelectItem>
+                                    <SelectItem value="low">Baixa (7 dias úteis)</SelectItem>
+                                    <SelectItem value="normal">Normal (3 dias úteis)</SelectItem>
+                                    <SelectItem value="high">Alta / Urgente (24h úteis)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

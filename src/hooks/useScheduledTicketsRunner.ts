@@ -1,10 +1,10 @@
-
 'use client';
 
 import { useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, getDocs, doc, serverTimestamp, runTransaction, Timestamp } from 'firebase/firestore';
 import type { AppUser, ScheduledTicket } from '@/lib/types';
+import { addBusinessDays } from '@/components/tickets/new-ticket-form';
 
 /**
  * Hook que verifica e dispara chamados automáticos (recorrentes).
@@ -50,9 +50,9 @@ export function useScheduledTicketsRunner(user: AppUser | null) {
                             // 2. Prepara o novo chamado
                             const newTicketRef = doc(collection(firestore, 'tickets'));
                             
-                            // Deadline de 4 dias úteis
-                            const deadlineDate = new Date();
-                            deadlineDate.setDate(deadlineDate.getDate() + 4);
+                            // SLA baseado na prioridade da regra (Alta=1d, Normal=3d, Baixa=7d)
+                            const slaDays = data.priority === 'high' ? 1 : data.priority === 'normal' ? 3 : 7;
+                            const deadlineDate = addBusinessDays(new Date(), slaDays);
 
                             const ticketPayload = {
                                 ticketNumber: nextNumber,
