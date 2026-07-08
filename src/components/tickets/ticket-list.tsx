@@ -11,6 +11,7 @@ import { ptBR } from "date-fns/locale";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { Star, ShoppingCart, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -35,6 +36,8 @@ const priorityMap: { [key: string]: { label: string; variant: "default" | "secon
 
 
 export function TicketList({ tickets }: TicketListProps) {
+  const router = useRouter();
+
   if (tickets.length === 0) {
     return (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center h-80">
@@ -50,7 +53,11 @@ export function TicketList({ tickets }: TicketListProps) {
   return (
     <div className="space-y-4">
       {tickets.map((ticket) => (
-        <Card key={ticket.id} className="transition-shadow hover:shadow-md">
+        <Card 
+          key={ticket.id} 
+          className="group transition-all hover:shadow-md cursor-pointer hover:border-primary/40 active:scale-[0.995]"
+          onClick={() => router.push(`/tickets/${ticket.id}`)}
+        >
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                 <div className="order-2 sm:order-1">
@@ -60,8 +67,8 @@ export function TicketList({ tickets }: TicketListProps) {
                         ) : (
                             <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground"><Wrench className="h-3 w-3 mr-1"/> SUPORTE</Badge>
                         )}
-                        <CardTitle className="font-headline text-lg hover:text-primary">
-                            <Link href={`/tickets/${ticket.id}`}>{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</Link>
+                        <CardTitle className="font-headline text-lg group-hover:text-primary transition-colors">
+                            {ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}
                         </CardTitle>
                     </div>
                     <CardDescription className="flex flex-wrap items-center text-xs">
@@ -98,8 +105,8 @@ export function TicketList({ tickets }: TicketListProps) {
              </div>
           </CardContent>
           <CardFooter className="flex justify-between items-center">
-            <Button asChild variant="secondary" size="sm">
-              <Link href={`/tickets/${ticket.id}`}>Ver Detalhes</Link>
+            <Button variant="secondary" size="sm" className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              Ver Detalhes
             </Button>
             {ticket.status === 'resolved' && typeof ticket.rating === 'number' && (
                 <div className="flex items-center gap-0.5">
