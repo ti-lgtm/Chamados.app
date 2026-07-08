@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2 } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2, RotateCcw } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
@@ -194,6 +194,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     if (authLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
     const isPurchase = ticket.type === 'purchase';
+    const isFinished = ticket.status === 'resolved' || ticket.status === 'delivered';
 
     return (
         <div className="grid gap-6 lg:grid-cols-3 print:block print:space-y-6">
@@ -401,16 +402,31 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                     </SelectContent>
                                 </Select>
                              </div>
-                             {!isPurchase ? (
-                                <Button className="w-full" onClick={() => handleStatusChange('resolved')} disabled={isUpdating || ticket.status === 'resolved'}>
-                                    {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                    Finalizar Chamado
+                             
+                             {isFinished ? (
+                                <Button 
+                                    className="w-full" 
+                                    variant="destructive" 
+                                    onClick={() => handleStatusChange(isPurchase ? 'in_quotation' : 'in_progress')}
+                                    disabled={isUpdating}
+                                >
+                                    {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+                                    Reabrir Chamado
                                 </Button>
                              ) : (
-                                <Button className="w-full" variant="outline" onClick={() => handleStatusChange('delivered')} disabled={isUpdating || ticket.status === 'delivered'}>
-                                    {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <Package className="mr-2 h-4 w-4" />}
-                                    Confirmar Entrega
-                                </Button>
+                                <>
+                                    {!isPurchase ? (
+                                        <Button className="w-full" onClick={() => handleStatusChange('resolved')} disabled={isUpdating}>
+                                            {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                            Finalizar Chamado
+                                        </Button>
+                                    ) : (
+                                        <Button className="w-full" variant="outline" onClick={() => handleStatusChange('delivered')} disabled={isUpdating}>
+                                            {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <Package className="mr-2 h-4 w-4" />}
+                                            Confirmar Entrega
+                                        </Button>
+                                    )}
+                                </>
                              )}
                          </CardFooter>
                     )}
