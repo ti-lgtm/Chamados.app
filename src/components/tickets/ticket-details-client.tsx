@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,6 +8,7 @@ import type { Ticket, AppUser } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2, RotateCcw } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2, RotateCcw, ArrowLeft } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
@@ -47,6 +49,7 @@ const priorityMap: { [key: string]: { label: string; variant: "default" | "secon
 export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps) {
     const { user, loading: authLoading } = useAuth();
     const firestore = useFirestore();
+    const router = useRouter();
     const { toast } = useToast();
     const [ticket, setTicket] = useState<Ticket>(initialTicket);
     const [isUpdating, setIsUpdating] = useState(false);
@@ -197,300 +200,309 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     const isFinished = ticket.status === 'resolved' || ticket.status === 'delivered';
 
     return (
-        <div className="grid gap-6 lg:grid-cols-3 print:block print:space-y-6">
-            <div className="lg:col-span-2 space-y-6">
-                <Card className="print:shadow-none print:border-2">
-                    <CardHeader>
-                        <div className="flex justify-between items-start">
-                             <div className="flex flex-col gap-1">
-                                {isPurchase && <Badge variant="outline" className="w-fit text-[10px] bg-primary/5 text-primary border-primary/20 mb-1"><ShoppingCart className="h-3 w-3 mr-1"/> COMPRA DE TI</Badge>}
-                                <CardTitle className="font-headline text-2xl">{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</CardTitle>
-                             </div>
-                             <div className="flex gap-2 print:hidden">
-                                {canEdit && (
-                                    <Button variant="outline" size="sm" onClick={() => window.print()}>
-                                        <Printer className="mr-2 h-4 w-4" />
-                                        Imprimir
-                                    </Button>
-                                )}
-                                <Badge variant={statusMap[ticket.status]?.variant || 'default'}>
-                                    {statusMap[ticket.status]?.label || ticket.status}
-                                </Badge>
-                             </div>
-                        </div>
-                        <CardDescription className="print:text-black">
-                            Criado por {ticket.userName} • {ticket.createdAt ? format(ticket.createdAt.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ''}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-foreground whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
-                        
-                        <div className="mt-6 border-t pt-4">
-                             <DeadlineIndicator 
-                                createdAt={ticket.createdAt} 
-                                deadline={ticket.deadline} 
-                                status={ticket.status}
-                                type={ticket.type}
-                                purchaseDate={ticket.purchaseDate}
-                                expectedDeliveryDate={ticket.expectedDeliveryDate}
-                            />
-                        </div>
-
-                        {ticket.attachments && ticket.attachments.length > 0 && (
-                            <div className="mt-6">
-                                <h4 className="font-semibold mb-2 flex items-center gap-2">Anexos</h4>
-                                <ul className="list-disc list-inside space-y-1 text-sm">
-                                    {ticket.attachments.map((url, index) => (
-                                        <li key={index}><a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{decodeURIComponent(url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`)}</a></li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-                <Comments ticket={ticket} currentUser={user} supportUsers={supportUsers} />
+        <div className="space-y-6">
+            <div className="flex items-center gap-2 print:hidden">
+                <Button variant="ghost" size="sm" onClick={() => router.back()} className="text-muted-foreground hover:text-foreground">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Voltar para a lista
+                </Button>
             </div>
-
-            <div className="lg:col-span-1 space-y-6">
-                <Card className="print:shadow-none print:border-2 overflow-hidden">
-                    <CardHeader><CardTitle className="font-headline text-lg">Dados da {isPurchase ? 'Compra' : 'Solicitação'}</CardTitle></CardHeader>
-                    <CardContent className="space-y-4 text-sm">
-                        <div className="flex items-start gap-3">
-                            <User className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                            <div className="flex flex-col">
-                                <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Solicitante</span>
-                                <span>{ticket.userName}</span>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-3">
-                            <Building className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                            <div className="flex flex-col">
-                                <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Empresa</span>
-                                <span>{ticket.company}</span>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-3">
-                            <Briefcase className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                            <div className="flex flex-col">
-                                <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Setor</span>
-                                <span>{ticket.department}</span>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-3">
-                            <Settings2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                            <div className="flex flex-col">
-                                <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Tipo de Serviço</span>
-                                <span className="font-medium">{ticket.service}</span>
-                            </div>
-                        </div>
-
-                        {ticket.contactNumber && (
-                            <div className="flex items-start gap-3">
-                                <Phone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                                <div className="flex flex-col">
-                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Contato</span>
-                                    <span className="font-medium">{ticket.contactNumber}</span>
+            
+            <div className="grid gap-6 lg:grid-cols-3 print:block print:space-y-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="print:shadow-none print:border-2">
+                        <CardHeader>
+                            <div className="flex justify-between items-start">
+                                <div className="flex flex-col gap-1">
+                                    {isPurchase && <Badge variant="outline" className="w-fit text-[10px] bg-primary/5 text-primary border-primary/20 mb-1"><ShoppingCart className="h-3 w-3 mr-1"/> COMPRA DE TI</Badge>}
+                                    <CardTitle className="font-headline text-2xl">{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</CardTitle>
                                 </div>
-                            </div>
-                        )}
-
-                        {ticket.requestedFor && (
-                            <div className="flex items-start gap-3">
-                                <UserPlus className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                                <div className="flex flex-col">
-                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">{isPurchase ? 'Comprar para' : 'Solicitado para'}</span>
-                                    <span className="font-medium text-primary">{ticket.requestedFor}</span>
-                                </div>
-                            </div>
-                        )}
-
-                        {ticket.ccEmail && (
-                            <div className="flex items-start gap-3">
-                                <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                                <div className="flex flex-col">
-                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">E-mail em Cópia (Gestor)</span>
-                                    <span className="text-xs break-all">{ticket.ccEmail}</span>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex items-start gap-3">
-                            <Tag className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                            <div className="flex flex-col w-full">
-                                <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1 flex items-center justify-between">
-                                    Prioridade
+                                <div className="flex gap-2 print:hidden">
                                     {canEdit && (
-                                        <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="h-5 w-5 -mt-1"
-                                            onClick={() => setIsPriorityDialogOpen(true)}
-                                        >
-                                            <Pencil className="h-3 w-3" />
+                                        <Button variant="outline" size="sm" onClick={() => window.print()}>
+                                            <Printer className="mr-2 h-4 w-4" />
+                                            Imprimir
                                         </Button>
                                     )}
-                                </span>
-                                <Badge variant={priorityMap[ticket.priority]?.variant || 'default'} className="w-fit mt-1">
-                                    {priorityMap[ticket.priority]?.label || ticket.priority}
-                                </Badge>
+                                    <Badge variant={statusMap[ticket.status]?.variant || 'default'}>
+                                        {statusMap[ticket.status]?.label || ticket.status}
+                                    </Badge>
+                                </div>
                             </div>
-                        </div>
+                            <CardDescription className="print:text-black">
+                                Criado por {ticket.userName} • {ticket.createdAt ? format(ticket.createdAt.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ''}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-foreground whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
+                            
+                            <div className="mt-6 border-t pt-4">
+                                <DeadlineIndicator 
+                                    createdAt={ticket.createdAt} 
+                                    deadline={ticket.deadline} 
+                                    status={ticket.status}
+                                    type={ticket.type}
+                                    purchaseDate={ticket.purchaseDate}
+                                    expectedDeliveryDate={ticket.expectedDeliveryDate}
+                                />
+                            </div>
 
-                        {ticket.expectedDeliveryDate && (
-                            <div className="p-3 bg-primary/5 rounded-md border border-primary/20 space-y-1">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-primary font-bold">
-                                        <Calendar className="h-4 w-4" />
-                                        <span className="text-xs uppercase">Previsão de Entrega</span>
+                            {ticket.attachments && ticket.attachments.length > 0 && (
+                                <div className="mt-6">
+                                    <h4 className="font-semibold mb-2 flex items-center gap-2">Anexos</h4>
+                                    <ul className="list-disc list-inside space-y-1 text-sm">
+                                        {ticket.attachments.map((url, index) => (
+                                            <li key={index}><a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{decodeURIComponent(url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`)}</a></li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                    <Comments ticket={ticket} currentUser={user} supportUsers={supportUsers} />
+                </div>
+
+                <div className="lg:col-span-1 space-y-6">
+                    <Card className="print:shadow-none print:border-2 overflow-hidden">
+                        <CardHeader><CardTitle className="font-headline text-lg">Dados da {isPurchase ? 'Compra' : 'Solicitação'}</CardTitle></CardHeader>
+                        <CardContent className="space-y-4 text-sm">
+                            <div className="flex items-start gap-3">
+                                <User className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <div className="flex flex-col">
+                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Solicitante</span>
+                                    <span>{ticket.userName}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <Building className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <div className="flex flex-col">
+                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Empresa</span>
+                                    <span>{ticket.company}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <Briefcase className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <div className="flex flex-col">
+                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Setor</span>
+                                    <span>{ticket.department}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <Settings2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <div className="flex flex-col">
+                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Tipo de Serviço</span>
+                                    <span className="font-medium">{ticket.service}</span>
+                                </div>
+                            </div>
+
+                            {ticket.contactNumber && (
+                                <div className="flex items-start gap-3">
+                                    <Phone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                    <div className="flex flex-col">
+                                        <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Contato</span>
+                                        <span className="font-medium">{ticket.contactNumber}</span>
                                     </div>
-                                    {canEdit && (
-                                        <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="h-6 w-6"
-                                            onClick={() => {
-                                                setDeliveryDate(format(ticket.expectedDeliveryDate!.toDate(), "yyyy-MM-dd"));
-                                                setIsDeliveryDialogOpen(true);
-                                            }}
-                                        >
-                                            <Pencil className="h-3 w-3" />
-                                        </Button>
-                                    )}
                                 </div>
-                                <p className="text-lg font-bold text-primary pl-6">
-                                    {format(ticket.expectedDeliveryDate.toDate(), "dd/MM/yyyy")}
-                                </p>
-                            </div>
-                        )}
-                    </CardContent>
-                    {canEdit && (
-                         <CardFooter className="flex-col items-start gap-4 print:hidden border-t pt-6 bg-muted/20">
-                             <div className="w-full space-y-2">
-                                <p className="text-xs font-bold uppercase text-muted-foreground">Status do Fluxo</p>
-                                <Select onValueChange={(v) => handleStatusChange(v)} value={ticket.status} disabled={isUpdating}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {!isPurchase ? (
-                                            <>
-                                                <SelectItem value="open">Aberto</SelectItem>
-                                                <SelectItem value="in_progress">Em Atendimento</SelectItem>
-                                                <SelectItem value="awaiting_user">Aguardando Usuário</SelectItem>
-                                                <SelectItem value="awaiting_support">Aguardando Suporte</SelectItem>
-                                                <SelectItem value="resolved">Resolvido</SelectItem>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <SelectItem value="open">Solicitado</SelectItem>
-                                                <SelectItem value="in_quotation">Em Cotação</SelectItem>
-                                                <SelectItem value="purchased">Comprado (Em Trânsito)</SelectItem>
-                                                <SelectItem value="delivered">Entregue / Concluído</SelectItem>
-                                            </>
+                            )}
+
+                            {ticket.requestedFor && (
+                                <div className="flex items-start gap-3">
+                                    <UserPlus className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                    <div className="flex flex-col">
+                                        <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">{isPurchase ? 'Comprar para' : 'Solicitado para'}</span>
+                                        <span className="font-medium text-primary">{ticket.requestedFor}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {ticket.ccEmail && (
+                                <div className="flex items-start gap-3">
+                                    <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                    <div className="flex flex-col">
+                                        <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">E-mail em Cópia (Gestor)</span>
+                                        <span className="text-xs break-all">{ticket.ccEmail}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex items-start gap-3">
+                                <Tag className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <div className="flex flex-col w-full">
+                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1 flex items-center justify-between">
+                                        Prioridade
+                                        {canEdit && (
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-5 w-5 -mt-1"
+                                                onClick={() => setIsPriorityDialogOpen(true)}
+                                            >
+                                                <Pencil className="h-3 w-3" />
+                                            </Button>
                                         )}
-                                    </SelectContent>
-                                </Select>
-                             </div>
-                             <div className="w-full space-y-2">
-                                <p className="text-xs font-bold uppercase text-muted-foreground">Responsável</p>
-                                <Select onValueChange={handleAttendantChange} value={ticket.assignedTo || 'null'} disabled={isUpdating}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="null">Ninguém</SelectItem>
-                                        {supportUsers?.map(su => <SelectItem key={su.id} value={su.id}>{su.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                             </div>
-                             
-                             {isFinished ? (
-                                <Button 
-                                    className="w-full" 
-                                    variant="destructive" 
-                                    onClick={() => handleStatusChange(isPurchase ? 'in_quotation' : 'in_progress')}
-                                    disabled={isUpdating}
-                                >
-                                    {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}
-                                    Reabrir Chamado
-                                </Button>
-                             ) : (
-                                <>
-                                    {!isPurchase ? (
-                                        <Button className="w-full" onClick={() => handleStatusChange('resolved')} disabled={isUpdating}>
-                                            {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                            Finalizar Chamado
-                                        </Button>
-                                    ) : (
-                                        <Button className="w-full" variant="outline" onClick={() => handleStatusChange('delivered')} disabled={isUpdating}>
-                                            {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <Package className="mr-2 h-4 w-4" />}
-                                            Confirmar Entrega
-                                        </Button>
-                                    )}
-                                </>
-                             )}
-                         </CardFooter>
-                    )}
-                </Card>
-                {canEdit && user && <InternalNotes ticketId={ticket.id} currentUser={user} />}
-                {(ticket.status === 'resolved' || ticket.status === 'delivered') && <RatingSection ticketId={ticket.id} ticketCreatorId={ticket.userId} currentUser={user} />}
+                                    </span>
+                                    <Badge variant={priorityMap[ticket.priority]?.variant || 'default'} className="w-fit mt-1">
+                                        {priorityMap[ticket.priority]?.label || ticket.priority}
+                                    </Badge>
+                                </div>
+                            </div>
+
+                            {ticket.expectedDeliveryDate && (
+                                <div className="p-3 bg-primary/5 rounded-md border border-primary/20 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-primary font-bold">
+                                            <Calendar className="h-4 w-4" />
+                                            <span className="text-xs uppercase">Previsão de Entrega</span>
+                                        </div>
+                                        {canEdit && (
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-6 w-6"
+                                                onClick={() => {
+                                                    setDeliveryDate(format(ticket.expectedDeliveryDate!.toDate(), "yyyy-MM-dd"));
+                                                    setIsDeliveryDialogOpen(true);
+                                                }}
+                                            >
+                                                <Pencil className="h-3 w-3" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <p className="text-lg font-bold text-primary pl-6">
+                                        {format(ticket.expectedDeliveryDate.toDate(), "dd/MM/yyyy")}
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                        {canEdit && (
+                            <CardFooter className="flex-col items-start gap-4 print:hidden border-t pt-6 bg-muted/20">
+                                <div className="w-full space-y-2">
+                                    <p className="text-xs font-bold uppercase text-muted-foreground">Status do Fluxo</p>
+                                    <Select onValueChange={(v) => handleStatusChange(v)} value={ticket.status} disabled={isUpdating}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            {!isPurchase ? (
+                                                <>
+                                                    <SelectItem value="open">Aberto</SelectItem>
+                                                    <SelectItem value="in_progress">Em Atendimento</SelectItem>
+                                                    <SelectItem value="awaiting_user">Aguardando Usuário</SelectItem>
+                                                    <SelectItem value="awaiting_support">Aguardando Suporte</SelectItem>
+                                                    <SelectItem value="resolved">Resolvido</SelectItem>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <SelectItem value="open">Solicitado</SelectItem>
+                                                    <SelectItem value="in_quotation">Em Cotação</SelectItem>
+                                                    <SelectItem value="purchased">Comprado (Em Trânsito)</SelectItem>
+                                                    <SelectItem value="delivered">Entregue / Concluído</SelectItem>
+                                                </>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="w-full space-y-2">
+                                    <p className="text-xs font-bold uppercase text-muted-foreground">Responsável</p>
+                                    <Select onValueChange={handleAttendantChange} value={ticket.assignedTo || 'null'} disabled={isUpdating}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="null">Ninguém</SelectItem>
+                                            {supportUsers?.map(su => <SelectItem key={su.id} value={su.id}>{su.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                
+                                {isFinished ? (
+                                    <Button 
+                                        className="w-full" 
+                                        variant="destructive" 
+                                        onClick={() => handleStatusChange(isPurchase ? 'in_quotation' : 'in_progress')}
+                                        disabled={isUpdating}
+                                    >
+                                        {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+                                        Reabrir Chamado
+                                    </Button>
+                                ) : (
+                                    <>
+                                        {!isPurchase ? (
+                                            <Button className="w-full" onClick={() => handleStatusChange('resolved')} disabled={isUpdating}>
+                                                {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                                Finalizar Chamado
+                                            </Button>
+                                        ) : (
+                                            <Button className="w-full" variant="outline" onClick={() => handleStatusChange('delivered')} disabled={isUpdating}>
+                                                {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <Package className="mr-2 h-4 w-4" />}
+                                                Confirmar Entrega
+                                            </Button>
+                                        )}
+                                    </>
+                                )}
+                            </CardFooter>
+                        )}
+                    </Card>
+                    {canEdit && user && <InternalNotes ticketId={ticket.id} currentUser={user} />}
+                    {(ticket.status === 'resolved' || ticket.status === 'delivered') && <RatingSection ticketId={ticket.id} ticketCreatorId={ticket.userId} currentUser={user} />}
+                </div>
+
+                {/* Dialog de Data de Entrega */}
+                <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>{ticket.status === 'purchased' ? 'Atualizar Previsão de Entrega' : 'Informar Previsão de Entrega'}</DialogTitle>
+                            <DialogDescription>
+                                {ticket.status === 'purchased' 
+                                    ? 'Informe a nova data caso ocorra algum atraso ou alteração no prazo.' 
+                                    : 'Ao marcar como comprado, o usuário verá uma barra de progresso até a chegada.'}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-2">
+                            <Label>Data Prevista</Label>
+                            <Input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsDeliveryDialogOpen(false)}>Cancelar</Button>
+                            <Button onClick={confirmPurchaseStatus} disabled={isUpdating}>
+                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {ticket.status === 'purchased' ? 'Atualizar Data' : 'Confirmar Compra'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Dialog de Prioridade */}
+                <Dialog open={isPriorityDialogOpen} onOpenChange={setIsPriorityDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Alterar Prioridade</DialogTitle>
+                            <DialogDescription>
+                                Ajuste o nível de urgência deste chamado. Isso altera a percepção de prioridade na fila técnica.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-2">
+                            <Label>Nova Prioridade</Label>
+                            <Select value={newPriority} onValueChange={(v: any) => setNewPriority(v)}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="low">Baixa</SelectItem>
+                                    <SelectItem value="normal">Normal</SelectItem>
+                                    <SelectItem value="high">Alta / Urgente</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsPriorityDialogOpen(false)}>Cancelar</Button>
+                            <Button onClick={handlePriorityChange} disabled={isUpdating}>
+                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Salvar Prioridade
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
-
-            {/* Dialog de Data de Entrega */}
-            <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{ticket.status === 'purchased' ? 'Atualizar Previsão de Entrega' : 'Informar Previsão de Entrega'}</DialogTitle>
-                        <DialogDescription>
-                            {ticket.status === 'purchased' 
-                                ? 'Informe a nova data caso ocorra algum atraso ou alteração no prazo.' 
-                                : 'Ao marcar como comprado, o usuário verá uma barra de progresso até a chegada.'}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-2">
-                        <Label>Data Prevista</Label>
-                        <Input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeliveryDialogOpen(false)}>Cancelar</Button>
-                        <Button onClick={confirmPurchaseStatus} disabled={isUpdating}>
-                            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {ticket.status === 'purchased' ? 'Atualizar Data' : 'Confirmar Compra'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Dialog de Prioridade */}
-            <Dialog open={isPriorityDialogOpen} onOpenChange={setIsPriorityDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Alterar Prioridade</DialogTitle>
-                        <DialogDescription>
-                            Ajuste o nível de urgência deste chamado. Isso altera a percepção de prioridade na fila técnica.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-2">
-                        <Label>Nova Prioridade</Label>
-                        <Select value={newPriority} onValueChange={(v: any) => setNewPriority(v)}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="low">Baixa</SelectItem>
-                                <SelectItem value="normal">Normal</SelectItem>
-                                <SelectItem value="high">Alta / Urgente</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsPriorityDialogOpen(false)}>Cancelar</Button>
-                        <Button onClick={handlePriorityChange} disabled={isUpdating}>
-                            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Salvar Prioridade
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }
