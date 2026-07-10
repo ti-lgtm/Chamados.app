@@ -75,5 +75,10 @@ service cloud.firestore {
     match /counters/{counterId} {
       allow read, write: if isSignedIn();
     }
+
+    match /room_images/{roomId} {
+      allow read: if isSignedIn();
+      allow write: if isSupportStaff();
+    }
   }
 }

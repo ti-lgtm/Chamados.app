@@ -1,13 +1,18 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, Loader2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-
+import { useAuth } from '@/hooks/useAuth';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { uploadAttachments } from '@/app/actions/upload';
+import { useToast } from '@/hooks/use-toast';
 
 const rooms: { name: string; koalendarUrl: string; googleCalendarUrl: string; imageId: string; }[] = [
   {
@@ -25,10 +30,59 @@ const rooms: { name: string; koalendarUrl: string; googleCalendarUrl: string; im
 ];
 
 export default function SchedulesPage() {
+  const { user } = useAuth();
+  const firestore = useFirestore();
+  const { toast } = useToast();
   const [selectedRoom, setSelectedRoom] = useState<(typeof rooms)[0] | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
   
-  const getImage = (id: string) => {
-    return PlaceHolderImages.find(img => img.id === id);
+  const isStaff = user?.role === 'admin' || user?.role === 'ti';
+
+  const roomImagesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'room_images');
+  }, [firestore]);
+
+  const { data: customImages } = useCollection<{ url: string }>(roomImagesQuery);
+
+  const getRoomImage = (imageId: string) => {
+    const custom = customImages?.find(img => img.id === imageId);
+    if (custom) return custom.url;
+    
+    const placeholder = PlaceHolderImages.find(img => img.id === imageId);
+    return placeholder?.imageUrl || 'https://picsum.photos/seed/default/800/600';
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, imageId: string) => {
+    const file = e.target.files?.[0];
+    if (!file || !firestore) return;
+
+    if (!file.type.startsWith('image/')) {
+        toast({ title: "Formato inválido", description: "Por favor, selecione um arquivo de imagem.", variant: "destructive" });
+        return;
+    }
+
+    setUploadingId(imageId);
+    try {
+        const formData = new FormData();
+        formData.append('attachments', file);
+        const urls = await uploadAttachments(formData);
+        
+        if (urls.length > 0) {
+            const roomRef = doc(firestore, 'room_images', imageId);
+            await setDoc(roomRef, { 
+                url: urls[0], 
+                updatedAt: serverTimestamp(),
+                updatedBy: user?.uid,
+                updatedByName: user?.name
+            });
+            toast({ title: "Foto da sala atualizada com sucesso!" });
+        }
+    } catch (error) {
+        toast({ title: "Erro ao enviar imagem", variant: "destructive" });
+    } finally {
+        setUploadingId(null);
+    }
   }
 
   const handleSelectRoom = (room: (typeof rooms)[0]) => {
@@ -129,19 +183,41 @@ export default function SchedulesPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {rooms.map((room) => {
-              const image = getImage(room.imageId);
+              const imageUrl = getRoomImage(room.imageId);
+              const isUploading = uploadingId === room.imageId;
+              
               return (
-                <Card key={room.name} className="flex flex-col overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl">
-                    <div className="relative h-56 w-full">
-                        {image && (
-                          <Image
-                              src={image.imageUrl}
-                              alt={image.description}
-                              width={800}
-                              height={600}
-                              data-ai-hint={image.imageHint}
-                              className="object-cover w-full h-full"
-                          />
+                <Card key={room.name} className="flex flex-col overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl group">
+                    <div className="relative h-64 w-full bg-muted">
+                        <Image
+                            src={imageUrl}
+                            alt={room.name}
+                            fill
+                            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
+                        />
+                        
+                        {isStaff && (
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+                                <div className="relative">
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        onChange={(e) => handleImageUpload(e, room.imageId)}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                                        disabled={isUploading}
+                                    />
+                                    <Button variant="secondary" size="sm" className="pointer-events-none">
+                                        {isUploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Camera className="h-4 w-4 mr-2" />}
+                                        Alterar Foto
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {isUploading && (
+                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-20">
+                                <Loader2 className="h-8 w-8 animate-spin text-white" />
+                            </div>
                         )}
                     </div>
                     <div className="flex flex-col flex-grow p-6 bg-card">
