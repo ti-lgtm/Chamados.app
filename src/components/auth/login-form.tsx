@@ -104,7 +104,7 @@ export function LoginForm() {
   });
 
   const setupUserProfile = useCallback(async (user: any) => {
-    if (!user || !db || !auth) return false;
+    if (!db || !auth) return false;
     
     if (!user.email) {
       setError('Não foi possível obter o e-mail da sua conta Google.');
@@ -121,7 +121,7 @@ export function LoginForm() {
         name: user.displayName || user.email.split('@')[0],
         email: user.email,
         role: 'user' as const,
-        status: 'active' as const,
+        status: 'suspended' as const, // Regra: novo usuário sempre suspenso por padrão
         createdAt: serverTimestamp(),
         avatarUrl: user.photoURL || null,
         receivesEmails: true,
@@ -129,6 +129,10 @@ export function LoginForm() {
 
       try {
         await setDoc(userDocRef, userData);
+        toast({
+          title: "Cadastro em análise",
+          description: "Sua conta foi criada, mas precisa ser autorizada por um administrador.",
+        });
       } catch (firestoreError) {
         const permissionError = new FirestorePermissionError({
           path: userDocRef.path,
@@ -140,9 +144,16 @@ export function LoginForm() {
         setError('Falha ao configurar o perfil do usuário no banco de dados.');
         return false;
       }
+    } else {
+        const data = userDoc.data();
+        if (data.status === 'suspended') {
+            setError('Seu acesso ainda não foi autorizado por um administrador.');
+            await signOut(auth);
+            return false;
+        }
     }
     return true;
-  }, [auth, db]);
+  }, [auth, db, toast]);
 
   useEffect(() => {
     if (!isUserLoading && currentUser) {
@@ -174,7 +185,11 @@ export function LoginForm() {
       });
       router.push('/dashboard');
     } catch (error: any) {
-      setError('E-mail ou senha inválidos. Por favor, tente novamente.');
+      if (error.code === 'auth/invalid-credential') {
+        setError('E-mail ou senha inválidos. Por favor, tente novamente.');
+      } else {
+        setError('Ocorreu um erro ao tentar fazer login.');
+      }
       setLoading(false);
     }
   }

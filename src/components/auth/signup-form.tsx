@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, signOut } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth as useFirebaseAuth, useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useRouter } from "next/navigation";
@@ -38,16 +39,8 @@ export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-    },
-  });
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth || !db) return;
     setLoading(true);
     setError(null);
     try {
@@ -63,27 +56,24 @@ export function SignupForm() {
         uid: user.uid,
         name: values.name,
         email: values.email,
-        role: "user", // Default role
-        status: "active", // Default status
+        role: "user",
+        status: "suspended", // Regra: novo usuário sempre suspenso por padrão
         createdAt: serverTimestamp(),
         receivesEmails: true,
       };
 
-      // Create user document in Firestore
-      setDoc(userDocRef, userData).catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'create',
-          requestResourceData: userData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+      // Cria o documento e aguarda a finalização
+      await setDoc(userDocRef, userData);
 
       toast({
-        title: "Conta criada com sucesso!",
-        description: "Você será redirecionado para o painel.",
+        title: "Cadastro realizado com sucesso!",
+        description: "Seu acesso está aguardando liberação de um administrador.",
       });
-      router.push("/dashboard");
+      
+      // Desloga o usuário para que ele veja a mensagem de acesso restrito ao tentar logar
+      await signOut(auth);
+      router.push("/login");
+
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
         setError("Este e-mail já está em uso. Tente fazer login.");
@@ -164,5 +154,3 @@ export function SignupForm() {
     </div>
   );
 }
-
-    

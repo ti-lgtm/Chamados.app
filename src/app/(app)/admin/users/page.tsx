@@ -9,7 +9,7 @@ import type { AppUser } from '@/lib/types';
 import { UsersTable } from '@/components/admin/users-table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ShieldAlert, Search } from 'lucide-react';
+import { ShieldAlert, Search, UserCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 
@@ -37,6 +37,14 @@ export default function AdminUsersPage() {
             u.email.toLowerCase().includes(term)
         );
     }, [users, searchTerm]);
+
+    const pendingUsers = useMemo(() => {
+        return filteredUsers.filter(u => u.status === 'suspended');
+    }, [filteredUsers]);
+
+    const activeUsers = useMemo(() => {
+        return filteredUsers.filter(u => u.status !== 'suspended');
+    }, [filteredUsers]);
 
     const isLoading = authLoading || (currentUser?.role === 'admin' && usersLoading);
 
@@ -87,7 +95,7 @@ export default function AdminUsersPage() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-headline font-bold">Gerenciamento de Usuários</h1>
-                    <p className="text-muted-foreground">Administre os usuários do sistema.</p>
+                    <p className="text-muted-foreground">Administre os acessos e funções do sistema.</p>
                 </div>
                 <div className="relative w-full sm:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -99,15 +107,34 @@ export default function AdminUsersPage() {
                     />
                 </div>
             </div>
+
+            {/* SEÇÃO DE APROVAÇÃO PENDENTE (Destaque no topo) */}
+            {pendingUsers.length > 0 && (
+                <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                            <UserCheck className="h-5 w-5" />
+                            <CardTitle className="text-lg">Aguardando Aprovação ({pendingUsers.length})</CardTitle>
+                        </div>
+                        <CardDescription className="text-orange-600/80 dark:text-orange-400/80">
+                            Estes usuários acabaram de se cadastrar e precisam de autorização para acessar o portal.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <UsersTable users={pendingUsers} />
+                    </CardContent>
+                </Card>
+            )}
+
             <Card>
                 <CardHeader>
                     <CardTitle>Todos os Usuários</CardTitle>
                     <CardDescription>
-                        Total de {filteredUsers.length} usuários {searchTerm ? 'encontrados' : 'cadastrados'}.
+                        Total de {filteredUsers.length} usuários registrados no sistema.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <UsersTable users={filteredUsers} />
+                    <UsersTable users={activeUsers} />
                 </CardContent>
             </Card>
         </div>
