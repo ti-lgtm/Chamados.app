@@ -133,6 +133,9 @@ export function LoginForm() {
           title: "Cadastro em análise",
           description: "Sua conta foi criada, mas precisa ser autorizada por um administrador.",
         });
+        // Desloga imediatamente após criar o perfil suspenso
+        await signOut(auth);
+        return false;
       } catch (firestoreError) {
         const permissionError = new FirestorePermissionError({
           path: userDocRef.path,
