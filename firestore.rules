@@ -1,27 +1,10 @@
 
-/**
- * Core Philosophy: This ruleset enforces a Role-Based Access Control (RBAC) model for a support ticket system.
- * The default security posture is user-ownership, where users can only manage their own data. This is then
- * extended by two elevated roles: 'ti' (support staff) and 'admin'. 'ti' users gain read-access to all tickets
- * and comments to provide support, while 'admin' users have full read/write access across the entire system.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    //-------------------------------------------------------------------------
-    // Helper Functions
-    //-------------------------------------------------------------------------
-
     function isSignedIn() {
-      return request.auth != null && (
-        !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active'
-      );
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth != null;
     }
 
     function getRole() {
@@ -37,24 +20,25 @@ service cloud.firestore {
       return isSignedIn() && getRole() == 'admin';
     }
 
-    //-------------------------------------------------------------------------
-    // Collection Rules
-    //-------------------------------------------------------------------------
+    // Knowledge Base is readable by anyone signed in
+    match /knowledge_base/{articleId} {
+      allow read: if isSignedIn();
+      allow write: if isSupportStaff();
+    }
 
     match /users/{userId} {
-      allow get: if isOwner(userId) || isSupportStaff();
+      allow get: if isSignedIn() && (request.auth.uid == userId || isSupportStaff());
       allow list: if isSignedIn();
       allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if isOwner(userId) || isSupportStaff();
+      allow update: if isSignedIn() && (request.auth.uid == userId || isSupportStaff());
       allow delete: if isAdmin();
     }
 
     match /tickets/{ticketId} {
-      allow get: if isOwner(resource.data.userId) || isSupportStaff();
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isSupportStaff());
       allow list: if isSignedIn();
-      // Permite criação se for o dono OU se for equipe técnica criando um chamado de sistema (recorrência)
-      allow create: if isOwner(request.resource.data.userId) || (isSupportStaff() && request.resource.data.userId == 'system');
-      allow update: if isSupportStaff() || isOwner(resource.data.userId);
+      allow create: if isSignedIn() && (request.resource.data.userId == request.auth.uid || (isSupportStaff() && request.resource.data.userId == 'system'));
+      allow update: if isSignedIn() && (isSupportStaff() || resource.data.userId == request.auth.uid);
       allow delete: if isSupportStaff();
 
       match /comments/{commentId} {

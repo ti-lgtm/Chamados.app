@@ -37,15 +37,29 @@
         "purchaseDate": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "ticketNumber", "type", "title", "status", "userId", "createdAt"]
+    },
+    "KnowledgeBaseArticle": {
+        "title": "Knowledge Base Article",
+        "type": "object",
+        "properties": {
+            "id": { "type": "string" },
+            "title": { "type": "string" },
+            "description": { "type": "string" },
+            "link": { "type": "string", "format": "uri" },
+            "category": { "type": "string" },
+            "isFeatured": { "type": "boolean" },
+            "order": { "type": "number" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "title", "description", "link", "category", "createdAt"]
     }
   },
   "auth": {
     "providers": ["password", "google"]
   },
   "firestore": {
-    "structure": [
-      { "path": "/users/{userId}", "definition": { "entityName": "User", "description": "Stores user profiles." } },
-      { "path": "/tickets/{ticketId}", "definition": { "entityName": "Ticket", "description": "Stores support tickets and purchases." } }
-    ]
+    "/users/{userId}": { "schema": "#/backend/entities/User", "description": "Stores user profiles." },
+    "/tickets/{ticketId}": { "schema": "#/backend/entities/Ticket", "description": "Stores support tickets and purchases." },
+    "/knowledge_base/{articleId}": { "schema": "#/backend/entities/KnowledgeBaseArticle", "description": "Stores knowledge base procedures and articles." }
   }
 }

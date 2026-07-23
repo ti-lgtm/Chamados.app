@@ -89,3 +89,15 @@ export interface InternalNote {
   message: string;
   createdAt: Timestamp;
 }
+
+export interface KnowledgeBaseArticle {
+  id: string;
+  title: string;
+  description: string;
+  link: string;
+  category: string;
+  isFeatured: boolean;
+  order?: number;
+  createdAt: Timestamp;
+  updatedAt?: Timestamp;
+}

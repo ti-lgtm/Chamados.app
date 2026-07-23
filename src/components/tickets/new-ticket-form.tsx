@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, serverTimestamp, runTransaction, doc, query, where, Timestamp } from 'firebase/firestore';
+import { collection, serverTimestamp, runTransaction, doc, query, where, Timestamp, getDocs, limit } from 'firebase/firestore';
 import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -32,9 +33,9 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Info, ShoppingCart, Wrench } from 'lucide-react';
+import { Loader2, Info, ShoppingCart, Wrench, BookOpen, ExternalLink, Lightbulb } from 'lucide-react';
 import { triggerTicketCreatedEmail, triggerTicketCreatedSupportEmail } from '@/app/actions/email';
-import type { AppUser } from '@/lib/types';
+import type { AppUser, KnowledgeBaseArticle } from '@/lib/types';
 
 const departmentOptions = [
     "Administrativo",
@@ -94,6 +95,7 @@ export function NewTicketForm() {
   const { toast } = useToast();
   const db = useFirestore();
   const [loading, setLoading] = useState(false);
+  const [suggestedArticles, setSuggestedArticles] = useState<KnowledgeBaseArticle[]>([]);
 
   const formSchema = useMemo(() => {
     return z.object({
@@ -141,11 +143,41 @@ export function NewTicketForm() {
     },
   });
 
+  const title = form.watch('title');
   const selectedService = form.watch('service');
   const isForMeValue = form.watch('isForMe');
   const fileRef = form.register('attachments');
 
   const isPurchase = selectedService === 'COMPRA';
+
+  // Busca sugestões na base de conhecimento conforme o usuário digita o título
+  useEffect(() => {
+    if (!db || title.length < 5) {
+        setSuggestedArticles([]);
+        return;
+    }
+
+    const searchDelay = setTimeout(async () => {
+        try {
+            const kbRef = collection(db, 'knowledge_base');
+            // Busca simples (o Firestore não suporta busca textual nativa por prefixo sem índice externo, 
+            // então pegamos uma amostra e filtramos localmente para o MVP)
+            const snapshot = await getDocs(query(kbRef, limit(20)));
+            const articles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as KnowledgeBaseArticle));
+            
+            const filtered = articles.filter(a => 
+                a.title.toLowerCase().includes(title.toLowerCase()) || 
+                a.category.toLowerCase().includes(title.toLowerCase())
+            ).slice(0, 3);
+
+            setSuggestedArticles(filtered);
+        } catch (err) {
+            console.error("Erro ao buscar sugestões:", err);
+        }
+    }, 500);
+
+    return () => clearTimeout(searchDelay);
+  }, [db, title]);
 
   const supportUsersQuery = useMemoFirebase(() => {
     if (!db) return null;
@@ -285,21 +317,49 @@ export function NewTicketForm() {
             />
         </div>
 
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                {isPurchase ? 'O que você precisa comprar?' : 'Título do Chamado'} <span className="text-destructive">*</span>
-              </FormLabel>
-              <FormControl>
-                <Input placeholder={isPurchase ? "Ex: Mouse sem fio e Teclado Mecânico" : "Ex: Problema com a impressora do 2º andar"} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="space-y-4">
+            <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>
+                    {isPurchase ? 'O que você precisa comprar?' : 'Título do Chamado'} <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                    <Input placeholder={isPurchase ? "Ex: Mouse sem fio e Teclado Mecânico" : "Ex: Problema com a impressora do 2º andar"} {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+
+            {suggestedArticles.length > 0 && (
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2 text-primary font-bold text-sm mb-3">
+                        <Lightbulb className="h-4 w-4" />
+                        Encontramos guias que podem te ajudar:
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                        {suggestedArticles.map(article => (
+                            <a 
+                                key={article.id} 
+                                href={article.link} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between p-2 rounded-md bg-background border hover:border-primary transition-colors group"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium line-clamp-1">{article.title}</span>
+                                </div>
+                                <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary" />
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
             <FormField

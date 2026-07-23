@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from "react";
@@ -12,7 +13,7 @@ import {
   CalendarDays,
   BarChart,
   Clock,
-  ShoppingCart,
+  BookOpen,
 } from "lucide-react";
 import {
   Sheet,
@@ -89,6 +90,7 @@ export function AppHeader() {
 
   const navItems = [
     { href: "/dashboard", label: "Chamados", icon: TicketIconAlt, roles: ['user', 'ti', 'admin'], isDashboard: true },
+    { href: "/knowledge-base", label: "Base de Conhecimento", icon: BookOpen, roles: ['user', 'ti', 'admin'] },
     { href: "/schedules", label: "Agendamentos", icon: CalendarDays, roles: ['user', 'ti', 'admin'] },
     { href: "/tickets/new", label: "Novo Chamado", icon: PlusCircle, roles: ['user', 'ti', 'admin'] },
     { href: "/statistics", label: "Estatísticas", icon: BarChart, roles: ['ti', 'admin'] },
