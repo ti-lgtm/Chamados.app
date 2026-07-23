@@ -1,14 +1,14 @@
-
 {
   "entities": {
     "User": {
       "title": "User",
+      "description": "Stores user profiles and roles.",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "role": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "ti", "admin"] },
         "status": { "type": "string", "enum": ["active", "suspended"] },
         "createdAt": { "type": "string", "format": "date-time" },
         "avatarUrl": { "type": "string", "format": "uri" },
@@ -19,6 +19,7 @@
     },
     "Ticket": {
       "title": "Ticket",
+      "description": "Stores support tickets and purchase requests.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -30,36 +31,53 @@
         "service": { "type": "string" },
         "description": { "type": "string" },
         "status": { "type": "string", "enum": ["open", "in_progress", "resolved", "awaiting_user", "awaiting_support", "in_quotation", "purchased", "delivered"] },
-        "priority": { "type": "string" },
+        "priority": { "type": "string", "enum": ["low", "normal", "high"] },
         "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "assignedTo": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "deadline": { "type": "string", "format": "date-time" },
         "expectedDeliveryDate": { "type": "string", "format": "date-time" },
-        "purchaseDate": { "type": "string", "format": "date-time" }
+        "purchaseDate": { "type": "string", "format": "date-time" },
+        "rating": { "type": "number" }
       },
       "required": ["id", "ticketNumber", "type", "title", "status", "userId", "createdAt"]
     },
     "KnowledgeBaseArticle": {
-        "title": "Knowledge Base Article",
-        "type": "object",
-        "properties": {
-            "id": { "type": "string" },
-            "title": { "type": "string" },
-            "description": { "type": "string" },
-            "link": { "type": "string", "format": "uri" },
-            "category": { "type": "string" },
-            "isFeatured": { "type": "boolean" },
-            "order": { "type": "number" },
-            "createdAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["id", "title", "description", "link", "category", "createdAt"]
+      "title": "Knowledge Base Article",
+      "description": "Stores links to technical procedures and guides.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "link": { "type": "string", "format": "uri" },
+        "category": { "type": "string" },
+        "isFeatured": { "type": "boolean" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "description", "link", "category", "createdAt"]
     }
   },
   "auth": {
     "providers": ["password", "google"]
   },
   "firestore": {
-    "/users/{userId}": { "schema": "#/backend/entities/User", "description": "Stores user profiles." },
-    "/tickets/{ticketId}": { "schema": "#/backend/entities/Ticket", "description": "Stores support tickets and purchases." },
-    "/knowledge_base/{articleId}": { "schema": "#/backend/entities/KnowledgeBaseArticle", "description": "Stores knowledge base procedures and articles." }
+    "/users/{userId}": {
+      "schema": "#/backend/entities/User",
+      "description": "Stores user profiles."
+    },
+    "/tickets/{ticketId}": {
+      "schema": "#/backend/entities/Ticket",
+      "description": "Stores support tickets and purchases."
+    },
+    "/knowledge_base/{articleId}": {
+      "schema": "#/backend/entities/KnowledgeBaseArticle",
+      "description": "Stores knowledge base procedures and articles."
+    }
   }
 }
