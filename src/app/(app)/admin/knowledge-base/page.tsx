@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { collection, deleteDoc, doc } from 'firebase/firestore';
 import type { KnowledgeBaseArticle } from '@/lib/types';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +36,7 @@ export default function AdminKnowledgeBasePage() {
 
     const articlesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'knowledge_base'), orderBy('category', 'asc'), orderBy('title', 'asc'));
+        return collection(firestore, 'knowledge_base');
     }, [firestore]);
 
     const { data: articles, isLoading } = useCollection<KnowledgeBaseArticle>(articlesQuery);
@@ -72,7 +71,7 @@ export default function AdminKnowledgeBasePage() {
     }
 
     return (
-        <div className="space-y-8 max-w-7xl mx-auto">
+        <div className="space-y-8 max-w-7xl mx-auto relative">
              <div className="flex justify-between items-center">
                 <div className="space-y-1">
                     <div className="flex items-center gap-2 text-muted-foreground mb-2">
@@ -80,12 +79,18 @@ export default function AdminKnowledgeBasePage() {
                             <ArrowLeft className="h-4 w-4" /> Voltar para a Base
                         </Link>
                     </div>
-                    <h1 className="text-3xl font-headline font-bold">Gerenciar Base de Conhecimento</h1>
-                    <p className="text-muted-foreground">Cadastre e edite os manuais técnicos para os usuários.</p>
+                    <h1 className="text-3xl font-headline font-bold">Gestão de Conteúdo</h1>
+                    <p className="text-muted-foreground">Cadastre novos procedimentos e manuais externos aqui.</p>
                 </div>
-                <Button onClick={() => { setEditingArticle(null); setIsFormOpen(true); }}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Novo Procedimento
+                
+                {/* Botão de Mais Prominente */}
+                <Button 
+                    size="lg" 
+                    className="rounded-full shadow-lg h-14 px-6 gap-2"
+                    onClick={() => { setEditingArticle(null); setIsFormOpen(true); }}
+                >
+                    <Plus className="h-6 w-6" />
+                    Novo Conteúdo
                 </Button>
             </div>
 
@@ -93,7 +98,7 @@ export default function AdminKnowledgeBasePage() {
                 <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                         <BookOpen className="h-5 w-5 text-primary" />
-                        Lista de Procedimentos ({articles?.length || 0})
+                        Lista de Manuais ({articles?.length || 0})
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -101,19 +106,18 @@ export default function AdminKnowledgeBasePage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-[300px]">Título</TableHead>
-                                <TableHead>Categoria</TableHead>
+                                <TableHead>Setor</TableHead>
                                 <TableHead className="hidden md:table-cell">Status</TableHead>
-                                <TableHead className="hidden lg:table-cell">Link</TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
-                                <TableRow><TableCell colSpan={5} className="text-center py-8"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
-                            ) : articles?.length === 0 ? (
-                                <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground">Nenhum procedimento cadastrado.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={4} className="text-center py-8"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+                            ) : !articles || articles.length === 0 ? (
+                                <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground">Nenhum procedimento cadastrado.</TableCell></TableRow>
                             ) : (
-                                articles?.map(article => (
+                                articles.map(article => (
                                     <TableRow key={article.id}>
                                         <TableCell className="font-medium">
                                             <div className="flex flex-col">
@@ -126,15 +130,10 @@ export default function AdminKnowledgeBasePage() {
                                         </TableCell>
                                         <TableCell className="hidden md:table-cell">
                                             {article.isFeatured && (
-                                                <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100">
+                                                <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
                                                     <Star className="h-3 w-3 mr-1 fill-yellow-600" /> Destaque
                                                 </Badge>
                                             )}
-                                        </TableCell>
-                                        <TableCell className="hidden lg:table-cell">
-                                            <a href={article.link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1 text-xs">
-                                                Ver Doc <ExternalLink className="h-3 w-3" />
-                                            </a>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
@@ -159,7 +158,7 @@ export default function AdminKnowledgeBasePage() {
                     <DialogHeader>
                         <DialogTitle>{editingArticle ? 'Editar Procedimento' : 'Novo Procedimento'}</DialogTitle>
                         <DialogDescription>
-                            Preencha os dados abaixo para disponibilizar este guia na base de conhecimento.
+                            Preencha os dados e o link do documento externo.
                         </DialogDescription>
                     </DialogHeader>
                     <KnowledgeBaseForm 

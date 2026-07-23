@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -45,9 +44,10 @@ export default function KnowledgeBasePage() {
 
     const isStaff = user?.role === 'admin' || user?.role === 'ti';
 
+    // Query simplificada para evitar problemas de permissão
     const articlesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'knowledge_base'), orderBy('title', 'asc'));
+        return collection(firestore, 'knowledge_base');
     }, [firestore]);
 
     const { data: articles, isLoading } = useCollection<KnowledgeBaseArticle>(articlesQuery);
@@ -55,11 +55,11 @@ export default function KnowledgeBasePage() {
     const filteredArticles = useMemo(() => {
         if (!articles) return [];
         return articles.filter(a => {
-            const matchesSearch = a.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                 a.description.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesSearch = a.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                 a.description?.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesCategory = !selectedCategory || a.category === selectedCategory;
             return matchesSearch && matchesCategory;
-        });
+        }).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     }, [articles, searchTerm, selectedCategory]);
 
     const featuredArticles = useMemo(() => {
@@ -68,7 +68,7 @@ export default function KnowledgeBasePage() {
 
     const categories = useMemo(() => {
         if (!articles) return [];
-        const cats = new Set(articles.map(a => a.category));
+        const cats = new Set(articles.map(a => a.category).filter(Boolean));
         return Array.from(cats).sort();
     }, [articles]);
 
@@ -143,12 +143,12 @@ export default function KnowledgeBasePage() {
                 </div>
             </div>
 
-            {/* Mais Acessados / Destaques */}
+            {/* Destaques */}
             {!searchTerm && !selectedCategory && featuredArticles.length > 0 && (
                 <div className="space-y-4">
                     <h2 className="text-xl font-bold font-headline flex items-center gap-2">
                         <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                        Destaques e Mais Acessados
+                        Mais Acessados
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {featuredArticles.map(article => (
@@ -177,7 +177,7 @@ export default function KnowledgeBasePage() {
                 </div>
             )}
 
-            {/* Lista Geral */}
+            {/* Mostrador Geral */}
             <div className="space-y-6">
                 <h2 className="text-2xl font-bold font-headline">
                     {searchTerm || selectedCategory ? 'Resultados da busca' : 'Todos os Procedimentos'}
@@ -187,7 +187,6 @@ export default function KnowledgeBasePage() {
                     <div className="text-center py-20 bg-muted/20 rounded-lg border border-dashed">
                         <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                         <h3 className="text-lg font-semibold">Nenhum resultado encontrado</h3>
-                        <p className="text-muted-foreground">Tente buscar por outros termos ou categorias.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
