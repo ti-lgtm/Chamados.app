@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import type { KnowledgeBaseArticle } from '@/lib/types';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,10 +21,13 @@ import {
     Network, 
     Briefcase,
     Star,
-    ArrowRight
+    ArrowRight,
+    Calendar
 } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const categoryIcons: Record<string, any> = {
     "TI": Laptop,
@@ -44,7 +47,6 @@ export default function KnowledgeBasePage() {
 
     const isStaff = user?.role === 'admin' || user?.role === 'ti';
 
-    // Query simplificada para evitar problemas de permissão
     const articlesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return collection(firestore, 'knowledge_base');
@@ -71,6 +73,12 @@ export default function KnowledgeBasePage() {
         const cats = new Set(articles.map(a => a.category).filter(Boolean));
         return Array.from(cats).sort();
     }, [articles]);
+
+    const formatDate = (article: KnowledgeBaseArticle) => {
+        const date = article.updatedAt?.toDate() || article.createdAt?.toDate();
+        if (!date) return '';
+        return format(date, "dd/MM/yyyy", { locale: ptBR });
+    };
 
     if (isLoading) {
         return (
@@ -161,7 +169,13 @@ export default function KnowledgeBasePage() {
                             >
                                 <Card className="h-full border-primary/20 hover:border-primary transition-all hover:shadow-lg bg-primary/5">
                                     <CardHeader className="pb-2">
-                                        <Badge variant="secondary" className="w-fit mb-2">{article.category}</Badge>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <Badge variant="secondary" className="w-fit">{article.category}</Badge>
+                                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                                <Calendar className="h-3 w-3" />
+                                                {formatDate(article)}
+                                            </span>
+                                        </div>
                                         <CardTitle className="text-base line-clamp-2 group-hover:text-primary">{article.title}</CardTitle>
                                     </CardHeader>
                                     <CardContent>
@@ -205,11 +219,17 @@ export default function KnowledgeBasePage() {
                                             <Icon className="h-16 w-16" />
                                         </div>
                                         <CardHeader>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                                                    <Icon className="h-5 w-5" />
+                                            <div className="flex items-center justify-between gap-2 mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                                                        <Icon className="h-5 w-5" />
+                                                    </div>
+                                                    <Badge variant="outline" className="bg-background">{article.category}</Badge>
                                                 </div>
-                                                <Badge variant="outline" className="bg-background">{article.category}</Badge>
+                                                <span className="text-[10px] text-muted-foreground flex items-center gap-1 bg-background/50 backdrop-blur-sm px-2 py-1 rounded-full border">
+                                                    <Calendar className="h-3 w-3" />
+                                                    {formatDate(article)}
+                                                </span>
                                             </div>
                                             <CardTitle className="text-xl group-hover:text-primary transition-colors">{article.title}</CardTitle>
                                         </CardHeader>

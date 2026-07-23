@@ -13,7 +13,6 @@ import {
     Plus, 
     Pencil, 
     Trash2, 
-    ExternalLink, 
     ShieldAlert, 
     Loader2, 
     BookOpen,
@@ -24,6 +23,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { KnowledgeBaseForm } from '@/components/knowledge-base/knowledge-base-form';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function AdminKnowledgeBasePage() {
     const { user } = useAuth();
@@ -60,6 +61,12 @@ export default function AdminKnowledgeBasePage() {
             });
     };
 
+    const formatDate = (article: KnowledgeBaseArticle) => {
+        const date = article.updatedAt?.toDate() || article.createdAt?.toDate();
+        if (!date) return '-';
+        return format(date, "dd/MM/yyyy", { locale: ptBR });
+    };
+
     if (user && !isStaff) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-destructive">
@@ -83,7 +90,6 @@ export default function AdminKnowledgeBasePage() {
                     <p className="text-muted-foreground">Cadastre novos procedimentos e manuais externos aqui.</p>
                 </div>
                 
-                {/* Botão de Mais Prominente */}
                 <Button 
                     size="lg" 
                     className="rounded-full shadow-lg h-14 px-6 gap-2"
@@ -107,15 +113,16 @@ export default function AdminKnowledgeBasePage() {
                             <TableRow>
                                 <TableHead className="w-[300px]">Título</TableHead>
                                 <TableHead>Setor</TableHead>
+                                <TableHead className="hidden md:table-cell">Última Alt.</TableHead>
                                 <TableHead className="hidden md:table-cell">Status</TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
-                                <TableRow><TableCell colSpan={4} className="text-center py-8"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+                                <TableRow><TableCell colSpan={5} className="text-center py-8"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
                             ) : !articles || articles.length === 0 ? (
-                                <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground">Nenhum procedimento cadastrado.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground">Nenhum procedimento cadastrado.</TableCell></TableRow>
                             ) : (
                                 articles.map(article => (
                                     <TableRow key={article.id}>
@@ -127,6 +134,9 @@ export default function AdminKnowledgeBasePage() {
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline">{article.category}</Badge>
+                                        </TableCell>
+                                        <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
+                                            {formatDate(article)}
                                         </TableCell>
                                         <TableCell className="hidden md:table-cell">
                                             {article.isFeatured && (
