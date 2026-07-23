@@ -1,6 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Versão: 1.0.2 - Correção de permissões Base de Conhecimento
 
     function isSignedIn() {
       return request.auth != null;
@@ -18,10 +19,11 @@ service cloud.firestore {
       return isSignedIn() && getRole() == 'admin';
     }
 
-    // PRIORIDADE: Base de Conhecimento (Leitura para todos logados, Escrita para equipe)
+    // PRIORIDADE: Base de Conhecimento (Seguindo padrão de listagem de usuários)
     match /knowledge_base/{articleId} {
-      allow read: if request.auth != null;
-      allow write: if isSupportStaff();
+      allow list: if isSignedIn();
+      allow get: if isSignedIn();
+      allow create, update, delete: if isSupportStaff();
     }
 
     match /users/{userId} {
