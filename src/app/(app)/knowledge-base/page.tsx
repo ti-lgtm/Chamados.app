@@ -169,19 +169,19 @@ export default function KnowledgeBasePage() {
                             >
                                 <Card className="h-full border-primary/20 hover:border-primary transition-all hover:shadow-lg bg-primary/5">
                                     <CardHeader className="pb-2">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <Badge variant="secondary" className="w-fit">{article.category}</Badge>
-                                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                                <Calendar className="h-3 w-3" />
-                                                {formatDate(article)}
-                                            </span>
-                                        </div>
+                                        <Badge variant="secondary" className="w-fit mb-2">{article.category}</Badge>
                                         <CardTitle className="text-base line-clamp-2 group-hover:text-primary">{article.title}</CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <p className="text-xs text-muted-foreground line-clamp-3 mb-4">{article.description}</p>
-                                        <div className="flex items-center text-xs font-bold text-primary">
-                                            Acessar Manual <ArrowRight className="ml-1 h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                                        <div className="flex items-center justify-between mt-auto">
+                                            <div className="flex items-center text-xs font-bold text-primary">
+                                                Acessar Manual <ArrowRight className="ml-1 h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                                            </div>
+                                            <span className="text-[9px] text-muted-foreground flex items-center gap-1">
+                                                <Calendar className="h-2.5 w-2.5" />
+                                                {formatDate(article)}
+                                            </span>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -214,33 +214,36 @@ export default function KnowledgeBasePage() {
                                     rel="noopener noreferrer"
                                     className="group"
                                 >
-                                    <Card className="h-full transition-all hover:shadow-md border-muted hover:border-primary/50 relative overflow-hidden">
+                                    <Card className="h-full transition-all hover:shadow-md border-muted hover:border-primary/50 relative overflow-hidden flex flex-col">
                                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                             <Icon className="h-16 w-16" />
                                         </div>
                                         <CardHeader>
-                                            <div className="flex items-center justify-between gap-2 mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                                                        <Icon className="h-5 w-5" />
-                                                    </div>
-                                                    <Badge variant="outline" className="bg-background">{article.category}</Badge>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                                                    <Icon className="h-5 w-5" />
                                                 </div>
-                                                <span className="text-[10px] text-muted-foreground flex items-center gap-1 bg-background/50 backdrop-blur-sm px-2 py-1 rounded-full border">
-                                                    <Calendar className="h-3 w-3" />
-                                                    {formatDate(article)}
-                                                </span>
+                                                <Badge variant="outline" className="bg-background">{article.category}</Badge>
                                             </div>
                                             <CardTitle className="text-xl group-hover:text-primary transition-colors">{article.title}</CardTitle>
                                         </CardHeader>
-                                        <CardContent>
-                                            <CardDescription className="text-sm line-clamp-3 mb-6 h-12">
+                                        <CardContent className="flex-1 flex flex-col">
+                                            <CardDescription className="text-sm line-clamp-3 mb-6">
                                                 {article.description}
                                             </CardDescription>
-                                            <Button variant="ghost" size="sm" className="w-full justify-between group-hover:bg-primary group-hover:text-primary-foreground">
-                                                Visualizar Documento
-                                                <ExternalLink className="h-4 w-4" />
-                                            </Button>
+                                            
+                                            <div className="mt-auto space-y-4">
+                                                <div className="flex justify-end">
+                                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-full border border-dashed">
+                                                        <Calendar className="h-3 w-3" />
+                                                        Postado em: {formatDate(article)}
+                                                    </span>
+                                                </div>
+                                                <Button variant="ghost" size="sm" className="w-full justify-between group-hover:bg-primary group-hover:text-primary-foreground">
+                                                    Visualizar Documento
+                                                    <ExternalLink className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </CardContent>
                                     </Card>
                                 </a>
