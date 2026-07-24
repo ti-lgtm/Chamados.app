@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, ShieldAlert, Info, ShoppingCart, Wrench } from 'lucide-react';
+import { Loader2, Mail, ShieldAlert, Info, ShoppingCart, Wrench, ShieldCheck } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function EmailSettingsPage() {
@@ -32,6 +32,8 @@ export default function EmailSettingsPage() {
         supportBody: '',
         purchaseSubject: '',
         purchaseBody: '',
+        staffSubject: '',
+        staffBody: '',
     });
 
     useEffect(() => {
@@ -41,6 +43,8 @@ export default function EmailSettingsPage() {
                 supportBody: settings.supportBody || '',
                 purchaseSubject: settings.purchaseSubject || '',
                 purchaseBody: settings.purchaseBody || '',
+                staffSubject: settings.staffSubject || '',
+                staffBody: settings.staffBody || '',
             });
         }
     }, [settings]);
@@ -76,7 +80,7 @@ export default function EmailSettingsPage() {
         <div className="space-y-8 max-w-5xl mx-auto">
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-headline font-bold">Personalização de E-mails</h1>
-                <p className="text-muted-foreground">Configure os textos dos e-mails automáticos enviados aos usuários.</p>
+                <p className="text-muted-foreground">Configure os textos dos e-mails automáticos enviados pelo sistema.</p>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg flex gap-3 dark:bg-blue-900/20 dark:border-blue-800">
@@ -85,30 +89,33 @@ export default function EmailSettingsPage() {
                     <p className="font-bold mb-1">Dica de Variáveis:</p>
                     <p>Você pode usar as seguintes marcações no texto:</p>
                     <ul className="list-disc list-inside mt-1 font-mono text-[11px]">
-                        <li><strong>{"{{nome}}"}</strong> - Nome do usuário</li>
+                        <li><strong>{"{{nome}}"}</strong> - Nome do usuário (ou criador)</li>
                         <li><strong>{"{{numero}}"}</strong> - Número do chamado</li>
                         <li><strong>{"{{titulo}}"}</strong> - Título do chamado</li>
-                        <li><strong>{"{{descricao}}"}</strong> - Descrição completa (apenas no corpo)</li>
+                        <li><strong>{"{{descricao}}"}</strong> - Descrição completa</li>
                     </ul>
                 </div>
             </div>
 
             <form onSubmit={handleSave} className="space-y-6">
                 <Tabs defaultValue="support" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="support" className="gap-2">
-                            <Wrench className="h-4 w-4" /> Chamado de Suporte
+                            <Wrench className="h-4 w-4" /> Usuário (Suporte)
                         </TabsTrigger>
                         <TabsTrigger value="purchase" className="gap-2">
-                            <ShoppingCart className="h-4 w-4" /> Solicitação de Compra
+                            <ShoppingCart className="h-4 w-4" /> Usuário (Compra)
+                        </TabsTrigger>
+                        <TabsTrigger value="staff" className="gap-2">
+                            <ShieldCheck className="h-4 w-4" /> Equipe TI (Aviso)
                         </TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="support" className="mt-6 space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-lg">Confirmação de Abertura (Suporte)</CardTitle>
-                                <CardDescription>Enviado ao usuário assim que ele abre um chamado técnico.</CardDescription>
+                                <CardTitle className="text-lg">Confirmação para o Usuário (Suporte)</CardTitle>
+                                <CardDescription>Enviado ao usuário que abriu um chamado técnico.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
@@ -135,8 +142,8 @@ export default function EmailSettingsPage() {
                     <TabsContent value="purchase" className="mt-6 space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-lg">Confirmação de Solicitação (Compra)</CardTitle>
-                                <CardDescription>Enviado ao usuário assim que ele solicita um material.</CardDescription>
+                                <CardTitle className="text-lg">Confirmação para o Usuário (Compra)</CardTitle>
+                                <CardDescription>Enviado ao usuário que solicitou material.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
@@ -154,6 +161,34 @@ export default function EmailSettingsPage() {
                                         onChange={e => setForm({...form, purchaseBody: e.target.value})} 
                                         rows={10}
                                         placeholder="Olá {{nome}}, sua solicitação de compra está em cotação..."
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="staff" className="mt-6 space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg">Notificação para a Equipe de TI</CardTitle>
+                                <CardDescription>Enviado para toda a equipe técnica quando um novo chamado é criado.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Assunto do E-mail</label>
+                                    <Input 
+                                        value={form.staffSubject} 
+                                        onChange={e => setForm({...form, staffSubject: e.target.value})} 
+                                        placeholder="Ex: Novo Chamado #{{numero}}: {{titulo}}"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Corpo do E-mail (HTML permitido)</label>
+                                    <Textarea 
+                                        value={form.staffBody} 
+                                        onChange={e => setForm({...form, staffBody: e.target.value})} 
+                                        rows={10}
+                                        placeholder="Novo chamado recebido..."
                                     />
                                 </div>
                             </CardContent>

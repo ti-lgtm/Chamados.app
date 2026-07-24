@@ -71,7 +71,9 @@
         "supportSubject": { "type": "string" },
         "supportBody": { "type": "string" },
         "purchaseSubject": { "type": "string" },
-        "purchaseBody": { "type": "string" }
+        "purchaseBody": { "type": "string" },
+        "staffSubject": { "type": "string" },
+        "staffBody": { "type": "string" }
       }
     }
   },

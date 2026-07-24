@@ -107,4 +107,6 @@ export interface EmailSettings {
   supportBody: string;
   purchaseSubject: string;
   purchaseBody: string;
+  staffSubject?: string;
+  staffBody?: string;
 }

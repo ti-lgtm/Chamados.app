@@ -240,10 +240,16 @@ export function NewTicketForm() {
         return { id: newTicketRef.id, payload: ticketPayload };
       });
 
-      // Prepare custom templates for the specific ticket type
-      const customTemplates = emailSettings ? {
+      // Prepare custom templates for the specific ticket type (User Confirmation)
+      const userCustomTemplates = emailSettings ? {
           subject: isPurchase ? emailSettings.purchaseSubject : emailSettings.supportSubject,
           body: isPurchase ? emailSettings.purchaseBody : emailSettings.supportBody,
+      } : undefined;
+
+      // Prepare custom templates for the staff notification
+      const staffCustomTemplates = (emailSettings?.staffSubject && emailSettings?.staffBody) ? {
+          subject: emailSettings.staffSubject,
+          body: emailSettings.staffBody,
       } : undefined;
 
       triggerTicketCreatedEmail({
@@ -254,7 +260,7 @@ export function NewTicketForm() {
         ccEmail: newTicketData.payload.ccEmail || undefined,
         description: newTicketData.payload.description,
         type: isPurchase ? 'purchase' : 'support',
-        customTemplates,
+        customTemplates: userCustomTemplates,
       });
 
       if (supportUsers && supportUsers.length > 0) {
@@ -270,6 +276,7 @@ export function NewTicketForm() {
                 creatorName: newTicketData.payload.userName,
                 supportEmails: supportEmails,
                 description: newTicketData.payload.description,
+                customTemplates: staffCustomTemplates,
             });
         }
       }

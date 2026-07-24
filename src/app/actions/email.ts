@@ -80,27 +80,46 @@ interface TicketCreatedSupportPayload {
   creatorName: string;
   supportEmails: string[];
   description: string;
+  customTemplates?: {
+    subject: string;
+    body: string;
+  };
 }
 
 export async function triggerTicketCreatedSupportEmail(payload: TicketCreatedSupportPayload) {
     if (payload.supportEmails.length === 0) return;
     try {
+        let subjectTemplate = payload.customTemplates?.subject || `Novo Chamado #{{numero}}: {{titulo}}`;
+        let bodyTemplate = payload.customTemplates?.body || `
+            <h1>Novo Chamado no Portal</h1>
+            <p>Um novo chamado foi aberto e precisa de atenção.</p>
+            <ul>
+                <li><strong>Criado por:</strong> {{nome}}</li>
+                <li><strong>Número:</strong> #{{numero}}</li>
+                <li><strong>Título:</strong> {{titulo}}</li>
+            </ul>
+            <p><strong>Descrição:</strong></p>
+            <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">{{descricao}}</blockquote>
+            <p>Acesse o portal para ver os detalhes e atribuir o chamado.</p>
+            <p>Atenciosamente,<br/>Sistema de Notificações do Portal</p>
+        `;
+
+        // Replace variables
+        const finalSubject = subjectTemplate
+            .replace(/{{numero}}/g, String(payload.ticketNumber))
+            .replace(/{{titulo}}/g, payload.title)
+            .replace(/{{nome}}/g, payload.creatorName);
+
+        const finalBody = bodyTemplate
+            .replace(/{{numero}}/g, String(payload.ticketNumber))
+            .replace(/{{titulo}}/g, payload.title)
+            .replace(/{{nome}}/g, payload.creatorName)
+            .replace(/{{descricao}}/g, payload.description);
+
         await sendEmail({
             to: payload.supportEmails,
-            subject: `Novo Chamado #${payload.ticketNumber}: ${payload.title}`,
-            html_body: `
-                <h1>Novo Chamado no Portal</h1>
-                <p>Um novo chamado foi aberto e precisa de atenção.</p>
-                <ul>
-                    <li><strong>Criado por:</strong> ${payload.creatorName}</li>
-                    <li><strong>Número:</strong> #${payload.ticketNumber}</li>
-                    <li><strong>Título:</strong> ${payload.title}</li>
-                </ul>
-                <p><strong>Descrição:</strong></p>
-                <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">${payload.description}</blockquote>
-                <p>Acesse o portal para ver os detalhes e atribuir o chamado.</p>
-                <p>Atenciosamente,<br/>Sistema de Notificações do Portal</p>
-            `,
+            subject: finalSubject,
+            html_body: finalBody,
         });
     } catch (error) {
         console.error("Error in triggerTicketCreatedSupportEmail:", error);
