@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, serverTimestamp, runTransaction, doc, query, where, Timestamp, getDocs, limit } from 'firebase/firestore';
+import { collection, serverTimestamp, runTransaction, doc, query, where, Timestamp, getDocs, limit, getDoc } from 'firebase/firestore';
 import { useFirestore, errorEmitter, FirestorePermissionError, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -35,7 +35,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Info, ShoppingCart, Wrench, BookOpen, ExternalLink, Lightbulb } from 'lucide-react';
 import { triggerTicketCreatedEmail, triggerTicketCreatedSupportEmail } from '@/app/actions/email';
-import type { AppUser, KnowledgeBaseArticle } from '@/lib/types';
+import type { AppUser, KnowledgeBaseArticle, EmailSettings } from '@/lib/types';
 
 const departmentOptions = [
     "Administrativo",
@@ -150,7 +150,6 @@ export function NewTicketForm() {
 
   const isPurchase = selectedService === 'COMPRA';
 
-  // Busca sugestões na base de conhecimento conforme o usuário digita o título
   useEffect(() => {
     if (!db || title.length < 5) {
         setSuggestedArticles([]);
@@ -160,8 +159,6 @@ export function NewTicketForm() {
     const searchDelay = setTimeout(async () => {
         try {
             const kbRef = collection(db, 'knowledge_base');
-            // Busca simples (o Firestore não suporta busca textual nativa por prefixo sem índice externo, 
-            // então pegamos uma amostra e filtramos localmente para o MVP)
             const snapshot = await getDocs(query(kbRef, limit(20)));
             const articles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as KnowledgeBaseArticle));
             
@@ -198,6 +195,11 @@ export function NewTicketForm() {
         attachmentUrls = await uploadAttachments(formData);
       }
 
+      // Fetch custom email templates
+      const settingsRef = doc(db, 'settings', 'emails');
+      const settingsSnap = await getDoc(settingsRef);
+      const emailSettings = settingsSnap.exists() ? settingsSnap.data() as EmailSettings : null;
+
       const newTicketData = await runTransaction(db, async (transaction) => {
         const counterRef = doc(db, 'counters', 'tickets');
         const counterDoc = await transaction.get(counterRef);
@@ -206,8 +208,6 @@ export function NewTicketForm() {
         transaction.set(counterRef, { lastNumber: newNumber }, { merge: true });
 
         const newTicketRef = doc(collection(db, "tickets"));
-        
-        // SLA: Alta = 1 dia, Normal = 3 dias, Baixa = 7 dias
         const slaDays = values.priority === 'high' ? 1 : values.priority === 'normal' ? 3 : 7;
         const deadlineDate = isPurchase ? null : addBusinessDays(new Date(), slaDays);
         
@@ -240,6 +240,12 @@ export function NewTicketForm() {
         return { id: newTicketRef.id, payload: ticketPayload };
       });
 
+      // Prepare custom templates for the specific ticket type
+      const customTemplates = emailSettings ? {
+          subject: isPurchase ? emailSettings.purchaseSubject : emailSettings.supportSubject,
+          body: isPurchase ? emailSettings.purchaseBody : emailSettings.supportBody,
+      } : undefined;
+
       triggerTicketCreatedEmail({
         ticketNumber: newTicketData.payload.ticketNumber,
         title: newTicketData.payload.title,
@@ -247,6 +253,8 @@ export function NewTicketForm() {
         userEmail: newTicketData.payload.userEmail,
         ccEmail: newTicketData.payload.ccEmail || undefined,
         description: newTicketData.payload.description,
+        type: isPurchase ? 'purchase' : 'support',
+        customTemplates,
       });
 
       if (supportUsers && supportUsers.length > 0) {

@@ -10,6 +10,11 @@ interface TicketCreatedPayload {
   userEmail: string;
   ccEmail?: string;
   description: string;
+  type: 'support' | 'purchase';
+  customTemplates?: {
+    subject: string;
+    body: string;
+  };
 }
 
 export async function triggerTicketCreatedEmail(payload: TicketCreatedPayload) {
@@ -19,17 +24,50 @@ export async function triggerTicketCreatedEmail(payload: TicketCreatedPayload) {
       recipients.push(payload.ccEmail);
     }
 
+    // Default templates if none provided from settings
+    let subjectTemplate = payload.customTemplates?.subject;
+    let bodyTemplate = payload.customTemplates?.body;
+
+    if (!subjectTemplate || !bodyTemplate) {
+        if (payload.type === 'purchase') {
+            subjectTemplate = subjectTemplate || `Solicitação de Compra #{{numero}}: {{titulo}}`;
+            bodyTemplate = bodyTemplate || `
+                <h1>Olá {{nome}},</h1>
+                <p>Recebemos sua solicitação de compra <strong>#{{numero}} - "{{titulo}}"</strong>.</p>
+                <p><strong>Descrição dos itens:</strong></p>
+                <blockquote style="border-left: 2px solid #F97316; padding-left: 1em; margin-left: 1em; font-style: italic;">{{descricao}}</blockquote>
+                <p>Nossa equipe iniciará o processo de cotação em breve. Você será notificado por aqui sobre o andamento.</p>
+                <p>Atenciosamente,<br/>Setor de Suprimentos / TI</p>
+            `;
+        } else {
+            subjectTemplate = subjectTemplate || `Chamado #{{numero}}: {{titulo}}`;
+            bodyTemplate = bodyTemplate || `
+                <h1>Olá {{nome}},</h1>
+                <p>Seu chamado <strong>#{{numero}} - "{{titulo}}"</strong> foi criado com sucesso.</p>
+                <p><strong>Descrição:</strong></p>
+                <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">{{descricao}}</blockquote>
+                <p>Nossa equipe de suporte irá analisá-lo em breve. Você pode acompanhar o status do seu chamado em nosso portal.</p>
+                <p>Atenciosamente,<br/>Equipe de Suporte do Portal</p>
+            `;
+        }
+    }
+
+    // Replace variables
+    const finalSubject = subjectTemplate
+        .replace(/{{numero}}/g, String(payload.ticketNumber))
+        .replace(/{{titulo}}/g, payload.title)
+        .replace(/{{nome}}/g, payload.userName);
+
+    const finalBody = bodyTemplate
+        .replace(/{{numero}}/g, String(payload.ticketNumber))
+        .replace(/{{titulo}}/g, payload.title)
+        .replace(/{{nome}}/g, payload.userName)
+        .replace(/{{descricao}}/g, payload.description);
+
     await sendEmail({
       to: recipients,
-      subject: `Chamado #${payload.ticketNumber}: ${payload.title}`,
-      html_body: `
-            <h1>Olá ${payload.userName},</h1>
-            <p>Seu chamado <strong>#${payload.ticketNumber} - "${payload.title}"</strong> foi criado com sucesso.</p>
-            <p><strong>Descrição:</strong></p>
-            <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">${payload.description}</blockquote>
-            <p>Nossa equipe de suporte irá analisá-lo em breve. Você pode acompanhar o status do seu chamado em nosso portal.</p>
-            <p>Atenciosamente,<br/>Equipe de Suporte do Portal</p>
-        `,
+      subject: finalSubject,
+      html_body: finalBody,
     });
   } catch (error) {
     console.error("Error in triggerTicketCreatedEmail:", error);

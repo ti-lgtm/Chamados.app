@@ -1,7 +1,8 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Versão: 1.0.8 - Simplificação Total Base de Conhecimento
+    // Versão: 1.0.9 - Adicionado suporte para settings de e-mail
 
     function isSignedIn() {
       return request.auth != null;
@@ -19,10 +20,16 @@ service cloud.firestore {
       return isSignedIn() && getRole() == 'admin';
     }
 
-    // BASE DE CONHECIMENTO - Acesso simplificado (Seguindo regra de usuários)
+    // CONFIGURAÇÕES GERAIS
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // BASE DE CONHECIMENTO
     match /knowledge_base/{articleId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null; // "Tira a trava" temporariamente para garantir funcionamento
+      allow write: if request.auth != null;
     }
 
     match /users/{userId} {

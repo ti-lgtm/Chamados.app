@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -61,6 +62,17 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "title", "description", "link", "category", "createdAt"]
+    },
+    "EmailSettings": {
+      "title": "Email Settings",
+      "description": "Stores custom email templates for the system.",
+      "type": "object",
+      "properties": {
+        "supportSubject": { "type": "string" },
+        "supportBody": { "type": "string" },
+        "purchaseSubject": { "type": "string" },
+        "purchaseBody": { "type": "string" }
+      }
     }
   },
   "auth": {
@@ -78,6 +90,10 @@
     "/knowledge_base/{articleId}": {
       "schema": "#/backend/entities/KnowledgeBaseArticle",
       "description": "Stores knowledge base procedures and articles."
+    },
+    "/settings/emails": {
+      "schema": "#/backend/entities/EmailSettings",
+      "description": "Stores custom email templates."
     }
   }
 }

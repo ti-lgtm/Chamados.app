@@ -14,6 +14,7 @@ import {
   BarChart,
   Clock,
   BookOpen,
+  Mail,
 } from "lucide-react";
 import {
   Sheet,
@@ -170,6 +171,13 @@ export function AppHeader() {
             <DropdownMenuItem asChild>
               <Link href="/profile">Perfil</Link>
             </DropdownMenuItem>
+            {user?.role === 'admin' && (
+                <DropdownMenuItem asChild>
+                    <Link href="/admin/email-settings" className="flex items-center">
+                        <Mail className="mr-2 h-4 w-4" /> Configurar E-mails
+                    </Link>
+                </DropdownMenuItem>
+            )}
             <DropdownMenuItem disabled>Configurações</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>Sair</DropdownMenuItem>

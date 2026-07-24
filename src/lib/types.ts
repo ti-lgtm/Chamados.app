@@ -101,3 +101,10 @@ export interface KnowledgeBaseArticle {
   createdAt: Timestamp;
   updatedAt?: Timestamp;
 }
+
+export interface EmailSettings {
+  supportSubject: string;
+  supportBody: string;
+  purchaseSubject: string;
+  purchaseBody: string;
+}
