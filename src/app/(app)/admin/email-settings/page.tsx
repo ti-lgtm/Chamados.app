@@ -87,13 +87,14 @@ export default function EmailSettingsPage() {
                 <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
                 <div className="text-sm text-blue-700 dark:text-blue-300">
                     <p className="font-bold mb-1">Dica de Variáveis:</p>
-                    <p>Você pode usar as seguintes marcações no texto:</p>
-                    <ul className="list-disc list-inside mt-1 font-mono text-[11px]">
-                        <li><strong>{"{{nome}}"}</strong> - Nome do usuário (ou criador)</li>
+                    <p>Use estas marcações para que o sistema preencha os dados reais no envio:</p>
+                    <ul className="list-disc list-inside mt-1 font-mono text-[11px] grid grid-cols-2 gap-x-4">
+                        <li><strong>{"{{nome}}"}</strong> - Nome do usuário</li>
                         <li><strong>{"{{numero}}"}</strong> - Número do chamado</li>
                         <li><strong>{"{{titulo}}"}</strong> - Título do chamado</li>
                         <li><strong>{"{{descricao}}"}</strong> - Descrição completa</li>
                     </ul>
+                    <p className="mt-2 text-xs italic">Dica: Se você não usar HTML, o sistema converterá suas quebras de linha automaticamente.</p>
                 </div>
             </div>
 
@@ -123,16 +124,16 @@ export default function EmailSettingsPage() {
                                     <Input 
                                         value={form.supportSubject} 
                                         onChange={e => setForm({...form, supportSubject: e.target.value})} 
-                                        placeholder="Ex: Chamado #{{numero}}: {{titulo}}"
+                                        placeholder="Ex: Chamado Aberto: #{{numero}} - {{titulo}}"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold">Corpo do E-mail (HTML permitido)</label>
+                                    <label className="text-sm font-bold">Corpo do E-mail</label>
                                     <Textarea 
                                         value={form.supportBody} 
                                         onChange={e => setForm({...form, supportBody: e.target.value})} 
                                         rows={10}
-                                        placeholder="Olá {{nome}}, seu chamado foi aberto..."
+                                        placeholder="Olá {{nome}}, seu chamado foi registrado..."
                                     />
                                 </div>
                             </CardContent>
@@ -151,16 +152,16 @@ export default function EmailSettingsPage() {
                                     <Input 
                                         value={form.purchaseSubject} 
                                         onChange={e => setForm({...form, purchaseSubject: e.target.value})} 
-                                        placeholder="Ex: Solicitação de Compra #{{numero}}: {{titulo}}"
+                                        placeholder="Ex: Confirmação de Solicitação de Compra #{{numero}}"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold">Corpo do E-mail (HTML permitido)</label>
+                                    <label className="text-sm font-bold">Corpo do E-mail</label>
                                     <Textarea 
                                         value={form.purchaseBody} 
                                         onChange={e => setForm({...form, purchaseBody: e.target.value})} 
                                         rows={10}
-                                        placeholder="Olá {{nome}}, sua solicitação de compra está em cotação..."
+                                        placeholder="Olá {{nome}}, recebemos sua solicitação de compra..."
                                     />
                                 </div>
                             </CardContent>
@@ -171,7 +172,7 @@ export default function EmailSettingsPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-lg">Notificação para a Equipe de TI</CardTitle>
-                                <CardDescription>Enviado para toda a equipe técnica quando um novo chamado é criado.</CardDescription>
+                                <CardDescription>Enviado para a equipe técnica quando um novo chamado é aberto.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
@@ -179,11 +180,11 @@ export default function EmailSettingsPage() {
                                     <Input 
                                         value={form.staffSubject} 
                                         onChange={e => setForm({...form, staffSubject: e.target.value})} 
-                                        placeholder="Ex: Novo Chamado #{{numero}}: {{titulo}}"
+                                        placeholder="Ex: NOVO CHAMADO #{{numero}}: {{titulo}}"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold">Corpo do E-mail (HTML permitido)</label>
+                                    <label className="text-sm font-bold">Corpo do E-mail</label>
                                     <Textarea 
                                         value={form.staffBody} 
                                         onChange={e => setForm({...form, staffBody: e.target.value})} 

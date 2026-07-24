@@ -3,6 +3,17 @@
 
 import { sendEmail } from "@/lib/email";
 
+// Auxiliar para converter quebras de linha simples em HTML <br/> se não houver tags HTML
+function formatBody(text: string): string {
+    if (!text) return "";
+    // Se o texto já parece HTML (tem tags), retorna como está
+    if (/<[a-z][\s\S]*>/i.test(text)) {
+        return text;
+    }
+    // Caso contrário, converte quebras de linha em <br/>
+    return text.replace(/\n/g, "<br/>");
+}
+
 interface TicketCreatedPayload {
   ticketNumber: number;
   title: string;
@@ -24,41 +35,51 @@ export async function triggerTicketCreatedEmail(payload: TicketCreatedPayload) {
       recipients.push(payload.ccEmail);
     }
 
-    // Default templates if none provided from settings
     let subjectTemplate = payload.customTemplates?.subject;
     let bodyTemplate = payload.customTemplates?.body;
 
+    // Default templates if none provided
     if (!subjectTemplate || !bodyTemplate) {
         if (payload.type === 'purchase') {
-            subjectTemplate = subjectTemplate || `Solicitação de Compra #{{numero}}: {{titulo}}`;
+            subjectTemplate = subjectTemplate || `Confirmação de Solicitação de Compra #{{numero}}`;
             bodyTemplate = bodyTemplate || `
-                <h1>Olá {{nome}},</h1>
-                <p>Recebemos sua solicitação de compra <strong>#{{numero}} - "{{titulo}}"</strong>.</p>
-                <p><strong>Descrição dos itens:</strong></p>
-                <blockquote style="border-left: 2px solid #F97316; padding-left: 1em; margin-left: 1em; font-style: italic;">{{descricao}}</blockquote>
-                <p>Nossa equipe iniciará o processo de cotação em breve. Você será notificado por aqui sobre o andamento.</p>
-                <p>Atenciosamente,<br/>Setor de Suprimentos / TI</p>
+                <div style="font-family: sans-serif; line-height: 1.6;">
+                    <h2>Olá, {{nome}}!</h2>
+                    <p>Recebemos sua solicitação de compra <strong>#{{numero}} - {{titulo}}</strong>.</p>
+                    <p><strong>Descrição dos itens:</strong></p>
+                    <div style="background: #f9f9f9; padding: 15px; border-left: 4px solid #F97316; font-style: italic;">
+                        {{descricao}}
+                    </div>
+                    <p>Nossa equipe técnica e de suprimentos iniciará o processo de cotação. Você será notificado por e-mail sobre qualquer atualização no status.</p>
+                    <p>Atenciosamente,<br/><strong>Equipe de Suporte e Compras</strong></p>
+                </div>
             `;
         } else {
-            subjectTemplate = subjectTemplate || `Chamado #{{numero}}: {{titulo}}`;
+            subjectTemplate = subjectTemplate || `Chamado Aberto: #{{numero}} - {{titulo}}`;
             bodyTemplate = bodyTemplate || `
-                <h1>Olá {{nome}},</h1>
-                <p>Seu chamado <strong>#{{numero}} - "{{titulo}}"</strong> foi criado com sucesso.</p>
-                <p><strong>Descrição:</strong></p>
-                <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">{{descricao}}</blockquote>
-                <p>Nossa equipe de suporte irá analisá-lo em breve. Você pode acompanhar o status do seu chamado em nosso portal.</p>
-                <p>Atenciosamente,<br/>Equipe de Suporte do Portal</p>
+                <div style="font-family: sans-serif; line-height: 1.6;">
+                    <h2>Olá, {{nome}}!</h2>
+                    <p>Seu chamado <strong>#{{numero}} - {{titulo}}</strong> foi registrado com sucesso.</p>
+                    <p><strong>Detalhes da solicitação:</strong></p>
+                    <div style="background: #f9f9f9; padding: 15px; border-left: 4px solid #ccc; font-style: italic;">
+                        {{descricao}}
+                    </div>
+                    <p>Um técnico analisará sua solicitação em breve. Você pode acompanhar o andamento diretamente no nosso portal.</p>
+                    <p>Atenciosamente,<br/><strong>Equipe de TI</strong></p>
+                </div>
             `;
         }
     }
 
-    // Replace variables
+    // Replace variables in Subject
     const finalSubject = subjectTemplate
         .replace(/{{numero}}/g, String(payload.ticketNumber))
         .replace(/{{titulo}}/g, payload.title)
-        .replace(/{{nome}}/g, payload.userName);
+        .replace(/{{nome}}/g, payload.userName)
+        .replace(/{{descricao}}/g, payload.description);
 
-    const finalBody = bodyTemplate
+    // Replace variables in Body and ensure formatting
+    const formattedBody = formatBody(bodyTemplate)
         .replace(/{{numero}}/g, String(payload.ticketNumber))
         .replace(/{{titulo}}/g, payload.title)
         .replace(/{{nome}}/g, payload.userName)
@@ -67,7 +88,7 @@ export async function triggerTicketCreatedEmail(payload: TicketCreatedPayload) {
     await sendEmail({
       to: recipients,
       subject: finalSubject,
-      html_body: finalBody,
+      html_body: formattedBody,
     });
   } catch (error) {
     console.error("Error in triggerTicketCreatedEmail:", error);
@@ -89,28 +110,34 @@ interface TicketCreatedSupportPayload {
 export async function triggerTicketCreatedSupportEmail(payload: TicketCreatedSupportPayload) {
     if (payload.supportEmails.length === 0) return;
     try {
-        let subjectTemplate = payload.customTemplates?.subject || `Novo Chamado #{{numero}}: {{titulo}}`;
+        let subjectTemplate = payload.customTemplates?.subject || `NOVO CHAMADO #{{numero}}: {{titulo}}`;
         let bodyTemplate = payload.customTemplates?.body || `
-            <h1>Novo Chamado no Portal</h1>
-            <p>Um novo chamado foi aberto e precisa de atenção.</p>
-            <ul>
-                <li><strong>Criado por:</strong> {{nome}}</li>
-                <li><strong>Número:</strong> #{{numero}}</li>
-                <li><strong>Título:</strong> {{titulo}}</li>
-            </ul>
-            <p><strong>Descrição:</strong></p>
-            <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">{{descricao}}</blockquote>
-            <p>Acesse o portal para ver os detalhes e atribuir o chamado.</p>
-            <p>Atenciosamente,<br/>Sistema de Notificações do Portal</p>
+            <div style="font-family: sans-serif; line-height: 1.6;">
+                <h2 style="color: #d946ef;">Novo Chamado no Portal</h2>
+                <p>Um novo chamado foi aberto e precisa de atenção da equipe técnica.</p>
+                <ul style="list-style: none; padding: 0;">
+                    <li><strong>Solicitante:</strong> {{nome}}</li>
+                    <li><strong>Número:</strong> #{{numero}}</li>
+                    <li><strong>Título:</strong> {{titulo}}</li>
+                </ul>
+                <p><strong>Descrição:</strong></p>
+                <div style="background: #f4f4f4; padding: 15px; border-left: 4px solid #d946ef;">
+                    {{descricao}}
+                </div>
+                <p>Acesse o portal para atribuir este chamado a um técnico ou responder ao usuário.</p>
+                <p>---<br/>Sistema de Notificações Automáticas</p>
+            </div>
         `;
 
-        // Replace variables
+        // Replace variables in Subject
         const finalSubject = subjectTemplate
             .replace(/{{numero}}/g, String(payload.ticketNumber))
             .replace(/{{titulo}}/g, payload.title)
-            .replace(/{{nome}}/g, payload.creatorName);
+            .replace(/{{nome}}/g, payload.creatorName)
+            .replace(/{{descricao}}/g, payload.description);
 
-        const finalBody = bodyTemplate
+        // Replace variables in Body and ensure formatting
+        const formattedBody = formatBody(bodyTemplate)
             .replace(/{{numero}}/g, String(payload.ticketNumber))
             .replace(/{{titulo}}/g, payload.title)
             .replace(/{{nome}}/g, payload.creatorName)
@@ -119,7 +146,7 @@ export async function triggerTicketCreatedSupportEmail(payload: TicketCreatedSup
         await sendEmail({
             to: payload.supportEmails,
             subject: finalSubject,
-            html_body: finalBody,
+            html_body: formattedBody,
         });
     } catch (error) {
         console.error("Error in triggerTicketCreatedSupportEmail:", error);
@@ -139,16 +166,19 @@ export async function triggerNewCommentEmail(payload: NewCommentPayload) {
   try {
     await sendEmail({
       to: [payload.recipientEmail],
-      subject: `Novo comentário no chamado #${payload.ticketNumber}`,
+      subject: `Nova Resposta: Chamado #${payload.ticketNumber}`,
       html_body: `
-            <h1>Olá ${payload.recipientName},</h1>
-            <p>Há uma nova resposta no chamado <strong>#${payload.ticketNumber} - "${payload.ticketTitle}"</strong>.</p>
-            <hr/>
-            <p><strong>${payload.commenterName}</strong> comentou:</p>
-            <blockquote style="border-left: 2px solid #ccc; padding-left: 1em; margin-left: 1em; font-style: italic;">${payload.commentMessage}</blockquote>
-            <hr/>
-            <p>Para ver o chamado completo, acesse o portal.</p>
-            <p>Atenciosamente,<br/>Equipe de Suporte do Portal</p>
+            <div style="font-family: sans-serif; line-height: 1.6;">
+                <p>Olá, <strong>${payload.recipientName}</strong>,</p>
+                <p>Há uma nova interação no chamado <strong>#${payload.ticketNumber} - ${payload.ticketTitle}</strong>.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+                <p><strong>${payload.commenterName}</strong> escreveu:</p>
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; border: 1px solid #eee;">
+                    ${formatBody(payload.commentMessage)}
+                </div>
+                <p>Para responder, acesse o portal de suporte.</p>
+                <p>Atenciosamente,<br/>Equipe do Portal</p>
+            </div>
         `,
     });
   } catch (error) {
@@ -168,15 +198,18 @@ export async function triggerTicketResolvedEmail(payload: TicketResolvedPayload)
   try {
     await sendEmail({
       to: [payload.userEmail],
-      subject: `Seu chamado #${payload.ticketNumber} foi resolvido!`,
+      subject: `Chamado Resolvido! #${payload.ticketNumber}`,
       html_body: `
-            <h1>Olá ${payload.userName},</h1>
-            <p>Boas notícias! Seu chamado <strong>#${payload.ticketNumber} - "${payload.ticketTitle}"</strong> foi marcado como resolvido pela nossa equipe.</p>
-            <p>Se o problema persistir ou se você tiver outra dúvida, sinta-se à vontade para abrir um novo chamado.</p>
-            <p>Agradeceríamos muito se você pudesse dedicar um momento para <strong>avaliar o atendimento</strong> recebido diretamente na página do chamado em nosso portal, clicando no link abaixo:</p>
-            <p><a href="${payload.ticketUrl}" style="display: inline-block; padding: 12px 24px; font-size: 16px; color: #ffffff; background-color: #F97316; text-decoration: none; border-radius: 5px; font-weight: bold;">Avaliar Atendimento</a></p>
-            <p style="font-size: 12px; color: #666;">Se o botão não funcionar, copie e cole este link em seu navegador: ${payload.ticketUrl}</p>
-            <p>Atenciosamente,<br/>Equipe de Suporte do Portal</p>
+            <div style="font-family: sans-serif; line-height: 1.6;">
+                <h2>Olá, ${payload.userName}!</h2>
+                <p>O seu chamado <strong>#${payload.ticketNumber} - ${payload.ticketTitle}</strong> foi marcado como <strong>Resolvido</strong>.</p>
+                <p>Esperamos que a solução tenha sido satisfatória. Por favor, dedique 1 minuto para avaliar o nosso atendimento clicando no botão abaixo:</p>
+                <p style="margin-top: 30px;">
+                    <a href="${payload.ticketUrl}" style="background-color: #F97316; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">AVALIAR ATENDIMENTO</a>
+                </p>
+                <p style="font-size: 11px; color: #999; margin-top: 20px;">Caso o botão não funcione, utilize este link: <br/> ${payload.ticketUrl}</p>
+                <p>Atenciosamente,<br/>Equipe de Suporte do Portal</p>
+            </div>
         `,
     });
   } catch (error) {
