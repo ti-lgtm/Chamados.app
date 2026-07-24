@@ -276,6 +276,7 @@ export function NewTicketForm() {
                 creatorName: newTicketData.payload.userName,
                 supportEmails: supportEmails,
                 description: newTicketData.payload.description,
+                type: isPurchase ? 'purchase' : 'support',
                 customTemplates: staffCustomTemplates,
             });
         }

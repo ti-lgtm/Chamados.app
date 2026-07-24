@@ -163,6 +163,7 @@ interface TicketCreatedSupportPayload {
   creatorName: string;
   supportEmails: string[];
   description: string;
+  type: 'support' | 'purchase';
   customTemplates?: {
     subject: string;
     body: string;
@@ -172,7 +173,9 @@ interface TicketCreatedSupportPayload {
 export async function triggerTicketCreatedSupportEmail(payload: TicketCreatedSupportPayload) {
     if (payload.supportEmails.length === 0) return;
     try {
-        let subjectTemplate = payload.customTemplates?.subject || `NOVO CHAMADO #{{numero}}: {{titulo}}`;
+        const isPurchase = payload.type === 'purchase';
+        
+        let subjectTemplate = payload.customTemplates?.subject || (isPurchase ? `NOVA SOLICITAÇÃO #{{numero}}: {{titulo}}` : `NOVO CHAMADO #{{numero}}: {{titulo}}`);
         let bodyTemplate = payload.customTemplates?.body || `
             <div style="margin: 0; padding: 0; background-color: #f4f6f8; font-family: Arial, sans-serif; color: #333333;">
                 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f6f8; padding: 20px 0;">
@@ -186,9 +189,9 @@ export async function triggerTicketCreatedSupportEmail(payload: TicketCreatedSup
                                 </tr>
                                 <tr>
                                     <td style="padding: 40px 30px;">
-                                        <h1 style="color: #1a202c; font-size: 20px; font-weight: bold; margin-top: 0; margin-bottom: 10px;">Novo Chamado no Portal</h1>
+                                        <h1 style="color: #1a202c; font-size: 20px; font-weight: bold; margin-top: 0; margin-bottom: 10px;">${isPurchase ? 'Nova Solicitação de Compra' : 'Novo Chamado no Portal'}</h1>
                                         <p style="font-size: 15px; color: #4a5568; margin-bottom: 25px;">
-                                            Um novo chamado foi aberto e precisa de atenção.
+                                            Um novo registro foi aberto e precisa de atenção.
                                         </p>
                                         <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 25px;">
                                             <tr>
