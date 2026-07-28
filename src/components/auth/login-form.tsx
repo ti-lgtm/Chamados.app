@@ -12,13 +12,11 @@ import {
   sendPasswordResetEmail,
   signOut,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import {
   useAuth as useFirebaseAuth,
   useFirestore,
   useFirebase,
-  errorEmitter,
-  FirestorePermissionError,
 } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -53,7 +51,7 @@ const formSchema = z.object({
     z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
 });
 
-const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+export const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     width="18"
     height="18"
@@ -103,60 +101,27 @@ export function LoginForm() {
     },
   });
 
-  const setupUserProfile = useCallback(async (user: any) => {
+  const checkUserProfile = useCallback(async (firebaseUser: any) => {
     if (!db || !auth) return false;
     
-    if (!user.email) {
-      setError('Não foi possível obter o e-mail da sua conta Google.');
+    const userDocRef = doc(db, 'users', firebaseUser.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (!userDoc.exists()) {
+      setError('Usuário não encontrado. Se é o seu primeiro acesso, realize seu cadastro primeiro.');
       await signOut(auth);
       return false;
     }
 
-    const userDocRef = doc(db, 'users', user.uid);
-    const userDoc = await getDoc(userDocRef);
-
-    if (!userDoc.exists()) {
-      const userData = {
-        uid: user.uid,
-        name: user.displayName || user.email.split('@')[0],
-        email: user.email,
-        role: 'user' as const,
-        status: 'suspended' as const, // Regra: novo usuário sempre suspenso por padrão
-        createdAt: serverTimestamp(),
-        avatarUrl: user.photoURL || null,
-        receivesEmails: true,
-      };
-
-      try {
-        await setDoc(userDocRef, userData);
-        toast({
-          title: "Cadastro em análise",
-          description: "Sua conta foi criada, mas precisa ser autorizada por um administrador.",
-        });
-        // Desloga imediatamente após criar o perfil suspenso
+    const data = userDoc.data();
+    if (data.status === 'suspended') {
+        setError('Seu acesso ainda não foi autorizado por um administrador.');
         await signOut(auth);
         return false;
-      } catch (firestoreError) {
-        const permissionError = new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'create',
-          requestResourceData: userData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        await signOut(auth);
-        setError('Falha ao configurar o perfil do usuário no banco de dados.');
-        return false;
-      }
-    } else {
-        const data = userDoc.data();
-        if (data.status === 'suspended') {
-            setError('Seu acesso ainda não foi autorizado por um administrador.');
-            await signOut(auth);
-            return false;
-        }
     }
+    
     return true;
-  }, [auth, db, toast]);
+  }, [auth, db]);
 
   useEffect(() => {
     if (!isUserLoading && currentUser) {
@@ -174,9 +139,7 @@ export function LoginForm() {
         values.email,
         values.password
       );
-      const user = userCredential.user;
-
-      const success = await setupUserProfile(user);
+      const success = await checkUserProfile(userCredential.user);
       if (!success) {
         setLoading(false);
         return;
@@ -184,12 +147,12 @@ export function LoginForm() {
 
       toast({
         title: 'Login bem-sucedido!',
-        description: 'Redirecionando para o painel.',
+        description: 'Redirecionando...',
       });
       router.push('/dashboard');
-    } catch (error: any) {
-      if (error.code === 'auth/invalid-credential') {
-        setError('E-mail ou senha inválidos. Por favor, tente novamente.');
+    } catch (err: any) {
+      if (err.code === 'auth/invalid-credential') {
+        setError('E-mail ou senha inválidos.');
       } else {
         setError('Ocorreu um erro ao tentar fazer login.');
       }
@@ -207,17 +170,14 @@ export function LoginForm() {
     try {
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
-        const success = await setupUserProfile(result.user);
+        const success = await checkUserProfile(result.user);
         if (success) {
           toast({ title: 'Login com Google bem-sucedido!' });
           router.push('/dashboard');
         }
       }
-    } catch (error: any) {
-      console.error('Erro ao fazer login com Google:', error);
-      if (error.code === 'auth/popup-blocked') {
-        setError('O pop-up de login foi bloqueado pelo navegador. Por favor, permita pop-ups para este site.');
-      } else {
+    } catch (err: any) {
+      if (err.code !== 'auth/popup-closed-by-user') {
         setError('Falha ao fazer login com Google. Tente novamente.');
       }
       setLoading(false);
@@ -235,12 +195,12 @@ export function LoginForm() {
     try {
       await sendPasswordResetEmail(auth, resetEmail);
       toast({
-        title: 'E-mail de redefinição de senha enviado!',
+        title: 'E-mail enviado!',
         description: 'Verifique sua caixa de entrada.',
       });
       setIsResetDialogOpen(false);
       setResetEmail('');
-    } catch (error: any) {
+    } catch (err: any) {
       toast({
         title: 'Erro ao enviar e-mail de redefinição.',
         variant: 'destructive',
@@ -254,7 +214,7 @@ export function LoginForm() {
     <div className="space-y-4">
       {error && (
         <Alert variant="destructive">
-          <AlertTitle>Erro no Login</AlertTitle>
+          <AlertTitle>Aviso</AlertTitle>
           <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       )}
@@ -275,7 +235,7 @@ export function LoginForm() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-card px-2 text-muted-foreground">
-            Ou entre com seu e-mail
+            Ou use seu e-mail
           </span>
         </div>
       </div>
@@ -339,7 +299,7 @@ export function LoginForm() {
           />
           <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Entrar com E-mail
+            Entrar no Portal
           </Button>
         </form>
       </Form>
@@ -352,8 +312,7 @@ export function LoginForm() {
           <AlertDialogHeader>
             <AlertDialogTitle>Redefinir Senha</AlertDialogTitle>
             <AlertDialogDescription>
-              Digite seu endereço de e-mail abaixo e enviaremos um link para
-              redefinir sua senha.
+              Digite seu e-mail para receber o link de redefinição.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">
