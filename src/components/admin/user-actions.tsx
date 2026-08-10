@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from "react";
@@ -136,8 +137,19 @@ export function UserActions({ user }: UserActionsProps) {
         if (!auth) return;
         setIsSubmitting(true);
         sendPasswordResetEmail(auth, user.email)
-            .then(() => toast({ title: "E-mail de redefinição de senha enviado!" }))
-            .catch(() => toast({ title: "Erro ao enviar e-mail", variant: "destructive" }))
+            .then(() => {
+                toast({ 
+                    title: "E-mail de redefinição enviado!",
+                    description: "O usuário receberá instruções no e-mail cadastrado."
+                });
+            })
+            .catch((err: any) => {
+                toast({ 
+                    title: "Erro ao enviar e-mail", 
+                    description: err.message || "Verifique a configuração no Firebase Console.",
+                    variant: "destructive" 
+                });
+            })
             .finally(() => setIsSubmitting(false));
     }
     

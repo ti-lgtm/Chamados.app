@@ -31,19 +31,17 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, Mail } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
@@ -186,23 +184,36 @@ export function LoginForm() {
     }
   }
 
-  const handlePasswordReset = async () => {
-    if (!auth || !resetEmail) {
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auth) return;
+    
+    const email = resetEmail.trim();
+    if (!email) {
       toast({ title: 'Por favor, insira seu e-mail.', variant: 'destructive' });
       return;
     }
+
     setIsSendingReset(true);
     try {
-      await sendPasswordResetEmail(auth, resetEmail);
+      await sendPasswordResetEmail(auth, email);
       toast({
         title: 'E-mail enviado!',
-        description: 'Verifique sua caixa de entrada.',
+        description: 'Verifique sua caixa de entrada e também a pasta de SPAM.',
       });
       setIsResetDialogOpen(false);
       setResetEmail('');
     } catch (err: any) {
+      let message = 'Ocorreu um erro ao tentar enviar o e-mail.';
+      if (err.code === 'auth/user-not-found') {
+        message = 'Não encontramos nenhum usuário com este e-mail.';
+      } else if (err.code === 'auth/invalid-email') {
+        message = 'O e-mail inserido é inválido.';
+      }
+      
       toast({
-        title: 'Erro ao enviar e-mail de redefinição.',
+        title: 'Erro ao enviar e-mail',
+        description: message,
         variant: 'destructive',
       });
     } finally {
@@ -304,40 +315,48 @@ export function LoginForm() {
         </form>
       </Form>
 
-      <AlertDialog
+      <Dialog
         open={isResetDialogOpen}
         onOpenChange={setIsResetDialogOpen}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Redefinir Senha</AlertDialogTitle>
-            <AlertDialogDescription>
-              Digite seu e-mail para receber o link de redefinição.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="reset-email">E-mail</Label>
-            <Input
-              id="reset-email"
-              placeholder="seu@email.com"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handlePasswordReset}
-              disabled={isSendingReset}
-            >
-              {isSendingReset && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Enviar Link
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redefinir Senha</DialogTitle>
+            <DialogDescription>
+              Digite seu e-mail para receber um link de redefinição oficial do Firebase.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="reset-email">E-mail de Cadastro</Label>
+                <Input
+                id="reset-email"
+                placeholder="seu@email.com"
+                type="email"
+                required
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                />
+            </div>
+            <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => setIsResetDialogOpen(false)}>
+                    Cancelar
+                </Button>
+                <Button
+                type="submit"
+                disabled={isSendingReset || !resetEmail}
+                >
+                {isSendingReset ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <Mail className="mr-2 h-4 w-4" />
+                )}
+                Enviar Link de Redefinição
+                </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
