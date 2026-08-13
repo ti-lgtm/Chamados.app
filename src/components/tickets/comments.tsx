@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, type ClipboardEvent } from 'react';
@@ -355,7 +354,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                             </div>
 
                             {/* Message Bubble */}
-                            <div className="flex-1 ml-4 relative">
+                            <div className="flex-1 ml-4 relative min-w-0">
                                 <div className={cn(
                                     "p-4 rounded-lg border shadow-sm text-sm relative transition-all hover:shadow-md",
                                     isSupport 
@@ -386,7 +385,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                                     </div>
 
                                     {comment.message && (
-                                        <div className="text-sm leading-relaxed whitespace-pre-wrap font-medium">
+                                        <div className="text-sm leading-relaxed whitespace-pre-wrap font-medium break-words overflow-hidden">
                                             {comment.message}
                                         </div>
                                     )}
@@ -400,9 +399,9 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                                                         <Image src={url} alt="Anexo" layout="fill" className="object-cover" />
                                                     </a>
                                                 ) : (
-                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] bg-muted/50 p-2 rounded-md hover:bg-muted transition-colors">
-                                                        <Paperclip className="h-3 w-3" />
-                                                        <span className="truncate max-w-[100px]">{decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'Anexo')}</span>
+                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] bg-muted/50 p-2 rounded-md hover:bg-muted transition-colors max-w-full">
+                                                        <Paperclip className="h-3 w-3 shrink-0" />
+                                                        <span className="truncate flex-1">{decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'Anexo')}</span>
                                                     </a>
                                                 );
                                             })}

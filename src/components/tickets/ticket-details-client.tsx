@@ -220,12 +220,12 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             
             <div className="grid gap-6 lg:grid-cols-3 print:block print:space-y-6">
                 <div className="lg:col-span-2 space-y-6">
-                    <Card className="print:shadow-none print:border-2">
+                    <Card className="print:shadow-none print:border-2 overflow-hidden">
                         <CardHeader>
                             <div className="flex justify-between items-start">
-                                <div className="flex flex-col gap-1">
+                                <div className="flex flex-col gap-1 max-w-[70%]">
                                     {isPurchase && <Badge variant="outline" className="w-fit text-[10px] bg-primary/5 text-primary border-primary/20 mb-1"><ShoppingCart className="h-3 w-3 mr-1"/> COMPRA DE TI</Badge>}
-                                    <CardTitle className="font-headline text-2xl">{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</CardTitle>
+                                    <CardTitle className="font-headline text-2xl break-words">{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</CardTitle>
                                 </div>
                                 <div className="flex gap-2 print:hidden">
                                     {canEdit && (
@@ -244,7 +244,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-foreground whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
+                            <p className="text-foreground whitespace-pre-wrap leading-relaxed break-words overflow-hidden">{ticket.description}</p>
                             
                             <div className="mt-6 border-t pt-4">
                                 <DeadlineIndicator 
@@ -262,7 +262,11 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                     <h4 className="font-semibold mb-2 flex items-center gap-2">Anexos</h4>
                                     <ul className="list-disc list-inside space-y-1 text-sm">
                                         {ticket.attachments.map((url, index) => (
-                                            <li key={index}><a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{decodeURIComponent(url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`)}</a></li>
+                                            <li key={index} className="break-all">
+                                                <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                                    {decodeURIComponent(url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`)}
+                                                </a>
+                                            </li>
                                         ))}
                                     </ul>
                                 </div>
