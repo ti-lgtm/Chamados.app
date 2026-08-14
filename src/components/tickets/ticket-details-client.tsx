@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where, Timestamp } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where, Timestamp, addDoc } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, useCollection, WithId } from "@/firebase";
 import type { Ticket, AppUser } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,13 +16,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2, RotateCcw, ArrowLeft } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2, RotateCcw, ArrowLeft, MessageSquareWarning } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "../ui/dialog";
 import { addBusinessDays } from "./new-ticket-form";
 
@@ -55,7 +57,9 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
     const [isPriorityDialogOpen, setIsPriorityDialogOpen] = useState(false);
+    const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
     const [deliveryDate, setDeliveryDate] = useState("");
+    const [reopenReason, setReopenReason] = useState("");
     const [newPriority, setNewPriority] = useState<'low' | 'normal' | 'high'>(ticket.priority);
 
     const canEdit = user?.role === 'ti' || user?.role === 'admin';
@@ -145,6 +149,47 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                 ...extraData,
                 purchaseDate: serverTimestamp()
             });
+        }
+    };
+
+    const handleReopenTicket = async () => {
+        if (!reopenReason.trim()) {
+            toast({ title: "Por favor, informe o motivo da reabertura.", variant: "destructive" });
+            return;
+        }
+
+        if (!firestore || !ticketRef || !user) return;
+
+        setIsUpdating(true);
+        const isPurchase = ticket.type === 'purchase';
+        const newStatus = isPurchase ? 'in_quotation' : 'in_progress';
+
+        try {
+            // 1. Adicionar comentário no histórico
+            const commentData = {
+                ticketId: ticket.id,
+                userId: user.uid,
+                userName: user.name,
+                userAvatarUrl: user.avatarUrl || '',
+                message: `⚠️ [REABERTURA POR SUPORTE]\n\nMotivo informado: ${reopenReason}`,
+                createdAt: serverTimestamp(),
+            };
+            await addDoc(collection(firestore, "tickets", ticket.id, "comments"), commentData);
+
+            // 2. Atualizar status do chamado
+            await updateDoc(ticketRef, {
+                status: newStatus,
+                updatedAt: serverTimestamp(),
+                rating: null, // Limpa a avaliação antiga ao reabrir
+            });
+
+            toast({ title: "Chamado reaberto com sucesso!" });
+            setIsReopenDialogOpen(false);
+            setReopenReason("");
+        } catch (error) {
+            toast({ title: "Erro ao reabrir chamado", variant: "destructive" });
+        } finally {
+            setIsUpdating(false);
         }
     };
 
@@ -432,7 +477,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                     <Button 
                                         className="w-full" 
                                         variant="destructive" 
-                                        onClick={() => handleStatusChange(isPurchase ? 'in_quotation' : 'in_progress')}
+                                        onClick={() => setIsReopenDialogOpen(true)}
                                         disabled={isUpdating}
                                     >
                                         {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}
@@ -480,6 +525,37 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                             <Button onClick={confirmPurchaseStatus} disabled={isUpdating}>
                                 {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {ticket.status === 'purchased' ? 'Atualizar Data' : 'Confirmar Compra'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Dialog de Reabertura */}
+                <Dialog open={isReopenDialogOpen} onOpenChange={setIsReopenDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <MessageSquareWarning className="h-5 w-5 text-destructive" />
+                                Reabertura de Chamado
+                            </DialogTitle>
+                            <DialogDescription>
+                                Informe detalhadamente o motivo pelo qual este chamado está sendo reaberto. Esta justificativa ficará registrada no histórico público.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-2">
+                            <Label>Motivo da Reabertura</Label>
+                            <Textarea 
+                                placeholder="Descreva aqui o motivo..." 
+                                value={reopenReason} 
+                                onChange={(e) => setReopenReason(e.target.value)}
+                                rows={4}
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => { setIsReopenDialogOpen(false); setReopenReason(""); }}>Cancelar</Button>
+                            <Button variant="destructive" onClick={handleReopenTicket} disabled={isUpdating || !reopenReason.trim()}>
+                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Confirmar Reabertura
                             </Button>
                         </DialogFooter>
                     </DialogContent>
