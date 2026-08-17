@@ -88,7 +88,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     }, [ticketRef]);
 
     const handleStatusChange = async (newStatus: any, extraData: any = {}) => {
-        if (!ticketRef) return;
+        if (!ticketRef || !firestore || !user) return;
         
         if (ticket.type === 'purchase' && newStatus === 'purchased' && !extraData.expectedDeliveryDate) {
             setIsDeliveryDialogOpen(true);
@@ -96,15 +96,34 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         }
 
         setIsUpdating(true);
-        const updateData = {
-            status: newStatus,
-            updatedAt: serverTimestamp(),
-            ...extraData
-        };
 
-        updateDoc(ticketRef, updateData)
-        .then(() => {
+        try {
+            // Se for encerramento (resolved ou delivered), adiciona comentário automático
+            if (newStatus === 'resolved' || newStatus === 'delivered') {
+                const isPurchase = ticket.type === 'purchase';
+                const commentData = {
+                    ticketId: ticket.id,
+                    userId: user.uid,
+                    userName: user.name,
+                    userAvatarUrl: user.avatarUrl || '',
+                    message: isPurchase 
+                        ? `✅ [MERCADORIA ENTREGUE]\nA solicitação de compra foi marcada como concluída e a mercadoria foi entregue.`
+                        : `✅ [CHAMADO FINALIZADO]\nO atendimento foi concluído e o chamado foi marcado como resolvido.`,
+                    createdAt: serverTimestamp(),
+                };
+                await addDoc(collection(firestore, "tickets", ticket.id, "comments"), commentData);
+            }
+
+            const updateData = {
+                status: newStatus,
+                updatedAt: serverTimestamp(),
+                ...extraData
+            };
+
+            await updateDoc(ticketRef, updateData);
+            
             toast({ title: "Status atualizado!" });
+            
             if (newStatus === 'resolved' || newStatus === 'delivered') {
                 triggerTicketResolvedEmail({
                     ticketNumber: ticket.ticketNumber,
@@ -114,12 +133,13 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                     ticketUrl: window.location.href,
                 });
             }
+            
             setIsDeliveryDialogOpen(false);
-        })
-        .catch(error => {
+        } catch (error) {
             toast({ title: "Erro ao atualizar", variant: "destructive" });
-        })
-        .finally(() => setIsUpdating(false));
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     const confirmPurchaseStatus = () => {
