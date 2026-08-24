@@ -241,8 +241,8 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         .finally(() => setIsUpdating(false));
     }
 
-    const handleAttendantChange = (attendantId: string) => {
-        if (!ticketRef) return;
+    const handleAttendantChange = async (attendantId: string) => {
+        if (!ticketRef || !firestore || !user) return;
         
         const attendantUser = supportUsers?.find(su => su.id === attendantId);
         const isAssigning = attendantId !== 'null';
@@ -260,14 +260,28 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         }
 
         setIsUpdating(true);
-        updateDoc(ticketRef, updateData)
-            .then(() => {
-                toast({ title: isAssigning ? "Atendente atribuído!" : "Atendente removido!" });
-            })
-            .catch(() => {
-                toast({ title: "Erro ao atribuir atendente", variant: "destructive" });
-            })
-            .finally(() => setIsUpdating(false));
+        try {
+            // Adiciona log de atribuição no histórico
+            const logMsg = isAssigning 
+                ? `👤 [ATRIBUIÇÃO]\nO chamado foi atribuído ao técnico: ${attendantUser?.name || 'N/A'}`
+                : `👤 [ATRIBUIÇÃO]\nO técnico responsável foi removido.`;
+
+            await addDoc(collection(firestore, "tickets", ticket.id, "comments"), {
+                ticketId: ticket.id,
+                userId: user.uid,
+                userName: user.name,
+                userAvatarUrl: user.avatarUrl || '',
+                message: logMsg,
+                createdAt: serverTimestamp(),
+            });
+
+            await updateDoc(ticketRef, updateData);
+            toast({ title: isAssigning ? "Atendente atribuído!" : "Atendente removido!" });
+        } catch (error) {
+            toast({ title: "Erro ao atribuir atendente", variant: "destructive" });
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     if (authLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
