@@ -488,9 +488,9 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                         <p className="text-xs font-bold uppercase text-muted-foreground">Responsável</p>
                                         {!isAssignedToMe && user && (
                                             <Button 
-                                                variant="ghost" 
+                                                variant="default" 
                                                 size="sm" 
-                                                className="h-7 px-2 text-[10px] uppercase font-bold text-primary hover:text-primary hover:bg-primary/10"
+                                                className="h-7 px-3 text-[10px] uppercase font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm ring-1 ring-emerald-400/20 transition-all active:scale-95"
                                                 onClick={() => handleAttendantChange(user.uid)}
                                                 disabled={isUpdating}
                                             >
