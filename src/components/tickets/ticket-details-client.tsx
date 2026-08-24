@@ -63,6 +63,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
     const [newPriority, setNewPriority] = useState<'low' | 'normal' | 'high'>(ticket.priority);
 
     const canEdit = user?.role === 'ti' || user?.role === 'admin';
+    const isAssignedToMe = ticket.assignedTo === user?.uid;
 
     const supportUsersQuery = useMemoFirebase(() => {
         if (!firestore || !canEdit) return null;
@@ -483,7 +484,20 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                     </Select>
                                 </div>
                                 <div className="w-full space-y-2">
-                                    <p className="text-xs font-bold uppercase text-muted-foreground">Responsável</p>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-xs font-bold uppercase text-muted-foreground">Responsável</p>
+                                        {!isAssignedToMe && user && (
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="h-7 px-2 text-[10px] uppercase font-bold text-primary hover:text-primary hover:bg-primary/10"
+                                                onClick={() => handleAttendantChange(user.uid)}
+                                                disabled={isUpdating}
+                                            >
+                                                Atribuir a mim
+                                            </Button>
+                                        )}
+                                    </div>
                                     <Select onValueChange={handleAttendantChange} value={ticket.assignedTo || 'null'} disabled={isUpdating}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
