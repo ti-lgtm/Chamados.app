@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -105,7 +104,7 @@ export function LoginForm() {
     const userDocRef = doc(db, 'users', firebaseUser.uid);
     let userDoc = await getDoc(userDocRef);
 
-    // Unificação de contas: Se logou com Google e não tem documento, procura por e-mail
+    // Unificação de contas: Se logou com Google e não tem documento vinculado a esse UID, procura por e-mail
     if (!userDoc.exists()) {
       const q = query(collection(db, 'users'), where('email', '==', firebaseUser.email));
       const querySnapshot = await getDocs(q);
@@ -114,18 +113,21 @@ export function LoginForm() {
         const oldUserDoc = querySnapshot.docs[0];
         const oldUserData = oldUserDoc.data();
         
-        // Migra o perfil para o novo UID (unificação)
+        // Migra o perfil para o novo UID (unificação de Google com E-mail/Senha anterior)
         await setDoc(userDocRef, {
           ...oldUserData,
           uid: firebaseUser.uid,
           avatarUrl: firebaseUser.photoURL || oldUserData.avatarUrl || null,
         });
         
-        // Remove o documento antigo (UID anterior)
-        await deleteDoc(doc(db, 'users', oldUserDoc.id));
+        // Remove o documento antigo com UID antigo para evitar duplicidade
+        if (oldUserDoc.id !== firebaseUser.uid) {
+            await deleteDoc(doc(db, 'users', oldUserDoc.id));
+        }
         
         userDoc = await getDoc(userDocRef);
       } else {
+        // Se não encontrou nem documento nem e-mail cadastrado, barra o acesso
         setError('Usuário não encontrado. Se é o seu primeiro acesso, realize seu cadastro primeiro.');
         await signOut(auth);
         return false;
@@ -170,7 +172,7 @@ export function LoginForm() {
       });
       router.push('/dashboard');
     } catch (err: any) {
-      if (err.code === 'auth/invalid-credential') {
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError('E-mail ou senha inválidos.');
       } else {
         setError('Ocorreu um erro ao tentar fazer login.');
