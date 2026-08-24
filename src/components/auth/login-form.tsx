@@ -12,7 +12,7 @@ import {
   sendPasswordResetEmail,
   signOut,
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, query, where, setDoc, deleteDoc } from "firebase/firestore";
 import {
   useAuth as useFirebaseAuth,
   useFirestore,
@@ -103,16 +103,37 @@ export function LoginForm() {
     if (!db || !auth) return false;
     
     const userDocRef = doc(db, 'users', firebaseUser.uid);
-    const userDoc = await getDoc(userDocRef);
+    let userDoc = await getDoc(userDocRef);
 
+    // Unificação de contas: Se logou com Google e não tem documento, procura por e-mail
     if (!userDoc.exists()) {
-      setError('Usuário não encontrado. Se é o seu primeiro acesso, realize seu cadastro primeiro.');
-      await signOut(auth);
-      return false;
+      const q = query(collection(db, 'users'), where('email', '==', firebaseUser.email));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const oldUserDoc = querySnapshot.docs[0];
+        const oldUserData = oldUserDoc.data();
+        
+        // Migra o perfil para o novo UID (unificação)
+        await setDoc(userDocRef, {
+          ...oldUserData,
+          uid: firebaseUser.uid,
+          avatarUrl: firebaseUser.photoURL || oldUserData.avatarUrl || null,
+        });
+        
+        // Remove o documento antigo (UID anterior)
+        await deleteDoc(doc(db, 'users', oldUserDoc.id));
+        
+        userDoc = await getDoc(userDocRef);
+      } else {
+        setError('Usuário não encontrado. Se é o seu primeiro acesso, realize seu cadastro primeiro.');
+        await signOut(auth);
+        return false;
+      }
     }
 
     const data = userDoc.data();
-    if (data.status === 'suspended') {
+    if (data?.status === 'suspended') {
         setError('Seu acesso ainda não foi autorizado por um administrador.');
         await signOut(auth);
         return false;
