@@ -11,7 +11,7 @@ import {
   sendPasswordResetEmail,
   signOut,
 } from "firebase/auth";
-import { doc, getDoc, getDocs, collection, query, where, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, query, where, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import {
   useAuth as useFirebaseAuth,
   useFirestore,
@@ -104,7 +104,7 @@ export function LoginForm() {
     const userDocRef = doc(db, 'users', firebaseUser.uid);
     let userDoc = await getDoc(userDocRef);
 
-    // Unificação de contas: Se logou com Google e não tem documento vinculado a esse UID, procura por e-mail
+    // Se não tem documento vinculado a esse UID, tenta unificação por e-mail ou cria um novo
     if (!userDoc.exists()) {
       const q = query(collection(db, 'users'), where('email', '==', firebaseUser.email));
       const querySnapshot = await getDocs(q);
@@ -113,22 +113,34 @@ export function LoginForm() {
         const oldUserDoc = querySnapshot.docs[0];
         const oldUserData = oldUserDoc.data();
         
-        // Migra o perfil para o novo UID (unificação de Google com E-mail/Senha anterior)
+        // Migra o perfil para o novo UID (unificação)
         await setDoc(userDocRef, {
           ...oldUserData,
           uid: firebaseUser.uid,
           avatarUrl: firebaseUser.photoURL || oldUserData.avatarUrl || null,
         });
         
-        // Remove o documento antigo com UID antigo para evitar duplicidade
         if (oldUserDoc.id !== firebaseUser.uid) {
             await deleteDoc(doc(db, 'users', oldUserDoc.id));
         }
         
         userDoc = await getDoc(userDocRef);
       } else {
-        // Se não encontrou nem documento nem e-mail cadastrado, barra o acesso
-        setError('Usuário não encontrado. Se é o seu primeiro acesso, realize seu cadastro primeiro.');
+        // CASO CRÍTICO: Usuário existe no Auth mas não no Firestore
+        // Criamos o documento agora para que ele apareça na Gestão de Usuários
+        const newUserData = {
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || 'Novo Usuário (Sincronizado)',
+          email: firebaseUser.email,
+          role: 'user',
+          status: 'suspended',
+          createdAt: serverTimestamp(),
+          avatarUrl: firebaseUser.photoURL || null,
+          receivesEmails: true,
+        };
+        
+        await setDoc(userDocRef, newUserData);
+        setError('Seu perfil foi identificado e sincronizado, mas ainda aguarda aprovação do administrador.');
         await signOut(auth);
         return false;
       }
