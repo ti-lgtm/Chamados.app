@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -22,7 +23,8 @@ import {
     Briefcase,
     Star,
     ArrowRight,
-    Calendar
+    Calendar,
+    Eye
 } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -160,11 +162,9 @@ export default function KnowledgeBasePage() {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {featuredArticles.map(article => (
-                            <a 
+                            <Link 
                                 key={article.id} 
-                                href={article.link} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
+                                href={`/knowledge-base/${article.id}`}
                                 className="group block"
                             >
                                 <Card className="h-full border-primary/20 hover:border-primary transition-all hover:shadow-lg bg-primary/5">
@@ -185,7 +185,7 @@ export default function KnowledgeBasePage() {
                                         </div>
                                     </CardContent>
                                 </Card>
-                            </a>
+                            </Link>
                         ))}
                     </div>
                 </div>
@@ -207,11 +207,9 @@ export default function KnowledgeBasePage() {
                         {filteredArticles.map(article => {
                             const Icon = categoryIcons[article.category] || BookOpen;
                             return (
-                                <a 
+                                <Link 
                                     key={article.id} 
-                                    href={article.link} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
+                                    href={`/knowledge-base/${article.id}`}
                                     className="group"
                                 >
                                     <Card className="h-full transition-all hover:shadow-md border-muted hover:border-primary/50 relative overflow-hidden flex flex-col">
@@ -241,12 +239,12 @@ export default function KnowledgeBasePage() {
                                                 </div>
                                                 <Button variant="ghost" size="sm" className="w-full justify-between group-hover:bg-primary group-hover:text-primary-foreground">
                                                     Visualizar Documento
-                                                    <ExternalLink className="h-4 w-4" />
+                                                    <Eye className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         </CardContent>
                                     </Card>
-                                </a>
+                                </Link>
                             );
                         })}
                     </div>

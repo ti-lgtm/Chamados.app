@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2, RotateCcw, ArrowLeft, MessageSquareWarning } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2, RotateCcw, ArrowLeft, MessageSquareWarning, RefreshCw } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
@@ -138,6 +138,50 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             setIsDeliveryDialogOpen(false);
         } catch (error) {
             toast({ title: "Erro ao atualizar", variant: "destructive" });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleMigrateType = async () => {
+        if (!ticketRef || !firestore || !user) return;
+        
+        const newType = ticket.type === 'support' ? 'purchase' : 'support';
+        const newStatus = newType === 'purchase' ? 'in_quotation' : 'in_progress';
+        
+        // Se mudar para compra, o serviço vira COMPRA. Se mudar para suporte, vira OUTROS.
+        const newService = newType === 'purchase' ? 'COMPRA' : 'OUTROS';
+
+        if (!confirm(`Deseja converter este registro para ${newType === 'purchase' ? 'SOLICITAÇÃO DE COMPRA' : 'CHAMADO DE SUPORTE'}?`)) {
+            return;
+        }
+
+        setIsUpdating(true);
+        try {
+            const logMsg = `🔄 [MIGRAÇÃO DE TIPO]\nO registro foi convertido de "${ticket.type === 'support' ? 'Suporte' : 'Compra'}" para "${newType === 'support' ? 'Suporte' : 'Compra'}" pelo técnico ${user.name}.`;
+
+            await addDoc(collection(firestore, "tickets", ticket.id, "comments"), {
+                ticketId: ticket.id,
+                userId: user.uid,
+                userName: user.name,
+                userAvatarUrl: user.avatarUrl || '',
+                message: logMsg,
+                createdAt: serverTimestamp(),
+            });
+
+            await updateDoc(ticketRef, {
+                type: newType,
+                status: newStatus,
+                service: newService,
+                updatedAt: serverTimestamp(),
+                // Se era suporte com SLA, limpa o SLA ao virar compra. 
+                // Se era compra ao virar suporte, o SLA será definido manualmente ou via prioridade.
+                deadline: newType === 'purchase' ? null : ticket.deadline 
+            });
+
+            toast({ title: "Tipo de registro alterado com sucesso!" });
+        } catch (err) {
+            toast({ title: "Erro ao converter tipo", variant: "destructive" });
         } finally {
             setIsUpdating(false);
         }
@@ -546,6 +590,20 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                                         )}
                                     </>
                                 )}
+
+                                <div className="w-full pt-4 mt-4 border-t border-dashed space-y-2">
+                                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Ações Avançadas</p>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="w-full text-xs"
+                                        onClick={handleMigrateType}
+                                        disabled={isUpdating}
+                                    >
+                                        <RefreshCw className="h-3 w-3 mr-2" />
+                                        Converter para {ticket.type === 'support' ? 'Compra' : 'Suporte'}
+                                    </Button>
+                                </div>
                             </CardFooter>
                         )}
                     </Card>
