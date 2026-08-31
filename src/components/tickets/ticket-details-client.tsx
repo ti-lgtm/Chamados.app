@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where, Timestamp, addDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where, Timestamp, addDoc, getDoc } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, useCollection, WithId } from "@/firebase";
-import type { Ticket, AppUser } from "@/lib/types";
+import type { Ticket, AppUser, EmailSettings } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -17,8 +18,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2, RotateCcw, ArrowLeft, MessageSquareWarning, Maximize2 } from "lucide-react";
-import { triggerTicketResolvedEmail } from "@/app/actions/email";
+import { 
+    Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, 
+    CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, 
+    Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2, 
+    RotateCcw, ArrowLeft, MessageSquareWarning, Maximize2, SendHorizontal 
+} from "lucide-react";
+import { 
+    triggerTicketResolvedEmail, 
+    triggerTicketCreatedEmail, 
+    triggerTicketCreatedSupportEmail 
+} from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
 import { Button } from "../ui/button";
@@ -27,6 +37,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "../ui/dialog";
 import { addBusinessDays } from "./new-ticket-form";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TicketDetailsClientProps {
     initialTicket: Ticket;
@@ -57,6 +75,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
     const { toast } = useToast();
     const [ticket, setTicket] = useState<Ticket>(initialTicket);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isSendingEmail, setIsSendingEmail] = useState(false);
     const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
     const [isPriorityDialogOpen, setIsPriorityDialogOpen] = useState(false);
     const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
@@ -141,6 +160,81 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
             toast({ title: "Erro ao atualizar", variant: "destructive" });
         } finally {
             setIsUpdating(false);
+        }
+    };
+
+    const handleResendOpeningEmail = async () => {
+        if (!firestore) return;
+        setIsSendingEmail(true);
+        try {
+            const settingsRef = doc(firestore, 'settings', 'emails');
+            const settingsSnap = await getDoc(settingsRef);
+            const emailSettings = settingsSnap.exists() ? settingsSnap.data() as EmailSettings : null;
+
+            const isPurchase = ticket.type === 'purchase';
+            const userCustomTemplates = emailSettings ? {
+                subject: isPurchase ? emailSettings.purchaseSubject : emailSettings.supportSubject,
+                body: isPurchase ? emailSettings.purchaseBody : emailSettings.supportBody,
+            } : undefined;
+
+            const staffCustomTemplates = (emailSettings?.staffSubject && emailSettings?.staffBody) ? {
+                subject: emailSettings.staffSubject,
+                body: emailSettings.staffBody,
+            } : undefined;
+
+            await triggerTicketCreatedEmail({
+                ticketNumber: ticket.ticketNumber,
+                title: ticket.title,
+                userName: ticket.userName,
+                userEmail: ticket.userEmail,
+                ccEmail: ticket.ccEmail || undefined,
+                description: ticket.description,
+                type: ticket.type,
+                customTemplates: userCustomTemplates,
+            });
+
+            if (supportUsers && supportUsers.length > 0) {
+                const supportEmails = supportUsers
+                  .filter(su => su.receivesEmails !== false)
+                  .map(su => su.email)
+                  .filter((email): email is string => !!email);
+                  
+                if(supportEmails.length > 0) {
+                    await triggerTicketCreatedSupportEmail({
+                        ticketNumber: ticket.ticketNumber,
+                        title: ticket.title,
+                        creatorName: ticket.userName,
+                        supportEmails: supportEmails,
+                        description: ticket.description,
+                        type: ticket.type,
+                        customTemplates: staffCustomTemplates,
+                    });
+                }
+            }
+
+            toast({ title: "E-mails de abertura reenviados!" });
+        } catch (error) {
+            toast({ title: "Erro ao reenviar e-mails", variant: "destructive" });
+        } finally {
+            setIsSendingEmail(false);
+        }
+    };
+
+    const handleResendClosingEmail = async () => {
+        setIsSendingEmail(true);
+        try {
+            await triggerTicketResolvedEmail({
+                ticketNumber: ticket.ticketNumber,
+                ticketTitle: ticket.title,
+                userName: ticket.userName,
+                userEmail: ticket.userEmail,
+                ticketUrl: window.location.href,
+            });
+            toast({ title: "E-mail de fechamento reenviado!" });
+        } catch (error) {
+            toast({ title: "Erro ao reenviar e-mail", variant: "destructive" });
+        } finally {
+            setIsSendingEmail(false);
         }
     };
 
@@ -299,6 +393,31 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                             Abrir em Tela Cheia
                         </Link>
                     </Button>
+                )}
+
+                {canEdit && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" disabled={isSendingEmail}>
+                                {isSendingEmail ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
+                                Notificações
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Comunicação por E-mail</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleResendOpeningEmail}>
+                                <SendHorizontal className="h-4 w-4 mr-2" /> Reenviar Abertura
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                                onClick={handleResendClosingEmail} 
+                                disabled={!isFinished}
+                                className={!isFinished ? "opacity-50" : ""}
+                            >
+                                <CheckCircle className="h-4 w-4 mr-2" /> Reenviar Conclusão
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )}
             </div>
             
