@@ -60,23 +60,42 @@ export default function ArticleViewPage() {
         return cleanedUrl;
     };
 
-    const handleShare = () => {
-        if (typeof navigator !== 'undefined' && navigator.share) {
-            navigator.share({
-                title: article?.title,
-                text: article?.description,
-                url: window.location.href,
-            }).catch(() => {});
-        } else {
-            navigator.clipboard.writeText(window.location.href);
-            toast({ title: "Link copiado para a área de transferência!" });
+    const handleShare = async () => {
+        if (!article) return;
+
+        const shareData = {
+            title: article.title,
+            text: article.description,
+            url: window.location.href,
+        };
+
+        try {
+            // Tenta usar a API nativa de compartilhamento
+            if (typeof navigator !== 'undefined' && navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                throw new Error('Navegador não suporta compartilhamento nativo');
+            }
+        } catch (err) {
+            // Se falhar (como no erro do usuário) ou não for suportado, copia para o clipboard
+            try {
+                await navigator.clipboard.writeText(window.location.href);
+                toast({ 
+                    title: "Link copiado!", 
+                    description: "O menu de compartilhamento do seu sistema falhou, mas o link foi copiado para sua área de transferência." 
+                });
+            } catch (clipboardErr) {
+                toast({ 
+                    title: "Erro ao compartilhar", 
+                    description: "Não foi possível abrir o menu nem copiar o link automaticamente.",
+                    variant: "destructive"
+                });
+            }
         }
     };
 
     const handlePrint = () => {
-        // Devido a restrições de segurança de navegadores (CORS), 
-        // não é possível disparar o print diretamente de um iframe de origem diferente (como o Google Docs).
-        // Usamos o print padrão da janela.
+        // Usa o print padrão da janela para evitar erros de segurança de cross-origin frames
         window.print();
     };
 
