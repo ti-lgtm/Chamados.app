@@ -8,6 +8,7 @@ import { doc } from 'firebase/firestore';
 import type { KnowledgeBaseArticle } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { 
     ArrowLeft, 
     Printer, 
@@ -15,9 +16,21 @@ import {
     Share2, 
     Loader2, 
     ExternalLink,
-    Info
+    Info,
+    Copy,
+    Check,
+    Mail,
+    Facebook,
+    Twitter,
+    MessageCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function ArticleViewPage() {
     const params = useParams<{ id: string }>();
@@ -25,6 +38,8 @@ export default function ArticleViewPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [iframeLoading, setIframeLoading] = useState(true);
+    const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     const articleRef = useMemoFirebase(() => {
         if (!firestore || !params.id) return null;
@@ -60,42 +75,22 @@ export default function ArticleViewPage() {
         return cleanedUrl;
     };
 
-    const handleShare = async () => {
-        if (!article) return;
+    const handleShare = () => {
+        setIsShareDialogOpen(true);
+    };
 
-        const shareData = {
-            title: article.title,
-            text: article.description,
-            url: window.location.href,
-        };
-
+    const copyToClipboard = async () => {
         try {
-            // Tenta usar a API nativa de compartilhamento
-            if (typeof navigator !== 'undefined' && navigator.share) {
-                await navigator.share(shareData);
-            } else {
-                throw new Error('Navegador não suporta compartilhamento nativo');
-            }
+            await navigator.clipboard.writeText(window.location.href);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+            toast({ title: "Link copiado!" });
         } catch (err) {
-            // Se falhar (como no erro do usuário) ou não for suportado, copia para o clipboard
-            try {
-                await navigator.clipboard.writeText(window.location.href);
-                toast({ 
-                    title: "Link copiado!", 
-                    description: "O menu de compartilhamento do seu sistema falhou, mas o link foi copiado para sua área de transferência." 
-                });
-            } catch (clipboardErr) {
-                toast({ 
-                    title: "Erro ao compartilhar", 
-                    description: "Não foi possível abrir o menu nem copiar o link automaticamente.",
-                    variant: "destructive"
-                });
-            }
+            toast({ title: "Erro ao copiar link", variant: "destructive" });
         }
     };
 
     const handlePrint = () => {
-        // Usa o print padrão da janela para evitar erros de segurança de cross-origin frames
         window.print();
     };
 
@@ -118,6 +113,8 @@ export default function ArticleViewPage() {
     }
 
     const embedUrl = getEmbedUrl(article.link);
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const shareText = `Confira este manual: ${article.title}`;
 
     return (
         <div className="flex flex-col h-[calc(100vh-120px)] space-y-4 print:h-auto print:space-y-0">
@@ -177,6 +174,75 @@ export default function ArticleViewPage() {
                 </div>
                 <p>Caso o documento não carregue, pode ser uma restrição do navegador a cookies de terceiros.</p>
             </div>
+
+            {/* Share Dialog - Estilo Youtube */}
+            <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Compartilhar</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col space-y-6 py-4">
+                        <div className="flex justify-between items-center gap-4 overflow-x-auto pb-2">
+                            <a 
+                                href={`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`} 
+                                target="_blank" rel="noopener noreferrer"
+                                className="flex flex-col items-center gap-2 group min-w-[70px]"
+                            >
+                                <div className="h-12 w-12 rounded-full bg-[#25D366] flex items-center justify-center text-white transition-transform group-hover:scale-110">
+                                    <MessageCircle className="h-6 w-6 fill-current" />
+                                </div>
+                                <span className="text-[10px] font-medium">WhatsApp</span>
+                            </a>
+                            <a 
+                                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} 
+                                target="_blank" rel="noopener noreferrer"
+                                className="flex flex-col items-center gap-2 group min-w-[70px]"
+                            >
+                                <div className="h-12 w-12 rounded-full bg-[#1877F2] flex items-center justify-center text-white transition-transform group-hover:scale-110">
+                                    <Facebook className="h-6 w-6 fill-current" />
+                                </div>
+                                <span className="text-[10px] font-medium">Facebook</span>
+                            </a>
+                            <a 
+                                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`} 
+                                target="_blank" rel="noopener noreferrer"
+                                className="flex flex-col items-center gap-2 group min-w-[70px]"
+                            >
+                                <div className="h-12 w-12 rounded-full bg-black flex items-center justify-center text-white transition-transform group-hover:scale-110">
+                                    <Twitter className="h-6 w-6 fill-current" />
+                                </div>
+                                <span className="text-[10px] font-medium">X</span>
+                            </a>
+                            <a 
+                                href={`mailto:?subject=${encodeURIComponent(article.title)}&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`}
+                                className="flex flex-col items-center gap-2 group min-w-[70px]"
+                            >
+                                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-foreground transition-transform group-hover:scale-110">
+                                    <Mail className="h-6 w-6" />
+                                </div>
+                                <span className="text-[10px] font-medium">E-mail</span>
+                            </a>
+                        </div>
+
+                        <div className="flex items-center space-x-2 bg-muted/50 p-3 rounded-lg border">
+                            <div className="grid flex-1 gap-2">
+                                <label htmlFor="link" className="sr-only">Link</label>
+                                <Input
+                                    id="link"
+                                    defaultValue={shareUrl}
+                                    readOnly
+                                    className="h-9 border-none bg-transparent focus-visible:ring-0 px-0"
+                                />
+                            </div>
+                            <Button size="sm" className="px-3 shrink-0" onClick={copyToClipboard}>
+                                <span className="sr-only">Copiar</span>
+                                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                <span className="ml-2">{copied ? 'Copiado' : 'Copiar'}</span>
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
