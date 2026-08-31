@@ -315,7 +315,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="px-0 space-y-8">
-        <div className="relative space-y-6 before:absolute before:inset-0 before:ml-[135px] before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-border/20 before:via-border before:to-border/20">
+        <div className="relative space-y-6 before:absolute before:inset-0 before:ml-[105px] sm:before:ml-[125px] before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-border/20 before:via-border before:to-border/20">
           {loading &&
             Array.from({ length: 2 }).map((_, i) => (
               <div className="flex items-center space-x-4" key={i}>
@@ -334,29 +334,29 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                 const isSupport = comment.userId !== ticket.userId;
                 return (
                     <div key={comment.id} className="relative flex items-center group">
-                        <div className="flex items-center w-full">
+                        <div className="flex items-center w-full min-w-0">
                             {/* Timestamp Column */}
-                            <div className="w-[120px] text-right pr-4 shrink-0">
-                                <p className="text-[10px] font-mono font-bold text-muted-foreground uppercase leading-tight">
+                            <div className="w-[90px] sm:w-[110px] text-right pr-4 shrink-0">
+                                <p className="text-[9px] sm:text-[10px] font-mono font-bold text-muted-foreground uppercase leading-tight">
                                     {comment.createdAt ? format(comment.createdAt.toDate(), "dd/MM/yyyy") : '--/--/----'}
                                 </p>
-                                <p className="text-[10px] font-mono text-muted-foreground">
+                                <p className="text-[9px] sm:text-[10px] font-mono text-muted-foreground">
                                     {comment.createdAt ? format(comment.createdAt.toDate(), "HH:mm") : '--:--'}
                                 </p>
                             </div>
 
                             {/* Timeline Node */}
                             <div className={cn(
-                                "flex items-center justify-center w-8 h-8 rounded-full border-2 z-10 shrink-0 transition-colors shadow-sm",
+                                "flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 z-10 shrink-0 transition-colors shadow-sm",
                                 isSupport ? "bg-primary border-primary text-primary-foreground" : "bg-background border-border text-muted-foreground"
                             )}>
-                                {isSupport ? <UserPen className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                                {isSupport ? <UserPen className="h-3 w-3 sm:h-4 sm:w-4" /> : <User className="h-3 w-3 sm:h-4 sm:w-4" />}
                             </div>
 
                             {/* Message Bubble */}
-                            <div className="flex-1 ml-4 relative min-w-0">
+                            <div className="flex-1 ml-3 sm:ml-4 relative min-w-0">
                                 <div className={cn(
-                                    "p-4 rounded-lg border shadow-sm text-sm relative transition-all hover:shadow-md",
+                                    "p-3 sm:p-4 rounded-lg border shadow-sm text-sm relative transition-all hover:shadow-md",
                                     isSupport 
                                         ? "bg-accent/5 border-primary/20 dark:bg-primary/5" 
                                         : "bg-card border-border"
@@ -368,38 +368,35 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                                     )} />
 
                                     <div className="mb-2 flex items-center justify-between gap-2">
-                                        <div className="flex flex-wrap items-center gap-1.5">
+                                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                                             <span className={cn(
-                                                "font-bold uppercase text-[10px] tracking-wider",
+                                                "font-bold uppercase text-[9px] tracking-wider shrink-0",
                                                 isSupport ? "text-primary" : "text-muted-foreground"
                                             )}>
                                                 {isSupport ? 'Atendente' : 'Solicitante'}
                                             </span>
-                                            <span className="font-bold text-[11px] truncate max-w-[150px] sm:max-w-none">
+                                            <span className="font-bold text-[10px] sm:text-[11px] truncate max-w-[100px] sm:max-w-none">
                                                 {comment.userName.toUpperCase()}
-                                            </span>
-                                            <span className="text-[10px] text-muted-foreground italic">
-                                                {isSupport ? 'registrou um apontamento.' : 'enviou uma mensagem.'}
                                             </span>
                                         </div>
                                     </div>
 
                                     {comment.message && (
-                                        <div className="text-sm leading-relaxed whitespace-pre-wrap font-medium break-words overflow-hidden">
+                                        <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-medium break-words overflow-hidden">
                                             {comment.message}
                                         </div>
                                     )}
 
                                     {comment.attachments && comment.attachments.length > 0 && (
-                                        <div className="mt-4 flex flex-wrap gap-3">
+                                        <div className="mt-4 flex flex-wrap gap-2 sm:gap-3">
                                             {comment.attachments.map((url, idx) => {
                                                 const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
                                                 return isImage ? (
-                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="relative w-24 h-24 rounded-md overflow-hidden border hover:opacity-80 transition-opacity">
+                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-md overflow-hidden border hover:opacity-80 transition-opacity">
                                                         <Image src={url} alt="Anexo" layout="fill" className="object-cover" />
                                                     </a>
                                                 ) : (
-                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] bg-muted/50 p-2 rounded-md hover:bg-muted transition-colors max-w-full">
+                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[10px] bg-muted/50 p-2 rounded-md hover:bg-muted transition-colors max-w-full">
                                                         <Paperclip className="h-3 w-3 shrink-0" />
                                                         <span className="truncate flex-1">{decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'Anexo')}</span>
                                                     </a>
@@ -419,12 +416,12 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
           <div className="pt-6 border-t border-dashed">
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="flex gap-4">
-                    <Avatar className="h-10 w-10 shrink-0 border">
+                <div className="flex gap-3 sm:gap-4">
+                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 border">
                         <AvatarImage src={currentUser.avatarUrl} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-bold">{getInitials(currentUser.name)}</AvatarFallback>
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{getInitials(currentUser.name)}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 space-y-4">
+                    <div className="flex-1 space-y-4 min-w-0">
                         <FormField
                         control={form.control}
                         name="message"
@@ -436,7 +433,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                                 {...field}
                                 rows={4}
                                 onPaste={handlePaste}
-                                className="resize-none focus-visible:ring-primary shadow-inner"
+                                className="resize-none focus-visible:ring-primary shadow-inner text-sm"
                                 />
                             </FormControl>
                             <FormMessage />
@@ -444,30 +441,30 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                         )}
                         />
                         
-                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-start sm:items-center">
                             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                                 {isSupportStaff && (
                                     <Select onValueChange={handleCannedResponse}>
-                                        <SelectTrigger className="h-9 text-xs w-full sm:w-[200px]">
+                                        <SelectTrigger className="h-8 sm:h-9 text-[10px] sm:text-xs w-full sm:w-[180px]">
                                             <SelectValue placeholder="Respostas rápidas" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {cannedResponses.map((res) => (
-                                                <SelectItem key={res.id} value={res.id} className="text-xs">{res.label}</SelectItem>
+                                                <SelectItem key={res.id} value={res.id} className="text-[10px] sm:text-xs">{res.label}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 )}
                                 <div className="relative w-full sm:w-auto">
-                                    <Input type="file" multiple {...fileRef} className="h-9 text-xs opacity-0 absolute inset-0 cursor-pointer z-20" />
-                                    <Button type="button" variant="outline" size="sm" className="h-9 text-xs w-full">
+                                    <Input type="file" multiple {...fileRef} className="h-8 sm:h-9 text-[10px] opacity-0 absolute inset-0 cursor-pointer z-20" />
+                                    <Button type="button" variant="outline" size="sm" className="h-8 sm:h-9 text-[10px] sm:text-xs w-full">
                                         <Paperclip className="h-3 w-3 mr-2" />
                                         Anexar Arquivos
                                     </Button>
                                 </div>
                             </div>
-                            <Button type="submit" size="sm" disabled={isSubmitting} className="w-full sm:w-auto shadow-md">
-                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                            <Button type="submit" size="sm" disabled={isSubmitting} className="w-full sm:w-auto shadow-md h-8 sm:h-9 text-[10px] sm:text-xs">
+                                {isSubmitting ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" /> : <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />}
                                 Registrar Apontamento
                             </Button>
                         </div>
@@ -475,8 +472,8 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                         {attachments && attachments.length > 0 && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                                 {Array.from(attachments).map((file, index) => (
-                                    <div key={index} className="flex items-center justify-between text-[11px] bg-muted/50 p-2 rounded border border-dashed">
-                                        <span className="truncate max-w-[150px]">{file.name}</span>
+                                    <div key={index} className="flex items-center justify-between text-[10px] bg-muted/50 p-2 rounded border border-dashed">
+                                        <span className="truncate max-w-[120px] sm:max-w-[150px]">{file.name}</span>
                                         <Button type="button" variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleRemoveAttachment(index)}>
                                             <X className="h-3 w-3" />
                                         </Button>

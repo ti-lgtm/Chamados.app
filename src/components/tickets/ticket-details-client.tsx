@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -286,7 +285,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
     const isFinished = ticket.status === 'resolved' || ticket.status === 'delivered';
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
             <div className="flex items-center justify-between gap-2 print:hidden">
                 {!isPreview ? (
                     <Button variant="ghost" size="sm" onClick={() => router.back()} className="text-muted-foreground hover:text-foreground">
@@ -307,22 +306,24 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 "grid gap-6 print:block print:space-y-6",
                 isPreview ? "grid-cols-1" : "lg:grid-cols-3"
             )}>
-                <div className={cn(isPreview ? "col-span-1" : "lg:col-span-2", "space-y-6")}>
+                <div className={cn(isPreview ? "col-span-1" : "lg:col-span-2", "space-y-6 min-w-0")}>
                     <Card className="print:shadow-none print:border-2 overflow-hidden">
-                        <CardHeader>
-                            <div className="flex justify-between items-start">
-                                <div className="flex flex-col gap-1 max-w-[70%]">
+                        <CardHeader className="space-y-3">
+                            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                                <div className="flex flex-col gap-1 flex-1 min-w-0">
                                     {isPurchase && <Badge variant="outline" className="w-fit text-[10px] bg-primary/5 text-primary border-primary/20 mb-1"><ShoppingCart className="h-3 w-3 mr-1"/> COMPRA DE TI</Badge>}
-                                    <CardTitle className="font-headline text-2xl break-words">{ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}</CardTitle>
+                                    <CardTitle className="font-headline text-xl sm:text-2xl break-words leading-tight">
+                                        {ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}
+                                    </CardTitle>
                                 </div>
-                                <div className="flex gap-2 print:hidden">
+                                <div className="flex items-center gap-2 print:hidden shrink-0">
                                     {canEdit && (
-                                        <Button variant="outline" size="sm" onClick={() => window.print()}>
+                                        <Button variant="outline" size="sm" onClick={() => window.print()} className="h-8">
                                             <Printer className="mr-2 h-4 w-4" />
-                                            Imprimir
+                                            <span className="hidden sm:inline">Imprimir</span>
                                         </Button>
                                     )}
-                                    <Badge variant={statusMap[ticket.status]?.variant || 'default'}>
+                                    <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="h-8">
                                         {statusMap[ticket.status]?.label || ticket.status}
                                     </Badge>
                                 </div>
@@ -332,7 +333,9 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-foreground whitespace-pre-wrap leading-relaxed break-words overflow-hidden">{ticket.description}</p>
+                            <p className="text-foreground whitespace-pre-wrap leading-relaxed break-words overflow-hidden text-sm sm:text-base">
+                                {ticket.description}
+                            </p>
                             
                             <div className="mt-6 border-t pt-4">
                                 <DeadlineIndicator 
@@ -347,7 +350,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
 
                             {ticket.attachments && ticket.attachments.length > 0 && (
                                 <div className="mt-6">
-                                    <h4 className="font-semibold mb-2 flex items-center gap-2">Anexos ({ticket.attachments.length})</h4>
+                                    <h4 className="font-semibold mb-2 flex items-center gap-2 text-sm">Anexos ({ticket.attachments.length})</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {ticket.attachments.map((url, index) => (
                                             <Button key={index} variant="secondary" size="sm" asChild className="h-8 text-[11px]">
@@ -365,66 +368,66 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                     <Comments ticket={ticket} currentUser={user} supportUsers={supportUsers} />
                 </div>
 
-                <div className={cn(isPreview ? "col-span-1" : "lg:col-span-1", "space-y-6")}>
+                <div className={cn(isPreview ? "col-span-1" : "lg:col-span-1", "space-y-6 min-w-0")}>
                     <Card className="print:shadow-none print:border-2 overflow-hidden">
                         <CardHeader><CardTitle className="font-headline text-lg">Dados da {isPurchase ? 'Compra' : 'Solicitação'}</CardTitle></CardHeader>
                         <CardContent className="space-y-4 text-sm">
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
                                 <User className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                                <div className="flex flex-col">
+                                <div className="flex flex-col min-w-0">
                                     <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Solicitante</span>
-                                    <span>{ticket.userName}</span>
+                                    <span className="truncate">{ticket.userName}</span>
                                 </div>
                             </div>
 
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
                                 <Building className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                                <div className="flex flex-col">
+                                <div className="flex flex-col min-w-0">
                                     <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Empresa</span>
-                                    <span>{ticket.company}</span>
+                                    <span className="truncate">{ticket.company}</span>
                                 </div>
                             </div>
 
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
                                 <Briefcase className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                                <div className="flex flex-col">
+                                <div className="flex flex-col min-w-0">
                                     <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Setor</span>
-                                    <span>{ticket.department}</span>
+                                    <span className="truncate">{ticket.department}</span>
                                 </div>
                             </div>
 
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
                                 <Settings2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                                <div className="flex flex-col">
+                                <div className="flex flex-col min-w-0">
                                     <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Tipo de Serviço</span>
-                                    <span className="font-medium">{ticket.service}</span>
+                                    <span className="font-medium truncate">{ticket.service}</span>
                                 </div>
                             </div>
 
                             {ticket.contactNumber && (
-                                <div className="flex items-start gap-3">
+                                <div className="flex items-start gap-3 min-w-0">
                                     <Phone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col min-w-0">
                                         <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Contato</span>
-                                        <span className="font-medium">{ticket.contactNumber}</span>
+                                        <span className="font-medium truncate">{ticket.contactNumber}</span>
                                     </div>
                                 </div>
                             )}
 
                             {ticket.requestedFor && (
-                                <div className="flex items-start gap-3">
+                                <div className="flex items-start gap-3 min-w-0">
                                     <UserPlus className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col min-w-0">
                                         <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">{isPurchase ? 'Comprar para' : 'Solicitado para'}</span>
-                                        <span className="font-medium text-primary">{ticket.requestedFor}</span>
+                                        <span className="font-medium text-primary truncate">{ticket.requestedFor}</span>
                                     </div>
                                 </div>
                             )}
 
                             {ticket.ccEmail && (
-                                <div className="flex items-start gap-3">
+                                <div className="flex items-start gap-3 min-w-0">
                                     <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col min-w-0">
                                         <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">E-mail em Cópia (Gestor)</span>
                                         <span className="text-xs break-all">{ticket.ccEmail}</span>
                                     </div>
