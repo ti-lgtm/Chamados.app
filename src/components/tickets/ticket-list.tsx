@@ -1,7 +1,6 @@
 
 'use client';
 
-import Link from "next/link";
 import type { Ticket } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +14,8 @@ import { useRouter } from "next/navigation";
 
 interface TicketListProps {
   tickets: Ticket[];
+  selectedId?: string | null;
+  onSelect?: (id: string) => void;
 }
 
 const statusMap: { [key: string]: { label: string; variant: "default" | "secondary" | "destructive" | "outline" } } = {
@@ -35,7 +36,7 @@ const priorityMap: { [key: string]: { label: string; variant: "default" | "secon
 };
 
 
-export function TicketList({ tickets }: TicketListProps) {
+export function TicketList({ tickets, selectedId, onSelect }: TicketListProps) {
   const router = useRouter();
 
   if (tickets.length === 0) {
@@ -50,50 +51,62 @@ export function TicketList({ tickets }: TicketListProps) {
     );
   }
 
+  const handleItemClick = (id: string) => {
+    // Se estiver em modo master-detail (com onSelect), seleciona.
+    // Caso contrário (mobile ou padrão), navega.
+    if (onSelect && window.innerWidth >= 1024) {
+        onSelect(id);
+    } else {
+        router.push(`/tickets/${id}`);
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {tickets.map((ticket) => (
         <Card 
           key={ticket.id} 
-          className="group transition-all hover:shadow-md cursor-pointer hover:border-primary/40 active:scale-[0.995]"
-          onClick={() => router.push(`/tickets/${ticket.id}`)}
+          className={cn(
+            "group transition-all cursor-pointer active:scale-[0.995] border-l-4",
+            selectedId === ticket.id 
+                ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-md" 
+                : "border-l-transparent hover:border-primary/40 hover:shadow-sm"
+          )}
+          onClick={() => handleItemClick(ticket.id)}
         >
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                <div className="order-2 sm:order-1">
-                    <div className="flex items-center gap-2 mb-1">
+          <CardHeader className="p-4 pb-2">
+            <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 overflow-hidden">
                         {ticket.type === 'purchase' ? (
-                            <Badge variant="outline" className="text-[10px] bg-primary/5 text-primary border-primary/20"><ShoppingCart className="h-3 w-3 mr-1"/> COMPRA</Badge>
+                            <Badge variant="outline" className="text-[9px] bg-primary/5 text-primary border-primary/20 shrink-0 h-5 px-1.5"><ShoppingCart className="h-2.5 w-2.5 mr-1"/> COMPRA</Badge>
                         ) : (
-                            <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground"><Wrench className="h-3 w-3 mr-1"/> SUPORTE</Badge>
+                            <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground shrink-0 h-5 px-1.5"><Wrench className="h-2.5 w-2.5 mr-1"/> SUPORTE</Badge>
                         )}
-                        <CardTitle className="font-headline text-lg group-hover:text-primary transition-colors">
+                        <CardTitle className={cn(
+                            "font-headline text-sm truncate",
+                            selectedId === ticket.id ? "text-primary" : "group-hover:text-primary transition-colors"
+                        )}>
                             {ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}
                         </CardTitle>
                     </div>
-                    <CardDescription className="flex flex-wrap items-center text-xs">
-                        <span>Criado por {ticket.userName} • {ticket.createdAt ? formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}</span>
-                        {ticket.assignedUserName && (
-                            <>
-                                <span className="mx-1.5">•</span>
-                                <span>Atribuído a <span className="font-medium text-foreground">{ticket.assignedUserName}</span></span>
-                            </>
-                        )}
-                    </CardDescription>
+                    <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="text-[9px] h-5 px-1.5 shrink-0">
+                        {statusMap[ticket.status]?.label || ticket.status}
+                    </Badge>
                 </div>
-              <div className="flex gap-2 order-1 sm:order-2 self-end sm:self-auto flex-shrink-0">
-                <Badge variant={priorityMap[ticket.priority]?.variant || 'default'}>
-                    {priorityMap[ticket.priority]?.label || ticket.priority}
-                </Badge>
-                <Badge variant={statusMap[ticket.status]?.variant || 'default'}>
-                    {statusMap[ticket.status]?.label || ticket.status}
-                </Badge>
-              </div>
+                <CardDescription className="flex flex-wrap items-center text-[10px] gap-1">
+                    <span>{ticket.userName} • {ticket.createdAt ? formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}</span>
+                    {ticket.assignedUserName && (
+                        <>
+                            <span className="text-muted-foreground/30">|</span>
+                            <span className="font-medium text-foreground">TI: {ticket.assignedUserName.split(' ')[0]}</span>
+                        </>
+                    )}
+                </CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
-            <p className="line-clamp-2 text-sm text-muted-foreground">{ticket.description}</p>
-             <div className="mt-4">
+          <CardContent className="p-4 pt-0">
+             <div className="mt-2">
                 <DeadlineIndicator 
                     createdAt={ticket.createdAt} 
                     deadline={ticket.deadline} 
@@ -104,21 +117,18 @@ export function TicketList({ tickets }: TicketListProps) {
                 />
              </div>
           </CardContent>
-          <CardFooter className="flex justify-between items-center">
-            <Button variant="secondary" size="sm" className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              Ver Detalhes
-            </Button>
-            {ticket.status === 'resolved' && typeof ticket.rating === 'number' && (
+          {ticket.status === 'resolved' && typeof ticket.rating === 'number' && (
+            <CardFooter className="p-4 pt-0 justify-end">
                 <div className="flex items-center gap-0.5">
                     {[...Array(5)].map((_, i) => (
                         <Star key={i} className={cn(
-                            "h-4 w-4",
+                            "h-3 w-3",
                             i < (ticket.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'
                         )} />
                     ))}
                 </div>
-            )}
-          </CardFooter>
+            </CardFooter>
+          )}
         </Card>
       ))}
     </div>

@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
-import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2, RotateCcw, ArrowLeft, MessageSquareWarning } from "lucide-react";
+import { Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2, RotateCcw, ArrowLeft, MessageSquareWarning, Maximize2 } from "lucide-react";
 import { triggerTicketResolvedEmail } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
@@ -29,6 +30,7 @@ import { addBusinessDays } from "./new-ticket-form";
 
 interface TicketDetailsClientProps {
     initialTicket: Ticket;
+    isPreview?: boolean;
 }
 
 const statusMap: { [key: string]: { label: string; variant: "default" | "secondary" | "destructive" | "outline", color: string } } = {
@@ -48,7 +50,7 @@ const priorityMap: { [key: string]: { label: string; variant: "default" | "secon
     high: { label: 'Alta', variant: 'destructive' },
 };
 
-export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps) {
+export function TicketDetailsClient({ initialTicket, isPreview = false }: TicketDetailsClientProps) {
     const { user, loading: authLoading } = useAuth();
     const firestore = useFirestore();
     const router = useRouter();
@@ -86,7 +88,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             }
         });
         return () => unsub();
-    }, [ticketRef]);
+    }, [ticketRef, initialTicket.id]);
 
     const handleStatusChange = async (newStatus: any, extraData: any = {}) => {
         if (!ticketRef || !firestore || !user) return;
@@ -284,15 +286,27 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-2 print:hidden">
-                <Button variant="ghost" size="sm" onClick={() => router.back()} className="text-muted-foreground hover:text-foreground">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Voltar para a lista
-                </Button>
+            <div className="flex items-center justify-between gap-2 print:hidden">
+                {!isPreview ? (
+                    <Button variant="ghost" size="sm" onClick={() => router.back()} className="text-muted-foreground hover:text-foreground">
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Voltar para a lista
+                    </Button>
+                ) : (
+                    <Button variant="outline" size="sm" asChild className="text-primary border-primary hover:bg-primary hover:text-white transition-all">
+                        <Link href={`/tickets/${ticket.id}`}>
+                            <Maximize2 className="h-4 w-4 mr-2" />
+                            Abrir em Tela Cheia
+                        </Link>
+                    </Button>
+                )}
             </div>
             
-            <div className="grid gap-6 lg:grid-cols-3 print:block print:space-y-6">
-                <div className="lg:col-span-2 space-y-6">
+            <div className={cn(
+                "grid gap-6 print:block print:space-y-6",
+                isPreview ? "grid-cols-1" : "lg:grid-cols-3"
+            )}>
+                <div className={cn(isPreview ? "col-span-1" : "lg:col-span-2", "space-y-6")}>
                     <Card className="print:shadow-none print:border-2 overflow-hidden">
                         <CardHeader>
                             <div className="flex justify-between items-start">
@@ -332,16 +346,17 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
 
                             {ticket.attachments && ticket.attachments.length > 0 && (
                                 <div className="mt-6">
-                                    <h4 className="font-semibold mb-2 flex items-center gap-2">Anexos</h4>
-                                    <ul className="list-disc list-inside space-y-1 text-sm">
+                                    <h4 className="font-semibold mb-2 flex items-center gap-2">Anexos ({ticket.attachments.length})</h4>
+                                    <div className="flex flex-wrap gap-2">
                                         {ticket.attachments.map((url, index) => (
-                                            <li key={index} className="break-all">
-                                                <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                                    {decodeURIComponent(url.split('/').pop()?.split('?')[0] || `Anexo ${index + 1}`)}
+                                            <Button key={index} variant="secondary" size="sm" asChild className="h-8 text-[11px]">
+                                                <a href={url} target="_blank" rel="noopener noreferrer">
+                                                    <Paperclip className="h-3 w-3 mr-1.5" />
+                                                    Ver Anexo {index + 1}
                                                 </a>
-                                            </li>
+                                            </Button>
                                         ))}
-                                    </ul>
+                                    </div>
                                 </div>
                             )}
                         </CardContent>
@@ -349,7 +364,7 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                     <Comments ticket={ticket} currentUser={user} supportUsers={supportUsers} />
                 </div>
 
-                <div className="lg:col-span-1 space-y-6">
+                <div className={cn(isPreview ? "col-span-1" : "lg:col-span-1", "space-y-6")}>
                     <Card className="print:shadow-none print:border-2 overflow-hidden">
                         <CardHeader><CardTitle className="font-headline text-lg">Dados da {isPurchase ? 'Compra' : 'Solicitação'}</CardTitle></CardHeader>
                         <CardContent className="space-y-4 text-sm">

@@ -12,6 +12,7 @@ import {
 } from '@/firebase';
 import type { AppUser, Ticket } from '@/lib/types';
 import { TicketList } from '@/components/tickets/ticket-list';
+import { TicketDetailsClient } from '@/components/tickets/ticket-details-client';
 import { StatsCard } from './stats-card';
 import {
   Circle as CircleIcon,
@@ -20,6 +21,7 @@ import {
   Search,
   User,
   ShoppingCart,
+  TicketIcon,
 } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -33,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface TiDashboardProps {
   user: AppUser;
@@ -46,6 +49,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const [statusFilter, setStatusFilter] = useState('my_in_progress');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('status');
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const prevTicketsRef = useRef<Ticket[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -257,16 +261,12 @@ export function TiDashboard({ user }: TiDashboardProps) {
     });
   }, [allTickets, statusFilter, searchTerm, user.uid, sortBy]);
 
+  const selectedTicket = useMemo(() => {
+    return allTickets.find(t => t.id === selectedTicketId) || null;
+  }, [allTickets, selectedTicketId]);
+
   return (
     <div className="space-y-6">
-      {user.role === 'ti' && (
-        <div>
-          <p className="text-muted-foreground">
-            Gestão técnica de chamados e solicitações de materiais.
-          </p>
-        </div>
-      )}
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Meus Chamados"
@@ -343,7 +343,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
           <div className="relative w-full sm:w-full sm:max-w-xs">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Pesquisar por nº, título, solicitante ou responsável..."
+              placeholder="Nº, título, solicitante ou técnico..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8"
@@ -351,15 +351,43 @@ export function TiDashboard({ user }: TiDashboardProps) {
           </div>
         </div>
 
-        {loading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-          </div>
-        ) : (
-          <TicketList tickets={filteredTickets} />
-        )}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px]">
+            <div className="lg:col-span-4 xl:col-span-3">
+                {loading ? (
+                <div className="space-y-4">
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                </div>
+                ) : (
+                    <ScrollArea className="h-[750px] pr-2">
+                        <TicketList 
+                            tickets={filteredTickets} 
+                            selectedId={selectedTicketId}
+                            onSelect={setSelectedTicketId}
+                        />
+                    </ScrollArea>
+                )}
+            </div>
+            
+            <div className="hidden lg:block lg:col-span-8 xl:col-span-9 bg-muted/20 rounded-xl border border-dashed p-1 min-h-[750px] overflow-hidden">
+                {selectedTicket ? (
+                    <ScrollArea className="h-[750px]">
+                        <div className="p-4">
+                            <TicketDetailsClient initialTicket={selectedTicket} isPreview />
+                        </div>
+                    </ScrollArea>
+                ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                        <div className="bg-muted p-6 rounded-full mb-4">
+                            <TicketIcon className="h-10 w-10 opacity-20" />
+                        </div>
+                        <h3 className="text-lg font-bold font-headline">Selecione um chamado</h3>
+                        <p className="text-sm">Clique em um registro na lista à esquerda para ver os detalhes.</p>
+                    </div>
+                )}
+            </div>
+        </div>
       </div>
     </div>
   );
