@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -47,14 +46,14 @@ export function DeadlineIndicator({
         const isOverdue = now > end;
 
         return (
-            <div className="space-y-2">
-                <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight text-primary">
-                    <span className="flex items-center gap-1"><Truck className="h-3 w-3"/> Trânsito da Mercadoria</span>
+            <div className="space-y-1">
+                <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-tight text-primary">
+                    <span className="flex items-center gap-1"><Truck className="h-2.5 w-2.5"/> Trânsito</span>
                     <span>{isOverdue ? "Atrasado" : `${Math.round(progress)}%`}</span>
                 </div>
-                <Progress value={progress} indicatorClassName={cn(isOverdue ? "bg-red-500" : "bg-primary")} />
-                <p className="text-[10px] text-muted-foreground text-right italic">
-                    Entrega prevista para: {formatDistanceToNowStrict(end, { locale: ptBR, addSuffix: true })}
+                <Progress value={progress} className="h-1.5" indicatorClassName={cn(isOverdue ? "bg-red-500" : "bg-primary")} />
+                <p className="text-[9px] text-muted-foreground text-right italic">
+                    {formatDistanceToNowStrict(end, { locale: ptBR, addSuffix: true })}
                 </p>
             </div>
         );
@@ -89,11 +88,11 @@ export function DeadlineIndicator({
             <Tooltip>
                 <TooltipTrigger asChild>
                     <div className="w-full">
-                        <Progress value={progress} indicatorClassName={cn(progressColor)} />
+                        <Progress value={progress} className="h-1.5" indicatorClassName={cn(progressColor)} />
                     </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                    <p>{remainingTimeText}</p>
+                    <p className="text-[10px]">{remainingTimeText}</p>
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Ticket } from "@/lib/types";
@@ -53,7 +52,7 @@ export function TicketList({ tickets, selectedId, onSelect }: TicketListProps) {
   };
 
   return (
-    <div className="space-y-4 px-1.5 pb-6">
+    <div className="space-y-3 px-1.5 pb-6">
       {tickets.map((ticket) => (
         <Card 
           key={ticket.id} 
@@ -65,38 +64,38 @@ export function TicketList({ tickets, selectedId, onSelect }: TicketListProps) {
           )}
           onClick={() => handleItemClick(ticket.id)}
         >
-          <CardHeader className="p-4 pb-2 space-y-2">
+          <CardHeader className="p-3 pb-1.5 space-y-1.5">
             {/* Linha Superior: Tipo e Status */}
             <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-1.5 min-w-0">
                     {ticket.type === 'purchase' ? (
-                        <Badge variant="outline" className="text-[9px] bg-primary/5 text-primary border-primary/20 shrink-0 h-5 px-1.5">
-                            <ShoppingCart className="h-2.5 w-2.5 mr-1"/> COMPRA
+                        <Badge variant="outline" className="text-[8px] bg-primary/5 text-primary border-primary/20 shrink-0 h-4 px-1">
+                            <ShoppingCart className="h-2 w-2 mr-1"/> COMPRA
                         </Badge>
                     ) : (
-                        <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground shrink-0 h-5 px-1.5">
-                            <Wrench className="h-2.5 w-2.5 mr-1"/> SUPORTE
+                        <Badge variant="outline" className="text-[8px] bg-muted text-muted-foreground shrink-0 h-4 px-1">
+                            <Wrench className="h-2 w-2 mr-1"/> SUPORTE
                         </Badge>
                     )}
-                    <span className="text-[10px] font-bold text-muted-foreground shrink-0">
+                    <span className="text-[9px] font-bold text-muted-foreground shrink-0">
                         #{ticket.ticketNumber}
                     </span>
                 </div>
-                <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="text-[9px] h-5 px-1.5 shrink-0">
+                <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="text-[8px] h-4 px-1 shrink-0">
                     {statusMap[ticket.status]?.label || ticket.status}
                 </Badge>
             </div>
 
             {/* Linha do Meio: Título */}
             <CardTitle className={cn(
-                "font-headline text-sm line-clamp-2 leading-tight transition-colors",
+                "font-headline text-xs line-clamp-2 leading-tight transition-colors",
                 selectedId === ticket.id ? "text-primary" : "group-hover:text-primary"
             )}>
                 {ticket.title}
             </CardTitle>
 
             {/* Linha Inferior: Metadados */}
-            <CardDescription className="flex flex-wrap items-center text-[10px] gap-1 pt-1">
+            <CardDescription className="flex flex-wrap items-center text-[9px] gap-1 pt-0.5">
                 <span className="truncate">{ticket.userName} • {ticket.createdAt ? formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}</span>
                 {ticket.assignedUserName && (
                     <>
@@ -107,8 +106,8 @@ export function TicketList({ tickets, selectedId, onSelect }: TicketListProps) {
             </CardDescription>
           </CardHeader>
           
-          <CardContent className="p-4 pt-0">
-             <div className="mt-2">
+          <CardContent className="p-3 pt-0">
+             <div className="mt-1">
                 <DeadlineIndicator 
                     createdAt={ticket.createdAt} 
                     deadline={ticket.deadline} 
@@ -121,11 +120,11 @@ export function TicketList({ tickets, selectedId, onSelect }: TicketListProps) {
           </CardContent>
 
           {ticket.status === 'resolved' && typeof ticket.rating === 'number' && (
-            <CardFooter className="p-4 pt-0 justify-end">
+            <CardFooter className="p-3 pt-0 justify-end">
                 <div className="flex items-center gap-0.5">
                     {[...Array(5)].map((_, i) => (
                         <Star key={i} className={cn(
-                            "h-3 w-3",
+                            "h-2.5 w-2.5",
                             i < (ticket.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'
                         )} />
                     ))}
