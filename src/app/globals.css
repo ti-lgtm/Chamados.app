@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -70,6 +71,14 @@
 }
 
 @media print {
+  @page {
+    margin: 0;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    background: white !important;
+  }
   .text-muted-foreground {
     color: #000000 !important;
     opacity: 1 !important;
@@ -89,6 +98,16 @@
     border-color: #d1d5db !important;
   }
   .shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
-    shadow: none !important;
+    box-shadow: none !important;
+  }
+  header, footer, nav, button, .print\:hidden {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .card, .border {
+    border: none !important;
   }
 }

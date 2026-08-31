@@ -15,7 +15,6 @@ import {
     Share2, 
     Loader2, 
     ExternalLink,
-    Maximize2,
     Info
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -34,15 +33,12 @@ export default function ArticleViewPage() {
 
     const { data: article, isLoading } = useDoc<KnowledgeBaseArticle>(articleRef);
 
-    // Ajusta o link para visualização em iframe de forma robusta
     const getEmbedUrl = (url: string) => {
         if (!url) return '';
         
         let cleanedUrl = url.trim();
 
-        // Trata links do Google Docs/Sheets/Slides
         if (cleanedUrl.includes('docs.google.com')) {
-            // Remove parâmetros e substitui a ação final por /preview
             cleanedUrl = cleanedUrl.split('?')[0];
             if (cleanedUrl.endsWith('/edit') || cleanedUrl.endsWith('/view')) {
                 cleanedUrl = cleanedUrl.replace(/\/(edit|view)$/, '/preview');
@@ -52,7 +48,6 @@ export default function ArticleViewPage() {
             return cleanedUrl;
         }
         
-        // Trata links diretos de arquivos no Google Drive
         if (cleanedUrl.includes('drive.google.com/file/d/')) {
             cleanedUrl = cleanedUrl.split('?')[0];
             cleanedUrl = cleanedUrl.replace(/\/(view|edit)$/, '/preview');
@@ -79,13 +74,10 @@ export default function ArticleViewPage() {
     };
 
     const handlePrint = () => {
-        const frame = document.getElementById('article-frame') as HTMLIFrameElement;
-        if (frame) {
-            frame.contentWindow?.focus();
-            frame.contentWindow?.print();
-        } else {
-            window.print();
-        }
+        // Devido a restrições de segurança de navegadores (CORS), 
+        // não é possível disparar o print diretamente de um iframe de origem diferente (como o Google Docs).
+        // Usamos o print padrão da janela.
+        window.print();
     };
 
     if (isLoading) {
@@ -109,9 +101,9 @@ export default function ArticleViewPage() {
     const embedUrl = getEmbedUrl(article.link);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-120px)] space-y-4">
-            {/* Toolbar */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 pb-2 border-b">
+        <div className="flex flex-col h-[calc(100vh-120px)] space-y-4 print:h-auto print:space-y-0">
+            {/* Toolbar - Oculta na impressão */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 pb-2 border-b print:hidden">
                 <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" onClick={() => router.push('/knowledge-base')}>
                         <ArrowLeft className="h-5 w-5" />
@@ -143,23 +135,23 @@ export default function ArticleViewPage() {
             </div>
 
             {/* Document Container */}
-            <Card className="flex-1 overflow-hidden relative border-2 bg-muted/20">
+            <Card className="flex-1 overflow-hidden relative border-2 bg-muted/20 print:border-none print:shadow-none print:m-0 print:p-0">
                 {iframeLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-0">
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-0 print:hidden">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                 )}
                 <iframe
                     id="article-frame"
                     src={embedUrl}
-                    className="w-full h-full border-none z-10 relative"
+                    className="w-full h-full border-none z-10 relative min-h-[80vh] print:h-[1100px]"
                     onLoad={() => setIframeLoading(false)}
                     title={article.title}
                     allow="autoplay; encrypted-media; fullscreen"
                 />
             </Card>
 
-            <div className="flex flex-col items-center gap-1 text-[10px] text-muted-foreground">
+            <div className="flex flex-col items-center gap-1 text-[10px] text-muted-foreground print:hidden">
                 <div className="flex items-center gap-1">
                     <Info className="h-3 w-3" />
                     <span>Se você vir uma mensagem de acesso negado acima, tente o botão <strong>"Abrir Externo"</strong> ou certifique-se de estar logado na sua conta Google corporativa.</span>
