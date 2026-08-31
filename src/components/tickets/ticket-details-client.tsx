@@ -148,8 +148,6 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         
         const newType = ticket.type === 'support' ? 'purchase' : 'support';
         const newStatus = newType === 'purchase' ? 'in_quotation' : 'in_progress';
-        
-        // Se mudar para compra, o serviço vira COMPRA. Se mudar para suporte, vira OUTROS.
         const newService = newType === 'purchase' ? 'COMPRA' : 'OUTROS';
 
         if (!confirm(`Deseja converter este registro para ${newType === 'purchase' ? 'SOLICITAÇÃO DE COMPRA' : 'CHAMADO DE SUPORTE'}?`)) {
@@ -174,13 +172,12 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                 status: newStatus,
                 service: newService,
                 updatedAt: serverTimestamp(),
-                // Se era suporte com SLA, limpa o SLA ao virar compra. 
-                // Se era compra ao virar suporte, o SLA será definido manualmente ou via prioridade.
                 deadline: newType === 'purchase' ? null : ticket.deadline 
             });
 
             toast({ title: "Tipo de registro alterado com sucesso!" });
         } catch (err) {
+            console.error("Erro ao converter:", err);
             toast({ title: "Erro ao converter tipo", variant: "destructive" });
         } finally {
             setIsUpdating(false);
@@ -230,7 +227,6 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         const newStatus = isPurchase ? 'in_quotation' : 'in_progress';
 
         try {
-            // 1. Adicionar comentário no histórico
             const commentData = {
                 ticketId: ticket.id,
                 userId: user.uid,
@@ -241,11 +237,10 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             };
             await addDoc(collection(firestore, "tickets", ticket.id, "comments"), commentData);
 
-            // 2. Atualizar status do chamado
             await updateDoc(ticketRef, {
                 status: newStatus,
                 updatedAt: serverTimestamp(),
-                rating: null, // Limpa a avaliação antiga ao reabrir
+                rating: null,
             });
 
             toast({ title: "Chamado reaberto com sucesso!" });
@@ -262,8 +257,6 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         if (!ticketRef) return;
         setIsUpdating(true);
         
-        // Recalcular SLA baseado na nova prioridade (Alta: 1d, Normal: 3d, Baixa: 7d)
-        // O prazo é contado a partir da criação original do chamado
         const slaDays = newPriority === 'high' ? 1 : newPriority === 'normal' ? 3 : 7;
         const creationDate = ticket.createdAt?.toDate() || new Date();
         const newDeadline = ticket.type === 'purchase' ? null : addBusinessDays(creationDate, slaDays);
@@ -298,14 +291,12 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
             updatedAt: serverTimestamp()
         };
 
-        // Se o chamado estiver 'aberto' e for atribuído a alguém, muda o status automaticamente
         if (isAssigning && ticket.status === 'open') {
             updateData.status = ticket.type === 'purchase' ? 'in_quotation' : 'in_progress';
         }
 
         setIsUpdating(true);
         try {
-            // Adiciona log de atribuição no histórico
             const logMsg = isAssigning 
                 ? `👤 [ATRIBUIÇÃO]\nO chamado foi atribuído ao técnico: ${attendantUser?.name || 'N/A'}`
                 : `👤 [ATRIBUIÇÃO]\nO técnico responsável foi removido.`;
@@ -611,7 +602,6 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                     {(ticket.status === 'resolved' || ticket.status === 'delivered') && <RatingSection ticketId={ticket.id} ticketCreatorId={ticket.userId} currentUser={user} />}
                 </div>
 
-                {/* Dialog de Data de Entrega */}
                 <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
                     <DialogContent>
                         <DialogHeader>
@@ -636,7 +626,6 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                     </DialogContent>
                 </Dialog>
 
-                {/* Dialog de Reabertura */}
                 <Dialog open={isReopenDialogOpen} onOpenChange={setIsReopenDialogOpen}>
                     <DialogContent>
                         <DialogHeader>
@@ -667,7 +656,6 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
                     </DialogContent>
                 </Dialog>
 
-                {/* Dialog de Prioridade */}
                 <Dialog open={isPriorityDialogOpen} onOpenChange={setIsPriorityDialogOpen}>
                     <DialogContent>
                         <DialogHeader>
@@ -702,3 +690,4 @@ export function TicketDetailsClient({ initialTicket }: TicketDetailsClientProps)
         </div>
     );
 }
+
