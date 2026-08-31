@@ -221,7 +221,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
                         <Skeleton className="h-24 w-full" />
                     </div>
                 ) : (
-                    <ScrollArea className="h-[750px] pr-2">
+                    <ScrollArea className="h-[750px] overflow-hidden">
                         <TicketList 
                             tickets={filteredTickets} 
                             selectedId={selectedTicketId}

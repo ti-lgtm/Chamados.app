@@ -62,7 +62,7 @@ export function TicketList({ tickets, selectedId, onSelect }: TicketListProps) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4 px-1 pb-6">
       {tickets.map((ticket) => (
         <Card 
           key={ticket.id} 
@@ -77,7 +77,7 @@ export function TicketList({ tickets, selectedId, onSelect }: TicketListProps) {
           <CardHeader className="p-4 pb-2">
             <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 overflow-hidden">
+                    <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
                         {ticket.type === 'purchase' ? (
                             <Badge variant="outline" className="text-[9px] bg-primary/5 text-primary border-primary/20 shrink-0 h-5 px-1.5"><ShoppingCart className="h-2.5 w-2.5 mr-1"/> COMPRA</Badge>
                         ) : (
@@ -95,7 +95,7 @@ export function TicketList({ tickets, selectedId, onSelect }: TicketListProps) {
                     </Badge>
                 </div>
                 <CardDescription className="flex flex-wrap items-center text-[10px] gap-1">
-                    <span>{ticket.userName} • {ticket.createdAt ? formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}</span>
+                    <span className="truncate">{ticket.userName} • {ticket.createdAt ? formatDistanceToNow(ticket.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : ''}</span>
                     {ticket.assignedUserName && (
                         <>
                             <span className="text-muted-foreground/30">|</span>
