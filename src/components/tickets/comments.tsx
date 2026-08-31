@@ -308,24 +308,24 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
 
   return (
     <Card className="border-none shadow-none bg-transparent">
-      <CardHeader className="px-0">
-        <CardTitle className="font-headline text-xl flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
+      <CardHeader className="px-0 py-4">
+        <CardTitle className="font-headline text-lg flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-primary" />
             Histórico de Conversas
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-0 space-y-8">
-        <div className="relative space-y-6 before:absolute before:inset-0 before:ml-[105px] sm:before:ml-[125px] before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-border/20 before:via-border before:to-border/20">
+      <CardContent className="px-0 space-y-6">
+        <div className="relative space-y-4 before:absolute before:inset-0 before:ml-[85px] sm:before:ml-[105px] before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-border/20 before:via-border before:to-border/20">
           {loading &&
             Array.from({ length: 2 }).map((_, i) => (
-              <div className="flex items-center space-x-4" key={i}>
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <Skeleton className="h-20 flex-1" />
+              <div className="flex items-center space-x-3" key={i}>
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="h-14 flex-1" />
               </div>
             ))}
           {!loading && comments.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-10">
+            <p className="text-xs text-muted-foreground text-center py-6">
               Nenhuma interação registrada ainda.
             </p>
           )}
@@ -336,68 +336,68 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                     <div key={comment.id} className="relative flex items-center group">
                         <div className="flex items-center w-full min-w-0">
                             {/* Timestamp Column */}
-                            <div className="w-[90px] sm:w-[110px] text-right pr-4 shrink-0">
-                                <p className="text-[9px] sm:text-[10px] font-mono font-bold text-muted-foreground uppercase leading-tight">
+                            <div className="w-[70px] sm:w-[90px] text-right pr-3 shrink-0">
+                                <p className="text-[8px] sm:text-[9px] font-mono font-bold text-muted-foreground uppercase leading-tight">
                                     {comment.createdAt ? format(comment.createdAt.toDate(), "dd/MM/yyyy") : '--/--/----'}
                                 </p>
-                                <p className="text-[9px] sm:text-[10px] font-mono text-muted-foreground">
+                                <p className="text-[8px] sm:text-[9px] font-mono text-muted-foreground">
                                     {comment.createdAt ? format(comment.createdAt.toDate(), "HH:mm") : '--:--'}
                                 </p>
                             </div>
 
                             {/* Timeline Node */}
                             <div className={cn(
-                                "flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 z-10 shrink-0 transition-colors shadow-sm",
+                                "flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 z-10 shrink-0 transition-colors shadow-sm",
                                 isSupport ? "bg-primary border-primary text-primary-foreground" : "bg-background border-border text-muted-foreground"
                             )}>
-                                {isSupport ? <UserPen className="h-3 w-3 sm:h-4 sm:w-4" /> : <User className="h-3 w-3 sm:h-4 sm:w-4" />}
+                                {isSupport ? <UserPen className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <User className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
                             </div>
 
                             {/* Message Bubble */}
-                            <div className="flex-1 ml-3 sm:ml-4 relative min-w-0">
+                            <div className="flex-1 ml-2 sm:ml-3 relative min-w-0">
                                 <div className={cn(
-                                    "p-3 sm:p-4 rounded-lg border shadow-sm text-sm relative transition-all hover:shadow-md",
+                                    "p-2.5 sm:p-3 rounded-lg border shadow-sm text-xs relative transition-all hover:shadow-md",
                                     isSupport 
                                         ? "bg-accent/5 border-primary/20 dark:bg-primary/5" 
                                         : "bg-card border-border"
                                 )}>
                                     {/* Bubble Arrow */}
                                     <div className={cn(
-                                        "absolute top-1/2 -left-2 -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[8px]",
+                                        "absolute top-1/2 -left-1.5 -translate-y-1/2 border-y-[5px] border-y-transparent border-r-[7px]",
                                         isSupport ? "border-r-primary/20" : "border-r-border"
                                     )} />
 
-                                    <div className="mb-2 flex items-center justify-between gap-2">
+                                    <div className="mb-1 flex items-center justify-between gap-2">
                                         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                                             <span className={cn(
-                                                "font-bold uppercase text-[9px] tracking-wider shrink-0",
+                                                "font-bold uppercase text-[8px] tracking-wider shrink-0",
                                                 isSupport ? "text-primary" : "text-muted-foreground"
                                             )}>
                                                 {isSupport ? 'Atendente' : 'Solicitante'}
                                             </span>
-                                            <span className="font-bold text-[10px] sm:text-[11px] truncate max-w-[100px] sm:max-w-none">
+                                            <span className="font-bold text-[9px] sm:text-[10px] truncate max-w-[80px] sm:max-w-none">
                                                 {comment.userName.toUpperCase()}
                                             </span>
                                         </div>
                                     </div>
 
                                     {comment.message && (
-                                        <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-medium break-words overflow-hidden">
+                                        <div className="text-[11px] sm:text-xs leading-relaxed whitespace-pre-wrap font-medium break-words overflow-hidden">
                                             {comment.message}
                                         </div>
                                     )}
 
                                     {comment.attachments && comment.attachments.length > 0 && (
-                                        <div className="mt-4 flex flex-wrap gap-2 sm:gap-3">
+                                        <div className="mt-2.5 flex flex-wrap gap-2">
                                             {comment.attachments.map((url, idx) => {
                                                 const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
                                                 return isImage ? (
-                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-md overflow-hidden border hover:opacity-80 transition-opacity">
+                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-md overflow-hidden border hover:opacity-80 transition-opacity">
                                                         <Image src={url} alt="Anexo" layout="fill" className="object-cover" />
                                                     </a>
                                                 ) : (
-                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[10px] bg-muted/50 p-2 rounded-md hover:bg-muted transition-colors max-w-full">
-                                                        <Paperclip className="h-3 w-3 shrink-0" />
+                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[9px] bg-muted/50 p-1.5 rounded-md hover:bg-muted transition-colors max-w-full">
+                                                        <Paperclip className="h-2.5 w-2.5 shrink-0" />
                                                         <span className="truncate flex-1">{decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'Anexo')}</span>
                                                     </a>
                                                 );
@@ -413,15 +413,15 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
         </div>
 
         {currentUser && (isSupportStaff || !isResolved) && (
-          <div className="pt-6 border-t border-dashed">
+          <div className="pt-4 border-t border-dashed">
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="flex gap-3 sm:gap-4">
-                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 border">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+                <div className="flex gap-2.5 sm:gap-3">
+                    <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0 border">
                         <AvatarImage src={currentUser.avatarUrl} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{getInitials(currentUser.name)}</AvatarFallback>
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-[10px]">{getInitials(currentUser.name)}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 space-y-4 min-w-0">
+                    <div className="flex-1 space-y-3 min-w-0">
                         <FormField
                         control={form.control}
                         name="message"
@@ -429,53 +429,53 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                             <FormItem>
                             <FormControl>
                                 <Textarea
-                                placeholder="Descreva aqui o apontamento ou cole uma imagem..."
+                                placeholder="Descreva aqui o apontamento..."
                                 {...field}
-                                rows={4}
+                                rows={3}
                                 onPaste={handlePaste}
-                                className="resize-none focus-visible:ring-primary shadow-inner text-sm"
+                                className="resize-none focus-visible:ring-primary shadow-inner text-xs min-h-[70px]"
                                 />
                             </FormControl>
-                            <FormMessage />
+                            <FormMessage className="text-[10px]" />
                             </FormItem>
                         )}
                         />
                         
-                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-start sm:items-center">
-                            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <div className="flex flex-col sm:flex-row gap-2.5 justify-between items-stretch sm:items-center">
+                            <div className="flex flex-wrap gap-2">
                                 {isSupportStaff && (
                                     <Select onValueChange={handleCannedResponse}>
-                                        <SelectTrigger className="h-8 sm:h-9 text-[10px] sm:text-xs w-full sm:w-[180px]">
+                                        <SelectTrigger className="h-7 text-[9px] w-full sm:w-[150px]">
                                             <SelectValue placeholder="Respostas rápidas" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {cannedResponses.map((res) => (
-                                                <SelectItem key={res.id} value={res.id} className="text-[10px] sm:text-xs">{res.label}</SelectItem>
+                                                <SelectItem key={res.id} value={res.id} className="text-[9px]">{res.label}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 )}
                                 <div className="relative w-full sm:w-auto">
-                                    <Input type="file" multiple {...fileRef} className="h-8 sm:h-9 text-[10px] opacity-0 absolute inset-0 cursor-pointer z-20" />
-                                    <Button type="button" variant="outline" size="sm" className="h-8 sm:h-9 text-[10px] sm:text-xs w-full">
-                                        <Paperclip className="h-3 w-3 mr-2" />
-                                        Anexar Arquivos
+                                    <Input type="file" multiple {...fileRef} className="h-7 text-[9px] opacity-0 absolute inset-0 cursor-pointer z-20" />
+                                    <Button type="button" variant="outline" size="sm" className="h-7 text-[9px] w-full px-2">
+                                        <Paperclip className="h-2.5 w-2.5 mr-1.5" />
+                                        Anexar
                                     </Button>
                                 </div>
                             </div>
-                            <Button type="submit" size="sm" disabled={isSubmitting} className="w-full sm:w-auto shadow-md h-8 sm:h-9 text-[10px] sm:text-xs">
-                                {isSubmitting ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" /> : <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />}
+                            <Button type="submit" size="sm" disabled={isSubmitting} className="shadow-md h-7 text-[9px] px-3">
+                                {isSubmitting ? <Loader2 className="h-2.5 w-2.5 animate-spin mr-1.5" /> : <Send className="h-2.5 w-2.5 mr-1.5" />}
                                 Registrar Apontamento
                             </Button>
                         </div>
 
                         {attachments && attachments.length > 0 && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
                                 {Array.from(attachments).map((file, index) => (
-                                    <div key={index} className="flex items-center justify-between text-[10px] bg-muted/50 p-2 rounded border border-dashed">
-                                        <span className="truncate max-w-[120px] sm:max-w-[150px]">{file.name}</span>
-                                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleRemoveAttachment(index)}>
-                                            <X className="h-3 w-3" />
+                                    <div key={index} className="flex items-center justify-between text-[9px] bg-muted/50 p-1.5 rounded border border-dashed">
+                                        <span className="truncate max-w-[100px]">{file.name}</span>
+                                        <Button type="button" variant="ghost" size="icon" className="h-4 w-4" onClick={() => handleRemoveAttachment(index)}>
+                                            <X className="h-2 w-2" />
                                         </Button>
                                     </div>
                                 ))}

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -379,17 +378,17 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
     const isFinished = ticket.status === 'resolved' || ticket.status === 'delivered';
 
     return (
-        <div className="space-y-6 min-w-0">
+        <div className="space-y-4 min-w-0">
             <div className="flex items-center justify-between gap-2 print:hidden">
                 {!isPreview ? (
-                    <Button variant="ghost" size="sm" onClick={() => router.back()} className="text-muted-foreground hover:text-foreground">
-                        <ArrowLeft className="h-4 w-4 mr-2" />
+                    <Button variant="ghost" size="xs" onClick={() => router.back()} className="text-muted-foreground hover:text-foreground h-8 px-2 text-xs">
+                        <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
                         Voltar para a lista
                     </Button>
                 ) : (
-                    <Button variant="outline" size="sm" asChild className="text-primary border-primary hover:bg-primary hover:text-white transition-all">
+                    <Button variant="outline" size="xs" asChild className="text-primary border-primary hover:bg-primary hover:text-white transition-all h-8 px-2 text-xs">
                         <Link href={`/tickets/${ticket.id}`}>
-                            <Maximize2 className="h-4 w-4 mr-2" />
+                            <Maximize2 className="h-3.5 w-3.5 mr-1.5" />
                             Abrir em Tela Cheia
                         </Link>
                     </Button>
@@ -398,23 +397,23 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 {canEdit && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" disabled={isSendingEmail}>
-                                {isSendingEmail ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
+                            <Button variant="outline" size="xs" disabled={isSendingEmail} className="h-8 px-2 text-xs">
+                                {isSendingEmail ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Mail className="h-3.5 w-3.5 mr-1.5" />}
                                 Notificações
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Comunicação por E-mail</DropdownMenuLabel>
+                            <DropdownMenuLabel className="text-xs">Comunicação por E-mail</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={handleResendOpeningEmail}>
-                                <SendHorizontal className="h-4 w-4 mr-2" /> Reenviar Abertura
+                            <DropdownMenuItem className="text-xs" onClick={handleResendOpeningEmail}>
+                                <SendHorizontal className="h-3.5 w-3.5 mr-2" /> Reenviar Abertura
                             </DropdownMenuItem>
                             <DropdownMenuItem 
+                                className="text-xs"
                                 onClick={handleResendClosingEmail} 
                                 disabled={!isFinished}
-                                className={!isFinished ? "opacity-50" : ""}
                             >
-                                <CheckCircle className="h-4 w-4 mr-2" /> Reenviar Conclusão
+                                <CheckCircle className="h-3.5 w-3.5 mr-2" /> Reenviar Conclusão
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -422,41 +421,40 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
             </div>
             
             <div className={cn(
-                "grid gap-6 print:block print:space-y-6",
+                "grid gap-4 print:block print:space-y-6",
                 isPreview ? "grid-cols-1" : "lg:grid-cols-3"
             )}>
-                <div className={cn(isPreview ? "col-span-1" : "lg:col-span-2", "space-y-6 min-w-0")}>
+                <div className={cn(isPreview ? "col-span-1" : "lg:col-span-2", "space-y-4 min-w-0")}>
                     <Card className="print:shadow-none print:border-2 overflow-hidden">
-                        <CardHeader className="space-y-3">
+                        <CardHeader className="p-4 sm:p-6 space-y-2">
                             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                                 <div className="flex flex-col gap-1 flex-1 min-w-0">
-                                    {isPurchase && <Badge variant="outline" className="w-fit text-[10px] bg-primary/5 text-primary border-primary/20 mb-1"><ShoppingCart className="h-3 w-3 mr-1"/> COMPRA DE TI</Badge>}
-                                    <CardTitle className="font-headline text-xl sm:text-2xl break-words leading-tight">
+                                    {isPurchase && <Badge variant="outline" className="w-fit text-[9px] h-4 px-1.5 bg-primary/5 text-primary border-primary/20 mb-1"><ShoppingCart className="h-2.5 w-2.5 mr-1"/> COMPRA DE TI</Badge>}
+                                    <CardTitle className="font-headline text-lg sm:text-xl break-words leading-tight">
                                         {ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}
                                     </CardTitle>
                                 </div>
                                 <div className="flex items-center gap-2 print:hidden shrink-0">
                                     {canEdit && (
-                                        <Button variant="outline" size="sm" onClick={() => window.print()} className="h-8">
-                                            <Printer className="mr-2 h-4 w-4" />
-                                            <span className="hidden sm:inline">Imprimir</span>
+                                        <Button variant="outline" size="icon" onClick={() => window.print()} className="h-7 w-7">
+                                            <Printer className="h-3.5 w-3.5" />
                                         </Button>
                                     )}
-                                    <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="h-8">
+                                    <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="h-6 text-[10px] px-2">
                                         {statusMap[ticket.status]?.label || ticket.status}
                                     </Badge>
                                 </div>
                             </div>
-                            <CardDescription className="print:text-black">
+                            <CardDescription className="text-[11px] print:text-black">
                                 Criado por {ticket.userName} • {ticket.createdAt ? format(ticket.createdAt.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ''}
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <p className="text-foreground whitespace-pre-wrap leading-relaxed break-words overflow-hidden text-sm sm:text-base">
+                        <CardContent className="p-4 sm:p-6 pt-0">
+                            <p className="text-foreground whitespace-pre-wrap leading-relaxed break-words overflow-hidden text-xs sm:text-sm">
                                 {ticket.description}
                             </p>
                             
-                            <div className="mt-6 border-t pt-4">
+                            <div className="mt-4 border-t pt-3">
                                 <DeadlineIndicator 
                                     createdAt={ticket.createdAt} 
                                     deadline={ticket.deadline} 
@@ -468,14 +466,14 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                             </div>
 
                             {ticket.attachments && ticket.attachments.length > 0 && (
-                                <div className="mt-6">
-                                    <h4 className="font-semibold mb-2 flex items-center gap-2 text-sm">Anexos ({ticket.attachments.length})</h4>
+                                <div className="mt-4">
+                                    <h4 className="font-semibold mb-2 flex items-center gap-2 text-xs">Anexos ({ticket.attachments.length})</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {ticket.attachments.map((url, index) => (
-                                            <Button key={index} variant="secondary" size="sm" asChild className="h-8 text-[11px]">
+                                            <Button key={index} variant="secondary" size="xs" asChild className="h-7 text-[10px] px-2">
                                                 <a href={url} target="_blank" rel="noopener noreferrer">
-                                                    <Paperclip className="h-3 w-3 mr-1.5" />
-                                                    Ver Anexo {index + 1}
+                                                    <Paperclip className="h-3 w-3 mr-1" />
+                                                    Anexo {index + 1}
                                                 </a>
                                             </Button>
                                         ))}
@@ -487,155 +485,127 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                     <Comments ticket={ticket} currentUser={user} supportUsers={supportUsers} />
                 </div>
 
-                <div className={cn(isPreview ? "col-span-1" : "lg:col-span-1", "space-y-6 min-w-0")}>
+                <div className={cn(isPreview ? "col-span-1" : "lg:col-span-1", "space-y-4 min-w-0")}>
                     <Card className="print:shadow-none print:border-2 overflow-hidden">
-                        <CardHeader><CardTitle className="font-headline text-lg">Dados da {isPurchase ? 'Compra' : 'Solicitação'}</CardTitle></CardHeader>
-                        <CardContent className="space-y-4 text-sm">
-                            <div className="flex items-start gap-3 min-w-0">
-                                <User className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                        <CardHeader className="p-4"><CardTitle className="font-headline text-base">Dados da {isPurchase ? 'Compra' : 'Solicitação'}</CardTitle></CardHeader>
+                        <CardContent className="p-4 pt-0 space-y-3 text-[11px]">
+                            <div className="flex items-start gap-2.5 min-w-0">
+                                <User className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                                 <div className="flex flex-col min-w-0">
-                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Solicitante</span>
+                                    <span className="font-bold text-[9px] uppercase text-muted-foreground leading-none mb-1">Solicitante</span>
                                     <span className="truncate">{ticket.userName}</span>
                                 </div>
                             </div>
 
-                            <div className="flex items-start gap-3 min-w-0">
-                                <Building className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                            <div className="flex items-start gap-2.5 min-w-0">
+                                <Building className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                                 <div className="flex flex-col min-w-0">
-                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Empresa</span>
+                                    <span className="font-bold text-[9px] uppercase text-muted-foreground leading-none mb-1">Empresa</span>
                                     <span className="truncate">{ticket.company}</span>
                                 </div>
                             </div>
 
-                            <div className="flex items-start gap-3 min-w-0">
-                                <Briefcase className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                            <div className="flex items-start gap-2.5 min-w-0">
+                                <Briefcase className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                                 <div className="flex flex-col min-w-0">
-                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Setor</span>
+                                    <span className="font-bold text-[9px] uppercase text-muted-foreground leading-none mb-1">Setor</span>
                                     <span className="truncate">{ticket.department}</span>
                                 </div>
                             </div>
 
-                            <div className="flex items-start gap-3 min-w-0">
-                                <Settings2 className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                            <div className="flex items-start gap-2.5 min-w-0">
+                                <Settings2 className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                                 <div className="flex flex-col min-w-0">
-                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Tipo de Serviço</span>
+                                    <span className="font-bold text-[9px] uppercase text-muted-foreground leading-none mb-1">Tipo de Serviço</span>
                                     <span className="font-medium truncate">{ticket.service}</span>
                                 </div>
                             </div>
 
                             {ticket.contactNumber && (
-                                <div className="flex items-start gap-3 min-w-0">
-                                    <Phone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <div className="flex items-start gap-2.5 min-w-0">
+                                    <Phone className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                                     <div className="flex flex-col min-w-0">
-                                        <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">Contato</span>
+                                        <span className="font-bold text-[9px] uppercase text-muted-foreground leading-none mb-1">Contato</span>
                                         <span className="font-medium truncate">{ticket.contactNumber}</span>
                                     </div>
                                 </div>
                             )}
 
                             {ticket.requestedFor && (
-                                <div className="flex items-start gap-3 min-w-0">
-                                    <UserPlus className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <div className="flex items-start gap-2.5 min-w-0">
+                                    <UserPlus className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                                     <div className="flex flex-col min-w-0">
-                                        <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">{isPurchase ? 'Comprar para' : 'Solicitado para'}</span>
+                                        <span className="font-bold text-[9px] uppercase text-muted-foreground leading-none mb-1">{isPurchase ? 'Comprar para' : 'Solicitado para'}</span>
                                         <span className="font-medium text-primary truncate">{ticket.requestedFor}</span>
                                     </div>
                                 </div>
                             )}
 
-                            {ticket.ccEmail && (
-                                <div className="flex items-start gap-3 min-w-0">
-                                    <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                                    <div className="flex flex-col min-w-0">
-                                        <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1">E-mail em Cópia (Gestor)</span>
-                                        <span className="text-xs break-all">{ticket.ccEmail}</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex items-start gap-3">
-                                <Tag className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                            <div className="flex items-start gap-2.5">
+                                <Tag className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                                 <div className="flex flex-col w-full">
-                                    <span className="font-semibold text-[11px] uppercase text-muted-foreground leading-none mb-1 flex items-center justify-between">
+                                    <span className="font-bold text-[9px] uppercase text-muted-foreground leading-none mb-1 flex items-center justify-between">
                                         Prioridade
                                         {canEdit && (
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="h-5 w-5 -mt-1"
-                                                onClick={() => setIsPriorityDialogOpen(true)}
-                                            >
-                                                <Pencil className="h-3 w-3" />
+                                            <Button variant="ghost" size="icon" className="h-4 w-4 -mt-1" onClick={() => setIsPriorityDialogOpen(true)}>
+                                                <Pencil className="h-2.5 w-2.5" />
                                             </Button>
                                         )}
                                     </span>
-                                    <Badge variant={priorityMap[ticket.priority]?.variant || 'default'} className="w-fit mt-1">
+                                    <Badge variant={priorityMap[ticket.priority]?.variant || 'default'} className="w-fit mt-0.5 h-4 text-[8px] px-1.5">
                                         {priorityMap[ticket.priority]?.label || ticket.priority}
                                     </Badge>
                                 </div>
                             </div>
 
                             {ticket.expectedDeliveryDate && (
-                                <div className="p-3 bg-primary/5 rounded-md border border-primary/20 space-y-1">
+                                <div className="p-2 bg-primary/5 rounded-md border border-primary/20 space-y-0.5">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2 text-primary font-bold">
-                                            <Calendar className="h-4 w-4" />
-                                            <span className="text-xs uppercase">Previsão de Entrega</span>
+                                        <div className="flex items-center gap-1.5 text-primary font-bold">
+                                            <Calendar className="h-3 w-3" />
+                                            <span className="text-[8px] uppercase">Previsão Entrega</span>
                                         </div>
-                                        {canEdit && (
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="h-6 w-6"
-                                                onClick={() => {
-                                                    setDeliveryDate(format(ticket.expectedDeliveryDate!.toDate(), "yyyy-MM-dd"));
-                                                    setIsDeliveryDialogOpen(true);
-                                                }}
-                                            >
-                                                <Pencil className="h-3 w-3" />
-                                            </Button>
-                                        )}
                                     </div>
-                                    <p className="text-lg font-bold text-primary pl-6">
+                                    <p className="text-sm font-bold text-primary">
                                         {format(ticket.expectedDeliveryDate.toDate(), "dd/MM/yyyy")}
                                     </p>
                                 </div>
                             )}
                         </CardContent>
                         {canEdit && (
-                            <CardFooter className="flex-col items-start gap-4 print:hidden border-t pt-6 bg-muted/20">
-                                <div className="w-full space-y-2">
-                                    <p className="text-xs font-bold uppercase text-muted-foreground">Status do Fluxo</p>
+                            <CardFooter className="flex-col items-start gap-3 print:hidden border-t p-4 bg-muted/20">
+                                <div className="w-full space-y-1">
+                                    <p className="text-[9px] font-bold uppercase text-muted-foreground">Status do Fluxo</p>
                                     <Select onValueChange={(v) => handleStatusChange(v)} value={ticket.status} disabled={isUpdating}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="h-8 text-[11px]"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             {!isPurchase ? (
                                                 <>
-                                                    <SelectItem value="open">Aberto</SelectItem>
-                                                    <SelectItem value="in_progress">Em Atendimento</SelectItem>
-                                                    <SelectItem value="awaiting_user">Aguardando Usuário</SelectItem>
-                                                    <SelectItem value="awaiting_support">Aguardando Suporte</SelectItem>
-                                                    <SelectItem value="resolved">Resolvido</SelectItem>
+                                                    <SelectItem value="open" className="text-[11px]">Aberto</SelectItem>
+                                                    <SelectItem value="in_progress" className="text-[11px]">Em Atendimento</SelectItem>
+                                                    <SelectItem value="awaiting_user" className="text-[11px]">Aguardando Usuário</SelectItem>
+                                                    <SelectItem value="awaiting_support" className="text-[11px]">Aguardando Suporte</SelectItem>
+                                                    <SelectItem value="resolved" className="text-[11px]">Resolvido</SelectItem>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <SelectItem value="open">Solicitado</SelectItem>
-                                                    <SelectItem value="in_quotation">Em Cotação</SelectItem>
-                                                    <SelectItem value="purchased">Comprado (Em Trânsito)</SelectItem>
-                                                    <SelectItem value="delivered">Entregue / Concluído</SelectItem>
+                                                    <SelectItem value="open" className="text-[11px]">Solicitado</SelectItem>
+                                                    <SelectItem value="in_quotation" className="text-[11px]">Em Cotação</SelectItem>
+                                                    <SelectItem value="purchased" className="text-[11px]">Comprado (Em Trânsito)</SelectItem>
+                                                    <SelectItem value="delivered" className="text-[11px]">Entregue / Concluído</SelectItem>
                                                 </>
                                             )}
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="w-full space-y-2">
+                                <div className="w-full space-y-1">
                                     <div className="flex items-center justify-between">
-                                        <p className="text-xs font-bold uppercase text-muted-foreground">Responsável</p>
+                                        <p className="text-[9px] font-bold uppercase text-muted-foreground">Responsável</p>
                                         {!isAssignedToMe && user && (
                                             <Button 
                                                 variant="default" 
-                                                size="sm" 
-                                                className="h-7 px-3 text-[10px] uppercase font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm ring-1 ring-emerald-400/20 transition-all active:scale-95"
+                                                size="xs" 
+                                                className="h-5 px-1.5 text-[8px] uppercase font-bold bg-emerald-600 hover:bg-emerald-700"
                                                 onClick={() => handleAttendantChange(user.uid)}
                                                 disabled={isUpdating}
                                             >
@@ -644,34 +614,29 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                                         )}
                                     </div>
                                     <Select onValueChange={handleAttendantChange} value={ticket.assignedTo || 'null'} disabled={isUpdating}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="h-8 text-[11px]"><SelectValue /></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="null">Ninguém</SelectItem>
-                                            {supportUsers?.map(su => <SelectItem key={su.id} value={su.id}>{su.name}</SelectItem>)}
+                                            <SelectItem value="null" className="text-[11px]">Ninguém</SelectItem>
+                                            {supportUsers?.map(su => <SelectItem key={su.id} value={su.id} className="text-[11px]">{su.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 
                                 {isFinished ? (
-                                    <Button 
-                                        className="w-full" 
-                                        variant="destructive" 
-                                        onClick={() => setIsReopenDialogOpen(true)}
-                                        disabled={isUpdating}
-                                    >
-                                        {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+                                    <Button className="w-full h-8 text-[11px]" variant="destructive" onClick={() => setIsReopenDialogOpen(true)} disabled={isUpdating}>
+                                        {isUpdating ? <Loader2 className="animate-spin mr-1.5 h-3.5 w-3.5" /> : <RotateCcw className="mr-1.5 h-3.5 w-3.5" />}
                                         Reabrir Chamado
                                     </Button>
                                 ) : (
                                     <>
                                         {!isPurchase ? (
-                                            <Button className="w-full" onClick={() => handleStatusChange('resolved')} disabled={isUpdating}>
-                                                {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                            <Button className="w-full h-8 text-[11px]" onClick={() => handleStatusChange('resolved')} disabled={isUpdating}>
+                                                {isUpdating ? <Loader2 className="animate-spin mr-1.5 h-3.5 w-3.5" /> : <CheckCircle className="mr-1.5 h-3.5 w-3.5" />}
                                                 Finalizar Chamado
                                             </Button>
                                         ) : (
-                                            <Button className="w-full" variant="outline" onClick={() => handleStatusChange('delivered')} disabled={isUpdating}>
-                                                {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <Package className="mr-2 h-4 w-4" />}
+                                            <Button className="w-full h-8 text-[11px]" variant="outline" onClick={() => handleStatusChange('delivered')} disabled={isUpdating}>
+                                                {isUpdating ? <Loader2 className="animate-spin mr-1.5 h-3.5 w-3.5" /> : <Package className="mr-1.5 h-3.5 w-3.5" />}
                                                 Confirmar Entrega
                                             </Button>
                                         )}
@@ -685,85 +650,65 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 </div>
 
                 <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
-                    <DialogContent>
+                    <DialogContent className="max-w-sm">
                         <DialogHeader>
-                            <DialogTitle>{ticket.status === 'purchased' ? 'Atualizar Previsão de Entrega' : 'Informar Previsão de Entrega'}</DialogTitle>
-                            <DialogDescription>
-                                {ticket.status === 'purchased' 
-                                    ? 'Informe a nova data caso ocorra algum atraso ou alteração no prazo.' 
-                                    : 'Ao marcar como comprado, o usuário verá uma barra de progresso até a chegada.'}
-                            </DialogDescription>
+                            <DialogTitle className="text-base">{ticket.status === 'purchased' ? 'Atualizar Entrega' : 'Informar Entrega'}</DialogTitle>
                         </DialogHeader>
-                        <div className="py-4 space-y-2">
-                            <Label>Data Prevista</Label>
-                            <Input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
+                        <div className="py-2 space-y-2">
+                            <Label className="text-xs">Data Prevista</Label>
+                            <Input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} className="h-9 text-sm" />
                         </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsDeliveryDialogOpen(false)}>Cancelar</Button>
-                            <Button onClick={confirmPurchaseStatus} disabled={isUpdating}>
-                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {ticket.status === 'purchased' ? 'Atualizar Data' : 'Confirmar Compra'}
+                        <DialogFooter className="gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setIsDeliveryDialogOpen(false)} className="text-xs">Cancelar</Button>
+                            <Button size="sm" onClick={confirmPurchaseStatus} disabled={isUpdating} className="text-xs">
+                                {isUpdating && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                                Confirmar
                             </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
 
                 <Dialog open={isReopenDialogOpen} onOpenChange={setIsReopenDialogOpen}>
-                    <DialogContent>
+                    <DialogContent className="max-w-md">
                         <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <MessageSquareWarning className="h-5 w-5 text-destructive" />
+                            <DialogTitle className="flex items-center gap-2 text-base">
+                                <MessageSquareWarning className="h-4 w-4 text-destructive" />
                                 Reabertura de Chamado
                             </DialogTitle>
-                            <DialogDescription>
-                                Informe detalhadamente o motivo pelo qual este chamado está sendo reaberto. Esta justificativa ficará registrada no histórico público.
-                            </DialogDescription>
                         </DialogHeader>
-                        <div className="py-4 space-y-2">
-                            <Label>Motivo da Reabertura</Label>
-                            <Textarea 
-                                placeholder="Descreva aqui o motivo..." 
-                                value={reopenReason} 
-                                onChange={(e) => setReopenReason(e.target.value)}
-                                rows={4}
-                            />
+                        <div className="py-2 space-y-2">
+                            <Label className="text-xs">Motivo da Reabertura</Label>
+                            <Textarea placeholder="Descreva aqui o motivo..." value={reopenReason} onChange={(e) => setReopenReason(e.target.value)} rows={3} className="text-sm" />
                         </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => { setIsReopenDialogOpen(false); setReopenReason(""); }}>Cancelar</Button>
-                            <Button variant="destructive" onClick={handleReopenTicket} disabled={isUpdating || !reopenReason.trim()}>
-                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Confirmar Reabertura
+                        <DialogFooter className="gap-2">
+                            <Button variant="outline" size="sm" onClick={() => { setIsReopenDialogOpen(false); setReopenReason(""); }} className="text-xs">Cancelar</Button>
+                            <Button variant="destructive" size="sm" onClick={handleReopenTicket} disabled={isUpdating || !reopenReason.trim()} className="text-xs">
+                                {isUpdating && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                                Confirmar
                             </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
 
                 <Dialog open={isPriorityDialogOpen} onOpenChange={setIsPriorityDialogOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Alterar Prioridade</DialogTitle>
-                            <DialogDescription>
-                                Ajuste o nível de urgência deste chamado. O prazo de SLA será recalculado automaticamente a partir da data de abertura.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="py-4 space-y-2">
-                            <Label>Nova Prioridade</Label>
+                    <DialogContent className="max-w-sm">
+                        <DialogHeader><DialogTitle className="text-base">Alterar Prioridade</DialogTitle></DialogHeader>
+                        <div className="py-2 space-y-2">
+                            <Label className="text-xs">Nova Prioridade</Label>
                             <Select value={newPriority} onValueChange={(v: any) => setNewPriority(v)}>
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
+                                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="low">Baixa (7 dias úteis)</SelectItem>
-                                    <SelectItem value="normal">Normal (3 dias úteis)</SelectItem>
-                                    <SelectItem value="high">Alta / Urgente (24h úteis)</SelectItem>
+                                    <SelectItem value="low" className="text-xs">Baixa (7 dias)</SelectItem>
+                                    <SelectItem value="normal" className="text-xs">Normal (3 dias)</SelectItem>
+                                    <SelectItem value="high" className="text-xs">Alta (24h)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsPriorityDialogOpen(false)}>Cancelar</Button>
-                            <Button onClick={handlePriorityChange} disabled={isUpdating}>
-                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Salvar Prioridade
+                        <DialogFooter className="gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setIsPriorityDialogOpen(false)} className="text-xs">Cancelar</Button>
+                            <Button size="sm" onClick={handlePriorityChange} disabled={isUpdating} className="text-xs">
+                                {isUpdating && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                                Salvar
                             </Button>
                         </DialogFooter>
                     </DialogContent>
