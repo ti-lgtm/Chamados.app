@@ -15,7 +15,8 @@ import {
     Share2, 
     Loader2, 
     ExternalLink,
-    Maximize2
+    Maximize2,
+    Info
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,14 +34,35 @@ export default function ArticleViewPage() {
 
     const { data: article, isLoading } = useDoc<KnowledgeBaseArticle>(articleRef);
 
-    // Ajusta o link para visualização em iframe se for Google Docs
+    // Ajusta o link para visualização em iframe de forma robusta
     const getEmbedUrl = (url: string) => {
         if (!url) return '';
-        if (url.includes('docs.google.com')) {
-            if (url.includes('/edit')) return url.replace(/\/edit.*$/, '/preview');
-            if (!url.includes('/preview')) return `${url.split('?')[0]}/preview`;
+        
+        let cleanedUrl = url.trim();
+
+        // Trata links do Google Docs/Sheets/Slides
+        if (cleanedUrl.includes('docs.google.com')) {
+            // Remove parâmetros e substitui a ação final por /preview
+            cleanedUrl = cleanedUrl.split('?')[0];
+            if (cleanedUrl.endsWith('/edit') || cleanedUrl.endsWith('/view')) {
+                cleanedUrl = cleanedUrl.replace(/\/(edit|view)$/, '/preview');
+            } else if (!cleanedUrl.endsWith('/preview')) {
+                cleanedUrl = cleanedUrl.replace(/\/$/, '') + '/preview';
+            }
+            return cleanedUrl;
         }
-        return url;
+        
+        // Trata links diretos de arquivos no Google Drive
+        if (cleanedUrl.includes('drive.google.com/file/d/')) {
+            cleanedUrl = cleanedUrl.split('?')[0];
+            cleanedUrl = cleanedUrl.replace(/\/(view|edit)$/, '/preview');
+            if (!cleanedUrl.endsWith('/preview')) {
+                cleanedUrl = cleanedUrl.replace(/\/$/, '') + '/preview';
+            }
+            return cleanedUrl;
+        }
+
+        return cleanedUrl;
     };
 
     const handleShare = () => {
@@ -133,12 +155,16 @@ export default function ArticleViewPage() {
                     className="w-full h-full border-none z-10 relative"
                     onLoad={() => setIframeLoading(false)}
                     title={article.title}
-                    allow="autoplay"
+                    allow="autoplay; encrypted-media; fullscreen"
                 />
             </Card>
 
-            <div className="text-[10px] text-muted-foreground text-center">
-                Caso o documento não carregue corretamente, utilize o botão <strong>"Abrir Externo"</strong> acima.
+            <div className="flex flex-col items-center gap-1 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-1">
+                    <Info className="h-3 w-3" />
+                    <span>Se você vir uma mensagem de acesso negado acima, tente o botão <strong>"Abrir Externo"</strong> ou certifique-se de estar logado na sua conta Google corporativa.</span>
+                </div>
+                <p>Caso o documento não carregue, pode ser uma restrição do navegador a cookies de terceiros.</p>
             </div>
         </div>
     );
