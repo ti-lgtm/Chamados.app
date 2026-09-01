@@ -46,6 +46,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const departmentOptions = [
+    "Administrativo", "Arquitetura", "Arquivo", "Assistência Técnica", "Atendimento ao Cliente",
+    "Auditoria", "Comercial", "Contabilidade", "Diretoria", "Financeiro",
+    "Gestão Pessoal", "Jurídico", "Obra", "Planejamento", "Projetos",
+    "Suprimentos", "Marketing", "Qualidade",
+];
+
 interface TicketDetailsClientProps {
     initialTicket: Ticket;
     isPreview?: boolean;
@@ -79,9 +86,11 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
     const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
     const [isPriorityDialogOpen, setIsPriorityDialogOpen] = useState(false);
     const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
+    const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
     const [deliveryDate, setDeliveryDate] = useState("");
     const [reopenReason, setReopenReason] = useState("");
     const [newPriority, setNewPriority] = useState<'low' | 'normal' | 'high'>(ticket.priority);
+    const [newDepartment, setNewDepartment] = useState(ticket.department);
 
     const canEdit = user?.role === 'ti' || user?.role === 'admin';
     const isAssignedToMe = ticket.assignedTo === user?.uid;
@@ -104,6 +113,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 const data = { id: doc.id, ...doc.data() } as Ticket;
                 setTicket(data);
                 setNewPriority(data.priority);
+                setNewDepartment(data.department);
             }
         });
         return () => unsub();
@@ -332,6 +342,40 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
         .finally(() => setIsUpdating(false));
     }
 
+    const handleDepartmentChange = async () => {
+        if (!ticketRef || !firestore || !user) return;
+        if (newDepartment === ticket.department) {
+            setIsDepartmentDialogOpen(false);
+            return;
+        }
+
+        setIsUpdating(true);
+        try {
+            const logMsg = `🏢 [ALTERAÇÃO DE SETOR]\nO setor foi alterado de "${ticket.department}" para "${newDepartment}" pela equipe técnica.`;
+
+            await addDoc(collection(firestore, "tickets", ticket.id, "comments"), {
+                ticketId: ticket.id,
+                userId: user.uid,
+                userName: user.name,
+                userAvatarUrl: user.avatarUrl || '',
+                message: logMsg,
+                createdAt: serverTimestamp(),
+            });
+
+            await updateDoc(ticketRef, { 
+                department: newDepartment,
+                updatedAt: serverTimestamp() 
+            });
+
+            toast({ title: "Setor atualizado com sucesso!" });
+            setIsDepartmentDialogOpen(false);
+        } catch (error) {
+            toast({ title: "Erro ao atualizar setor", variant: "destructive" });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
     const handleAttendantChange = async (attendantId: string) => {
         if (!ticketRef || !firestore || !user) return;
         
@@ -525,7 +569,14 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                                 </div>
 
                                 <div className="flex flex-col gap-1">
-                                    <span className="font-bold text-[9px] uppercase text-muted-foreground">Setor</span>
+                                    <div className="flex items-center justify-between pr-4">
+                                        <span className="font-bold text-[9px] uppercase text-muted-foreground">Setor</span>
+                                        {canEdit && (
+                                            <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => setIsDepartmentDialogOpen(true)}>
+                                                <Pencil className="h-2 w-2" />
+                                            </Button>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         <Briefcase className="h-3 w-3 text-primary" />
                                         <span className="font-medium">{ticket.department}</span>
@@ -741,6 +792,30 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                         <DialogFooter className="gap-2">
                             <Button variant="outline" size="sm" onClick={() => setIsPriorityDialogOpen(false)} className="text-xs">Cancelar</Button>
                             <Button size="sm" onClick={handlePriorityChange} disabled={isUpdating} className="text-xs">
+                                {isUpdating && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                                Salvar
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={isDepartmentDialogOpen} onOpenChange={setIsDepartmentDialogOpen}>
+                    <DialogContent className="max-w-sm">
+                        <DialogHeader><DialogTitle className="text-base">Corrigir Setor</DialogTitle></DialogHeader>
+                        <div className="py-2 space-y-2">
+                            <Label className="text-xs">Setor Correto</Label>
+                            <Select value={newDepartment} onValueChange={setNewDepartment}>
+                                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {departmentOptions.map(dep => (
+                                        <SelectItem key={dep} value={dep} className="text-xs">{dep}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <DialogFooter className="gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setIsDepartmentDialogOpen(false)} className="text-xs">Cancelar</Button>
+                            <Button size="sm" onClick={handleDepartmentChange} disabled={isUpdating} className="text-xs">
                                 {isUpdating && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
                                 Salvar
                             </Button>
