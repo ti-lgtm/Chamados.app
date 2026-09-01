@@ -382,12 +382,12 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
         <div className="space-y-4 min-w-0">
             <div className="flex items-center justify-between gap-2 print:hidden">
                 {!isPreview ? (
-                    <Button variant="ghost" size="xs" onClick={() => router.back()} className="text-muted-foreground hover:text-foreground h-8 px-2 text-xs">
+                    <Button variant="ghost" size="sm" onClick={() => router.back()} className="text-muted-foreground hover:text-foreground h-8 px-2 text-xs">
                         <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
                         Voltar para a lista
                     </Button>
                 ) : (
-                    <Button variant="outline" size="xs" asChild className="text-primary border-primary hover:bg-primary hover:text-white transition-all h-8 px-2 text-xs">
+                    <Button variant="outline" size="sm" asChild className="text-primary border-primary hover:bg-primary hover:text-white transition-all h-8 px-2 text-xs">
                         <Link href={`/tickets/${ticket.id}`}>
                             <Maximize2 className="h-3.5 w-3.5 mr-1.5" />
                             Abrir em Tela Cheia
@@ -398,7 +398,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 {canEdit && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="xs" disabled={isSendingEmail} className="h-8 px-2 text-xs">
+                            <Button variant="outline" size="sm" disabled={isSendingEmail} className="h-8 px-2 text-xs">
                                 {isSendingEmail ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Mail className="h-3.5 w-3.5 mr-1.5" />}
                                 Notificações
                             </Button>
@@ -441,7 +441,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                                     {canEdit && !isAssignedToMe && user && (
                                         <Button 
                                             variant="default" 
-                                            size="xs" 
+                                            size="sm" 
                                             className="h-7 px-2 text-[9px] uppercase font-bold bg-emerald-600 hover:bg-emerald-700 shadow-sm"
                                             onClick={() => handleAttendantChange(user.uid)}
                                             disabled={isUpdating}
@@ -450,7 +450,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                                             Atribuir a mim
                                         </Button>
                                     )}
-                                    {canEdit && (
+                                    {canEdit && !isPreview && (
                                         <Button variant="outline" size="icon" onClick={() => window.print()} title="Imprimir Chamado" className="h-7 w-7">
                                             <Printer className="h-3.5 w-3.5" />
                                         </Button>
@@ -476,7 +476,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                                     <h4 className="font-semibold mb-2 flex items-center gap-2 text-xs">Anexos ({ticket.attachments.length})</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {ticket.attachments.map((url, index) => (
-                                            <Button key={index} variant="secondary" size="xs" asChild className="h-7 text-[10px] px-2">
+                                            <Button key={index} variant="secondary" size="sm" asChild className="h-7 text-[10px] px-2">
                                                 <a href={url} target="_blank" rel="noopener noreferrer">
                                                     <Paperclip className="h-3 w-3 mr-1" />
                                                     Anexo {index + 1}
