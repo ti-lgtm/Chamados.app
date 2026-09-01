@@ -438,12 +438,24 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                                     </CardTitle>
                                 </div>
                                 <div className="flex items-center gap-2 print:hidden shrink-0">
+                                    {canEdit && !isAssignedToMe && user && (
+                                        <Button 
+                                            variant="default" 
+                                            size="xs" 
+                                            className="h-7 px-2 text-[9px] uppercase font-bold bg-emerald-600 hover:bg-emerald-700 shadow-sm"
+                                            onClick={() => handleAttendantChange(user.uid)}
+                                            disabled={isUpdating}
+                                        >
+                                            <UserPlus className="h-3 w-3 mr-1" />
+                                            Atribuir a mim
+                                        </Button>
+                                    )}
                                     {canEdit && (
-                                        <Button variant="outline" size="icon" onClick={() => window.print()} className="h-7 w-7">
+                                        <Button variant="outline" size="icon" onClick={() => window.print()} title="Imprimir Chamado" className="h-7 w-7">
                                             <Printer className="h-3.5 w-3.5" />
                                         </Button>
                                     )}
-                                    <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="h-6 text-[10px] px-2">
+                                    <Badge variant={statusMap[ticket.status]?.variant || 'default'} className="h-7 text-[10px] px-2 font-bold uppercase tracking-wider">
                                         {statusMap[ticket.status]?.label || ticket.status}
                                     </Badge>
                                 </div>
