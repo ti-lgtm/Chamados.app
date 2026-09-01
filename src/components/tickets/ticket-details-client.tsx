@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where, Timestamp, addDoc, getDoc } from "firebase/firestore";
-import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, useCollection, WithId } from "@/firebase";
+import { useFirestore, useMemoFirebase, useCollection, WithId } from "@/firebase";
 import type { Ticket, AppUser, EmailSettings } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -18,11 +19,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Comments } from "./comments";
 import { RatingSection } from "./rating";
 import { 
-    Loader2, User, Clock, Shield, Tag, Paperclip, Building, Briefcase, 
-    CheckCircle, Phone, Circle as CircleIcon, Mail, Printer, UserPlus, 
-    Wrench, ShoppingCart, Calendar, Package, Pencil, Settings2, 
-    RotateCcw, ArrowLeft, MessageSquareWarning, Maximize2, SendHorizontal,
-    ClipboardList
+    Loader2, User, Building, Briefcase, 
+    CheckCircle, Phone, Mail, Printer, UserPlus, 
+    Settings2, RotateCcw, ArrowLeft, MessageSquareWarning, Maximize2, 
+    SendHorizontal, ClipboardList, Shield, Tag, Paperclip, Package, Pencil
 } from "lucide-react";
 import { 
     triggerTicketResolvedEmail, 
@@ -31,11 +31,11 @@ import {
 } from "@/app/actions/email";
 import { DeadlineIndicator } from "./deadline-indicator";
 import { InternalNotes } from "./internal-notes";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { addBusinessDays } from "./new-ticket-form";
 import {
   DropdownMenu,
@@ -49,7 +49,7 @@ import {
 const departmentOptions = [
     "Administrativo", "Arquitetura", "Arquivo", "Assistência Técnica", "Atendimento ao Cliente",
     "Auditoria", "Comercial", "Contabilidade", "Diretoria", "Financeiro",
-    "Gestão Pessoal", "Jurídico", "Obra", "Planejamento", "Projetos",
+    "Gestão Pessoal", "Jurídico", "Legalização", "Obra", "Planejamento", "Projetos",
     "Suprimentos", "Marketing", "Qualidade",
 ];
 
@@ -100,7 +100,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
         return query(collection(firestore, 'users'), where('role', 'in', ['ti', 'admin']));
     }, [firestore, canEdit]);
 
-    const { data: supportUsers, isLoading: supportUsersLoading } = useCollection<WithId<AppUser>>(supportUsersQuery);
+    const { data: supportUsers } = useCollection<WithId<AppUser>>(supportUsersQuery);
 
     const ticketRef = useMemoFirebase(() => 
         firestore ? doc(firestore, "tickets", initialTicket.id) : null

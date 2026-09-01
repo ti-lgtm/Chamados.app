@@ -5,8 +5,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, serverTimestamp, runTransaction, doc, Timestamp } from 'firebase/firestore';
-import { useFirestore, FirestorePermissionError } from '@/firebase';
+import { collection, serverTimestamp, runTransaction, doc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { uploadAttachments } from '@/app/actions/upload';
@@ -14,15 +14,13 @@ import { uploadAttachments } from '@/app/actions/upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/select';
 import {
   Form,
   FormControl,
@@ -30,16 +28,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
-} from '@/components/ui/form';
+} from '@/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Info, Package } from 'lucide-react';
+import { Loader2, ShoppingCart } from 'lucide-react';
 import { triggerTicketCreatedEmail } from '@/app/actions/email';
 
 const departmentOptions = [
     "Administrativo", "Arquitetura", "Arquivo", "Assistência Técnica", "Atendimento ao Cliente",
     "Auditoria", "Comercial", "Contabilidade", "Diretoria", "Financeiro",
-    "Gestão Pessoal", "Jurídico", "Obra", "Planejamento", "Projetos",
+    "Gestão Pessoal", "Jurídico", "Legalização", "Obra", "Planejamento", "Projetos",
     "Suprimentos", "Marketing", "Qualidade",
 ] as const;
 
@@ -121,6 +118,7 @@ export function NewPurchaseForm() {
         userName: user.name,
         userEmail: user.email,
         description: values.description,
+        type: 'purchase',
       });
 
       toast({ title: `Solicitação de Compra #${newPurchaseData.number} criada!` });

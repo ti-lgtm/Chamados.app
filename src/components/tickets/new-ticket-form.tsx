@@ -50,6 +50,7 @@ const departmentOptions = [
     "Financeiro",
     "Gestão Pessoal",
     "Jurídico",
+    "Legalização",
     "Obra",
     "Planejamento",
     "Projetos",
