@@ -22,6 +22,7 @@ import {
   User,
   ShoppingCart,
   TicketIcon,
+  Filter,
 } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -47,6 +48,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('my_in_progress');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('status');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -80,6 +82,11 @@ export function TiDashboard({ user }: TiDashboardProps) {
       totalPurchases: activePurchases,
     };
   }, [allTickets, user.uid]);
+
+  const departments = useMemo(() => {
+    const deps = new Set(allTickets.map(t => t.department).filter(Boolean));
+    return Array.from(deps).sort();
+  }, [allTickets]);
 
   const ticketsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -230,6 +237,10 @@ export function TiDashboard({ user }: TiDashboardProps) {
         break;
     }
 
+    if (departmentFilter !== 'all') {
+      statusFilteredTickets = statusFilteredTickets.filter(t => t.department === departmentFilter);
+    }
+
     return statusFilteredTickets.sort((a, b) => {
       if (sortBy === 'status') {
         const statusOrder = {
@@ -259,7 +270,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
       }
       return dateB - dateA; // 'newest' is default
     });
-  }, [allTickets, statusFilter, searchTerm, user.uid, sortBy]);
+  }, [allTickets, statusFilter, searchTerm, user.uid, sortBy, departmentFilter]);
 
   const selectedTicket = useMemo(() => {
     return allTickets.find(t => t.id === selectedTicketId) || null;
@@ -272,14 +283,14 @@ export function TiDashboard({ user }: TiDashboardProps) {
           title="Meus Chamados"
           value={loading ? <Skeleton className="h-8 w-12" /> : stats.myTickets}
           icon={User}
-          onClick={() => setStatusFilter('mine')}
+          onClick={() => { setStatusFilter('mine'); setDepartmentFilter('all'); }}
         />
         <StatsCard
           title="Chamados Abertos"
           value={loading ? <Skeleton className="h-8 w-12" /> : stats.open}
           icon={CircleIcon}
           variant={!loading && stats.open > 0 ? 'destructive' : 'default'}
-          onClick={() => setStatusFilter('open')}
+          onClick={() => { setStatusFilter('open'); setDepartmentFilter('all'); }}
         />
         <StatsCard
           title="Atendimento (Suporte)"
@@ -287,13 +298,13 @@ export function TiDashboard({ user }: TiDashboardProps) {
             loading ? <Skeleton className="h-8 w-12" /> : stats.inProgress
           }
           icon={GanttChart}
-          onClick={() => setStatusFilter('in_progress')}
+          onClick={() => { setStatusFilter('in_progress'); setDepartmentFilter('all'); }}
         />
         <StatsCard
           title="Compras Ativas"
           value={loading ? <Skeleton className="h-8 w-12" /> : stats.totalPurchases}
           icon={ShoppingCart}
-          onClick={() => setStatusFilter('purchases')}
+          onClick={() => { setStatusFilter('purchases'); setDepartmentFilter('all'); }}
         />
       </div>
 
@@ -301,8 +312,8 @@ export function TiDashboard({ user }: TiDashboardProps) {
         <div className="flex flex-col sm:flex-row gap-2 justify-between items-center">
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[260px]">
-                <SelectValue placeholder="Filtrar por tipo e status" />
+              <SelectTrigger className="w-full sm:w-[220px]">
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
@@ -313,8 +324,8 @@ export function TiDashboard({ user }: TiDashboardProps) {
                 <SelectSeparator />
                 <SelectGroup>
                     <SelectLabel>Suporte Técnico</SelectLabel>
-                    <SelectItem value="open">Abertos ({loading ? '...' : stats.open})</SelectItem>
-                    <SelectItem value="in_progress">Em Atendimento ({loading ? '...' : stats.inProgress})</SelectItem>
+                    <SelectItem value="open">Abertos</SelectItem>
+                    <SelectItem value="in_progress">Em Atendimento</SelectItem>
                     <SelectItem value="awaiting_user">Aguardando Usuário</SelectItem>
                     <SelectItem value="awaiting_support">Aguardando Suporte</SelectItem>
                     <SelectItem value="resolved">Resolvidos</SelectItem>
@@ -322,16 +333,32 @@ export function TiDashboard({ user }: TiDashboardProps) {
                 <SelectSeparator />
                 <SelectGroup>
                     <SelectLabel>Compras de TI</SelectLabel>
-                    <SelectItem value="purchases">Compras Ativas ({loading ? '...' : stats.totalPurchases})</SelectItem>
+                    <SelectItem value="purchases">Compras Ativas</SelectItem>
                     <SelectItem value="in_quotation">Em Cotação</SelectItem>
-                    <SelectItem value="purchased">Comprado (Em Trânsito)</SelectItem>
-                    <SelectItem value="delivered">Entregue (Finalizado)</SelectItem>
+                    <SelectItem value="purchased">Comprado</SelectItem>
+                    <SelectItem value="delivered">Entregue</SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
+
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <div className="flex items-center gap-2">
+                    <Filter className="h-3 w-3 text-muted-foreground" />
+                    <SelectValue placeholder="Setor" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Setores</SelectItem>
+                {departments.map(dep => (
+                    <SelectItem key={dep} value={dep}>{dep}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full sm:w-[220px]">
-                <SelectValue placeholder="Ordenar por" />
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Ordenar" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="newest">Mais recentes</SelectItem>
@@ -343,10 +370,10 @@ export function TiDashboard({ user }: TiDashboardProps) {
           <div className="relative w-full sm:w-full sm:max-w-xs">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Nº, título, solicitante ou técnico..."
+              placeholder="Pesquisar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
+              className="pl-8 h-10"
             />
           </div>
         </div>

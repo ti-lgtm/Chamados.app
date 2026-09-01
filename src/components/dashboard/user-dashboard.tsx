@@ -9,7 +9,7 @@ import type { AppUser, Ticket } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { TicketList } from '@/components/tickets/ticket-list';
 import { TicketDetailsClient } from '@/components/tickets/ticket-details-client';
-import { PlusCircle, Star, Search, ShoppingCart, TicketIcon } from 'lucide-react';
+import { PlusCircle, Star, Search, ShoppingCart, TicketIcon, Filter } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { 
@@ -33,6 +33,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -71,6 +72,11 @@ export function UserDashboard({ user }: UserDashboardProps) {
     return () => unsubscribe();
   }, [ticketsQuery]);
 
+  const departments = useMemo(() => {
+    const deps = new Set(allTickets.map(t => t.department).filter(Boolean));
+    return Array.from(deps).sort();
+  }, [allTickets]);
+
   const filteredTickets = useMemo(() => {
     let tickets = [...allTickets]; 
 
@@ -95,6 +101,10 @@ export function UserDashboard({ user }: UserDashboardProps) {
             ticket.status === statusFilter && 
             (isPurchaseStatus ? ticket.type === 'purchase' : ticket.type !== 'purchase')
         );
+    }
+
+    if (departmentFilter !== 'all') {
+      tickets = tickets.filter(t => t.department === departmentFilter);
     }
 
     return tickets.sort((a, b) => {
@@ -125,7 +135,7 @@ export function UserDashboard({ user }: UserDashboardProps) {
         return dateB - dateA; // 'newest' is default
     });
 
-  }, [allTickets, statusFilter, searchTerm, sortBy]);
+  }, [allTickets, statusFilter, searchTerm, sortBy, departmentFilter]);
 
   const unratedTickets = useMemo(() => {
     return allTickets.filter(ticket => (ticket.status === 'resolved' || ticket.status === 'delivered') && !ticket.rating);
@@ -163,8 +173,8 @@ export function UserDashboard({ user }: UserDashboardProps) {
         <div className="flex flex-col sm:flex-row gap-2 justify-between items-center">
              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[220px]">
-                      <SelectValue placeholder="Filtrar por status" />
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
                       <SelectGroup>
@@ -190,9 +200,25 @@ export function UserDashboard({ user }: UserDashboardProps) {
                       </SelectGroup>
                   </SelectContent>
               </Select>
+
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                    <div className="flex items-center gap-2">
+                        <Filter className="h-3 w-3 text-muted-foreground" />
+                        <SelectValue placeholder="Setor" />
+                    </div>
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todos os Setores</SelectItem>
+                    {departments.map(dep => (
+                        <SelectItem key={dep} value={dep}>{dep}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+
               <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full sm:w-[220px]">
-                      <SelectValue placeholder="Ordenar por" />
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Ordenar" />
                   </SelectTrigger>
                   <SelectContent>
                       <SelectItem value="newest">Mais recentes</SelectItem>
@@ -204,10 +230,10 @@ export function UserDashboard({ user }: UserDashboardProps) {
              <div className="relative w-full sm:w-full sm:max-w-xs">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input 
-                      placeholder="Pesquisar por nº ou título..."
+                      placeholder="Pesquisar..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-8"
+                      className="pl-8 h-10"
                   />
               </div>
         </div>
