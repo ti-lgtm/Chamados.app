@@ -20,7 +20,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/select';
+} from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -28,7 +28,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/form';
+} from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ShoppingCart } from 'lucide-react';
 import { triggerTicketCreatedEmail } from '@/app/actions/email';
