@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -24,7 +23,8 @@ import {
     Settings2, RotateCcw, ArrowLeft, MessageSquareWarning, Maximize2, 
     SendHorizontal, ClipboardList, Shield, Tag, Paperclip, Package, Pencil,
     AlertTriangle,
-    Calendar
+    Calendar,
+    ShoppingCart
 } from "lucide-react";
 import { 
     triggerTicketResolvedEmail, 
@@ -160,7 +160,6 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 ...extraData
             };
 
-            // Ao fechar ou mudar status, limpamos a flag de reabertura do usuário
             if (newStatus === 'resolved' || newStatus === 'delivered') {
                 updateData.reopenedByUser = false;
             }
@@ -322,7 +321,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 status: newStatus,
                 updatedAt: serverTimestamp(),
                 rating: null,
-                reopenedByUser: isActionByUser // Ativa sinalização visual para TI se for o usuário
+                reopenedByUser: isActionByUser
             });
 
             toast({ title: "Chamado reaberto com sucesso!" });
@@ -482,7 +481,6 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 )}
             </div>
 
-            {/* Sinalização para TI/ADM sobre reabertura pelo usuário */}
             {canEdit && ticket.reopenedByUser && !isFinished && (
                 <Alert variant="destructive" className="animate-pulse bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900">
                     <AlertTriangle className="h-4 w-4" />
@@ -497,7 +495,6 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 "grid gap-4 print:block print:space-y-6",
                 isPreview ? "grid-cols-1" : "lg:grid-cols-3"
             )}>
-                {/* Coluna Principal */}
                 <div className={cn(isPreview ? "col-span-1" : "lg:col-span-2", "space-y-4 min-w-0")}>
                     <Card className="print:shadow-none print:border-2 overflow-hidden">
                         <CardHeader className="p-4 sm:p-6 space-y-2">
@@ -673,7 +670,6 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                     <Comments ticket={ticket} currentUser={user} supportUsers={supportUsers} />
                 </div>
 
-                {/* Coluna Lateral */}
                 <div className={cn(isPreview ? "col-span-1" : "lg:col-span-1", "space-y-4 min-w-0")}>
                     {canEdit && (
                         <Card className="print:hidden overflow-hidden border-primary/20">
@@ -757,7 +753,6 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                         </Card>
                     )}
 
-                    {/* Botão de reabertura para USUÁRIO (Dentro de 24h) */}
                     {canUserReopen && (
                         <Card className="print:hidden border-orange-200 bg-orange-50 dark:bg-orange-950/20">
                             <CardHeader className="p-4">
@@ -780,7 +775,6 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                     {isFinished && <RatingSection ticketId={ticket.id} ticketCreatorId={ticket.userId} currentUser={user} />}
                 </div>
 
-                {/* Modais */}
                 <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
                     <DialogContent className="max-w-sm">
                         <DialogHeader>
