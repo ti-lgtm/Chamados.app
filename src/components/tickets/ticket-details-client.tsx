@@ -6,7 +6,7 @@ import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where, 
 import { useFirestore, useMemoFirebase, useCollection, WithId } from "@/firebase";
 import type { Ticket, AppUser, EmailSettings } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
-import { format } from "date-fns";
+import { format, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -22,7 +22,9 @@ import {
     Loader2, User, Building, Briefcase, 
     CheckCircle, Phone, Mail, Printer, UserPlus, 
     Settings2, RotateCcw, ArrowLeft, MessageSquareWarning, Maximize2, 
-    SendHorizontal, ClipboardList, Shield, Tag, Paperclip, Package, Pencil
+    SendHorizontal, ClipboardList, Shield, Tag, Paperclip, Package, Pencil,
+    AlertTriangle,
+    Calendar
 } from "lucide-react";
 import { 
     triggerTicketResolvedEmail, 
@@ -45,6 +47,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const departmentOptions = [
     "Administrativo", "Arquitetura", "Arquivo", "Assistência Técnica", "Atendimento ao Cliente",
@@ -93,7 +96,13 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
     const [newDepartment, setNewDepartment] = useState(ticket.department);
 
     const canEdit = user?.role === 'ti' || user?.role === 'admin';
+    const isOwner = user?.uid === ticket.userId;
     const isAssignedToMe = ticket.assignedTo === user?.uid;
+    const isFinished = ticket.status === 'resolved' || ticket.status === 'delivered';
+
+    // Lógica de reabertura por usuário (janela de 24h)
+    const hoursSinceUpdate = ticket.updatedAt ? differenceInHours(new Date(), ticket.updatedAt.toDate()) : 0;
+    const canUserReopen = isOwner && isFinished && hoursSinceUpdate < 24;
 
     const supportUsersQuery = useMemoFirebase(() => {
         if (!firestore || !canEdit) return null;
@@ -145,11 +154,16 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 await addDoc(collection(firestore, "tickets", ticket.id, "comments"), commentData);
             }
 
-            const updateData = {
+            const updateData: any = {
                 status: newStatus,
                 updatedAt: serverTimestamp(),
                 ...extraData
             };
+
+            // Ao fechar ou mudar status, limpamos a flag de reabertura do usuário
+            if (newStatus === 'resolved' || newStatus === 'delivered') {
+                updateData.reopenedByUser = false;
+            }
 
             await updateDoc(ticketRef, updateData);
             
@@ -161,7 +175,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                     ticketTitle: ticket.title,
                     userName: ticket.userName,
                     userEmail: ticket.userEmail,
-                    ticketUrl: window.location.href,
+                    ticketUrl: typeof window !== 'undefined' ? window.location.href : '',
                 });
             }
             
@@ -238,7 +252,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 ticketTitle: ticket.title,
                 userName: ticket.userName,
                 userEmail: ticket.userEmail,
-                ticketUrl: window.location.href,
+                ticketUrl: typeof window !== 'undefined' ? window.location.href : '',
             });
             toast({ title: "E-mail de fechamento reenviado!" });
         } catch (error) {
@@ -289,6 +303,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
         setIsUpdating(true);
         const isPurchase = ticket.type === 'purchase';
         const newStatus = isPurchase ? 'in_quotation' : 'in_progress';
+        const isActionByUser = user.uid === ticket.userId;
 
         try {
             const commentData = {
@@ -296,7 +311,9 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 userId: user.uid,
                 userName: user.name,
                 userAvatarUrl: user.avatarUrl || '',
-                message: `⚠️ [REABERTURA POR SUPORTE]\n\nMotivo informado: ${reopenReason}`,
+                message: isActionByUser 
+                    ? `⚠️ [REABERTURA PELO USUÁRIO]\n\nO cliente informou que o problema persiste.\nMotivo: ${reopenReason}`
+                    : `⚠️ [REABERTURA POR SUPORTE]\n\nMotivo informado: ${reopenReason}`,
                 createdAt: serverTimestamp(),
             };
             await addDoc(collection(firestore, "tickets", ticket.id, "comments"), commentData);
@@ -305,6 +322,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 status: newStatus,
                 updatedAt: serverTimestamp(),
                 rating: null,
+                reopenedByUser: isActionByUser // Ativa sinalização visual para TI se for o usuário
             });
 
             toast({ title: "Chamado reaberto com sucesso!" });
@@ -420,7 +438,6 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
     if (authLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
     const isPurchase = ticket.type === 'purchase';
-    const isFinished = ticket.status === 'resolved' || ticket.status === 'delivered';
 
     return (
         <div className="space-y-4 min-w-0">
@@ -464,19 +481,32 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                     </DropdownMenu>
                 )}
             </div>
+
+            {/* Sinalização para TI/ADM sobre reabertura pelo usuário */}
+            {canEdit && ticket.reopenedByUser && !isFinished && (
+                <Alert variant="destructive" className="animate-pulse bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle className="font-bold text-[11px] uppercase tracking-wider">Atenção: Chamado Reaberto pelo Cliente</AlertTitle>
+                    <AlertDescription className="text-xs">
+                        Este registro foi reaberto pelo solicitante em menos de 24h. Por favor, revise o motivo no histórico.
+                    </AlertDescription>
+                </Alert>
+            )}
             
             <div className={cn(
                 "grid gap-4 print:block print:space-y-6",
                 isPreview ? "grid-cols-1" : "lg:grid-cols-3"
             )}>
-                {/* Coluna Principal (Descrição, Metadados e Histórico) */}
+                {/* Coluna Principal */}
                 <div className={cn(isPreview ? "col-span-1" : "lg:col-span-2", "space-y-4 min-w-0")}>
-                    {/* Card de Título e Descrição */}
                     <Card className="print:shadow-none print:border-2 overflow-hidden">
                         <CardHeader className="p-4 sm:p-6 space-y-2">
                             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                                 <div className="flex flex-col gap-1 flex-1 min-w-0">
-                                    {isPurchase && <Badge variant="outline" className="w-fit text-[9px] h-4 px-1.5 bg-primary/5 text-primary border-primary/20 mb-1"><ShoppingCart className="h-2.5 w-2.5 mr-1"/> COMPRA DE TI</Badge>}
+                                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                                        {isPurchase && <Badge variant="outline" className="w-fit text-[9px] h-4 px-1.5 bg-primary/5 text-primary border-primary/20"><ShoppingCart className="h-2.5 w-2.5 mr-1"/> COMPRA DE TI</Badge>}
+                                        {ticket.reopenedByUser && !isFinished && <Badge variant="destructive" className="w-fit text-[9px] h-4 px-1.5 animate-bounce"><AlertTriangle className="h-2.5 w-2.5 mr-1"/> REABERTO</Badge>}
+                                    </div>
                                     <CardTitle className="font-headline text-lg sm:text-xl break-words leading-tight">
                                         {ticket.ticketNumber ? `#${ticket.ticketNumber} - ` : ''}{ticket.title}
                                     </CardTitle>
@@ -544,7 +574,6 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                         </CardContent>
                     </Card>
 
-                    {/* SEÇÃO DE METADADOS ORGANIZADA - ANTES DO HISTÓRICO */}
                     <Card className="print:shadow-none print:border-2 bg-muted/5 border-dashed">
                         <CardHeader className="p-4 flex flex-row items-center gap-2 space-y-0">
                             <ClipboardList className="h-4 w-4 text-primary" />
@@ -641,11 +670,10 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                         </CardContent>
                     </Card>
 
-                    {/* Histórico de Conversas */}
                     <Comments ticket={ticket} currentUser={user} supportUsers={supportUsers} />
                 </div>
 
-                {/* Coluna Lateral (Ações e Controles) */}
+                {/* Coluna Lateral */}
                 <div className={cn(isPreview ? "col-span-1" : "lg:col-span-1", "space-y-4 min-w-0")}>
                     {canEdit && (
                         <Card className="print:hidden overflow-hidden border-primary/20">
@@ -729,11 +757,30 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                         </Card>
                     )}
 
+                    {/* Botão de reabertura para USUÁRIO (Dentro de 24h) */}
+                    {canUserReopen && (
+                        <Card className="print:hidden border-orange-200 bg-orange-50 dark:bg-orange-950/20">
+                            <CardHeader className="p-4">
+                                <CardTitle className="text-xs font-bold text-orange-800 dark:text-orange-400 flex items-center gap-2">
+                                    <RotateCcw className="h-4 w-4" /> Problema não resolvido?
+                                </CardTitle>
+                                <CardDescription className="text-[10px] leading-relaxed">
+                                    Você tem até 24 horas após o fechamento para reabrir este chamado caso a solução não tenha funcionado.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardFooter className="p-4 pt-0">
+                                <Button className="w-full h-9 text-[11px] font-bold bg-orange-600 hover:bg-orange-700" onClick={() => setIsReopenDialogOpen(true)} disabled={isUpdating}>
+                                    REABRIR CHAMADO
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    )}
+
                     {canEdit && user && <InternalNotes ticketId={ticket.id} currentUser={user} />}
-                    {(ticket.status === 'resolved' || ticket.status === 'delivered') && <RatingSection ticketId={ticket.id} ticketCreatorId={ticket.userId} currentUser={user} />}
+                    {isFinished && <RatingSection ticketId={ticket.id} ticketCreatorId={ticket.userId} currentUser={user} />}
                 </div>
 
-                {/* Diálogos (Modais) */}
+                {/* Modais */}
                 <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
                     <DialogContent className="max-w-sm">
                         <DialogHeader>
@@ -763,13 +810,19 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                         </DialogHeader>
                         <div className="py-2 space-y-2">
                             <Label className="text-xs">Motivo da Reabertura</Label>
-                            <Textarea placeholder="Descreva aqui o motivo..." value={reopenReason} onChange={(e) => setReopenReason(e.target.value)} rows={3} className="text-sm" />
+                            <Textarea 
+                                placeholder={isOwner ? "Explique por que a solução anterior não funcionou..." : "Descreva aqui o motivo..."} 
+                                value={reopenReason} 
+                                onChange={(e) => setReopenReason(e.target.value)} 
+                                rows={3} 
+                                className="text-sm" 
+                            />
                         </div>
                         <DialogFooter className="gap-2">
                             <Button variant="outline" size="sm" onClick={() => { setIsReopenDialogOpen(false); setReopenReason(""); }} className="text-xs">Cancelar</Button>
                             <Button variant="destructive" size="sm" onClick={handleReopenTicket} disabled={isUpdating || !reopenReason.trim()} className="text-xs">
                                 {isUpdating && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
-                                Confirmar
+                                Confirmar Reabertura
                             </Button>
                         </DialogFooter>
                     </DialogContent>

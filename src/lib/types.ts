@@ -44,6 +44,7 @@ export interface Ticket {
   attachments?: string[];
   deadline?: Timestamp;
   rating?: number;
+  reopenedByUser?: boolean;
 }
 
 export interface ScheduledTicket {
