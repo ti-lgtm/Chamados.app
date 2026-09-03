@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -277,108 +276,108 @@ export function TiDashboard({ user }: TiDashboardProps) {
   }, [allTickets, selectedTicketId]);
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-3 sm:space-y-4">
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Meus Chamados"
-          value={loading ? <Skeleton className="h-8 w-12" /> : stats.myTickets}
+          value={loading ? <Skeleton className="h-6 w-10" /> : stats.myTickets}
           icon={User}
           onClick={() => { setStatusFilter('mine'); setDepartmentFilter('all'); }}
         />
         <StatsCard
           title="Chamados Abertos"
-          value={loading ? <Skeleton className="h-8 w-12" /> : stats.open}
+          value={loading ? <Skeleton className="h-6 w-10" /> : stats.open}
           icon={CircleIcon}
           variant={!loading && stats.open > 0 ? 'destructive' : 'default'}
           onClick={() => { setStatusFilter('open'); setDepartmentFilter('all'); }}
         />
         <StatsCard
-          title="Atendimento (Suporte)"
+          title="Atendimento"
           value={
-            loading ? <Skeleton className="h-8 w-12" /> : stats.inProgress
+            loading ? <Skeleton className="h-6 w-10" /> : stats.inProgress
           }
           icon={GanttChart}
           onClick={() => { setStatusFilter('in_progress'); setDepartmentFilter('all'); }}
         />
         <StatsCard
           title="Compras Ativas"
-          value={loading ? <Skeleton className="h-8 w-12" /> : stats.totalPurchases}
+          value={loading ? <Skeleton className="h-6 w-10" /> : stats.totalPurchases}
           icon={ShoppingCart}
           onClick={() => { setStatusFilter('purchases'); setDepartmentFilter('all'); }}
         />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row gap-2 justify-between items-center">
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[220px]">
+              <SelectTrigger className="w-full sm:w-[200px] h-9 text-xs">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                     <SelectLabel>Geral</SelectLabel>
-                    <SelectItem value="my_in_progress">Meus em Atendimento</SelectItem>
-                    <SelectItem value="mine">Meus Chamados (Histórico)</SelectItem>
+                    <SelectItem value="my_in_progress" className="text-xs">Meus em Atendimento</SelectItem>
+                    <SelectItem value="mine" className="text-xs">Meus Chamados (Histórico)</SelectItem>
                 </SelectGroup>
                 <SelectSeparator />
                 <SelectGroup>
                     <SelectLabel>Suporte Técnico</SelectLabel>
-                    <SelectItem value="open">Abertos</SelectItem>
-                    <SelectItem value="in_progress">Em Atendimento</SelectItem>
-                    <SelectItem value="awaiting_user">Aguardando Usuário</SelectItem>
-                    <SelectItem value="awaiting_support">Aguardando Suporte</SelectItem>
-                    <SelectItem value="resolved">Resolvidos</SelectItem>
+                    <SelectItem value="open" className="text-xs">Abertos</SelectItem>
+                    <SelectItem value="in_progress" className="text-xs">Em Atendimento</SelectItem>
+                    <SelectItem value="awaiting_user" className="text-xs">Aguardando Usuário</SelectItem>
+                    <SelectItem value="awaiting_support" className="text-xs">Aguardando Suporte</SelectItem>
+                    <SelectItem value="resolved" className="text-xs">Resolvidos</SelectItem>
                 </SelectGroup>
                 <SelectSeparator />
                 <SelectGroup>
                     <SelectLabel>Compras de TI</SelectLabel>
-                    <SelectItem value="purchases">Compras Ativas</SelectItem>
-                    <SelectItem value="in_quotation">Em Cotação</SelectItem>
-                    <SelectItem value="purchased">Comprado</SelectItem>
-                    <SelectItem value="delivered">Entregue</SelectItem>
+                    <SelectItem value="purchases" className="text-xs">Compras Ativas</SelectItem>
+                    <SelectItem value="in_quotation" className="text-xs">Em Cotação</SelectItem>
+                    <SelectItem value="purchased" className="text-xs">Comprado</SelectItem>
+                    <SelectItem value="delivered" className="text-xs">Entregue</SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
 
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 text-xs">
                 <div className="flex items-center gap-2">
                     <Filter className="h-3 w-3 text-muted-foreground" />
                     <SelectValue placeholder="Setor" />
                 </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Setores</SelectItem>
+                <SelectItem value="all" className="text-xs">Todos os Setores</SelectItem>
                 {departments.map(dep => (
-                    <SelectItem key={dep} value={dep}>{dep}</SelectItem>
+                    <SelectItem key={dep} value={dep} className="text-xs">{dep}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 text-xs">
                 <SelectValue placeholder="Ordenar" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="newest">Mais recentes</SelectItem>
-                <SelectItem value="oldest">Mais antigos</SelectItem>
-                <SelectItem value="status">Em atendimento primeiro</SelectItem>
+                <SelectItem value="newest" className="text-xs">Mais recentes</SelectItem>
+                <SelectItem value="oldest" className="text-xs">Mais antigos</SelectItem>
+                <SelectItem value="status" className="text-xs">Em atendimento primeiro</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="relative w-full sm:w-full sm:max-w-xs">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               placeholder="Pesquisar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 h-10"
+              className="pl-8 h-9 text-xs"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-[600px]">
             <div className="lg:col-span-4 xl:col-span-3">
                 {loading ? (
                 <div className="space-y-4">
@@ -397,7 +396,7 @@ export function TiDashboard({ user }: TiDashboardProps) {
                 )}
             </div>
             
-            <div className="hidden lg:block lg:col-span-8 xl:col-span-9 bg-muted/20 rounded-xl border border-dashed p-1 min-h-[750px] overflow-hidden">
+            <div className="hidden lg:block lg:col-span-8 xl:col-span-9 bg-muted/10 rounded-xl border border-dashed p-1 min-h-[750px] overflow-hidden">
                 {selectedTicket ? (
                     <ScrollArea className="h-[750px]">
                         <div className="p-4">
@@ -407,10 +406,10 @@ export function TiDashboard({ user }: TiDashboardProps) {
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
                         <div className="bg-muted p-6 rounded-full mb-4">
-                            <TicketIcon className="h-10 w-10 opacity-20" />
+                            <TicketIcon className="h-8 w-8 opacity-20" />
                         </div>
-                        <h3 className="text-lg font-bold font-headline">Selecione um chamado</h3>
-                        <p className="text-sm">Clique em um registro na lista à esquerda para ver os detalhes.</p>
+                        <h3 className="text-base font-bold font-headline">Selecione um chamado</h3>
+                        <p className="text-xs">Clique em um registro na lista à esquerda para ver os detalhes.</p>
                     </div>
                 )}
             </div>

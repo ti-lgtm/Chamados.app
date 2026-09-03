@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,9 +16,9 @@ export function StatsCard({ title, value, icon: Icon, variant = "default", onCli
   return (
     <Card
       className={cn(
-        "transition-all",
-        variant === "destructive" && "border-destructive/50 bg-destructive/10 text-destructive hover:bg-destructive/10 dark:bg-destructive/10",
-        isClickable && "cursor-pointer hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        "transition-all border-none shadow-sm bg-card",
+        variant === "destructive" && "bg-destructive/10 text-destructive border border-destructive/20",
+        isClickable && "cursor-pointer hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
       )}
       onClick={onClick}
       onKeyDown={isClickable ? (e) => {
@@ -30,13 +30,22 @@ export function StatsCard({ title, value, icon: Icon, variant = "default", onCli
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className={cn("h-4 w-4 text-muted-foreground", variant === "destructive" && "text-destructive")} />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-      </CardContent>
+      <div className="p-3 sm:p-4 flex items-center justify-between gap-3">
+        <div className="space-y-0.5 min-w-0">
+          <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate leading-none">
+            {title}
+          </p>
+          <div className="text-xl sm:text-2xl font-bold leading-tight truncate">
+            {value}
+          </div>
+        </div>
+        <div className={cn(
+            "p-2 rounded-lg bg-muted/50 shrink-0", 
+            variant === "destructive" && "bg-destructive/20"
+        )}>
+          <Icon className={cn("h-4 w-4 text-muted-foreground", variant === "destructive" && "text-destructive")} />
+        </div>
+      </div>
     </Card>
   );
 }

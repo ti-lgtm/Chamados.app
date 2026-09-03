@@ -12,15 +12,15 @@ interface AdminDashboardProps {
 
 export function AdminDashboard({ user }: AdminDashboardProps) {
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-headline font-bold">Painel de Administrador</h1>
-          <p className="text-muted-foreground">Gerencie usuários e visualize todos os chamados do sistema.</p>
+          <h1 className="text-xl font-headline font-bold">Painel de Administrador</h1>
+          <p className="text-[11px] text-muted-foreground">Gerencie usuários e visualize todos os chamados do sistema.</p>
         </div>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" size="sm" className="h-8 text-xs">
           <Link href="/admin/users">
-            <Users className="mr-2 h-4 w-4" />
+            <Users className="mr-1.5 h-3.5 w-3.5" />
             Gerenciar Usuários
           </Link>
         </Button>
