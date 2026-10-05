@@ -25,7 +25,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Loader2, Send, Paperclip, X, User, UserPen, MessageSquare } from 'lucide-react';
+import { Loader2, Send, Paperclip, X, User, CirclePause, MessageSquare } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { triggerNewCommentEmail } from '@/app/actions/email';
 import { uploadAttachments } from '@/app/actions/upload';
@@ -276,6 +276,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
               newStatus = 'awaiting_support';
             }
           } else {
+            // Quando TI ou ADM respondem, o status muda para Aguardando Usuário (Pausa o SLA)
             newStatus = 'awaiting_user';
           }
 
@@ -350,7 +351,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                                 "flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 z-10 shrink-0 transition-colors shadow-sm",
                                 isSupport ? "bg-primary border-primary text-primary-foreground" : "bg-background border-border text-muted-foreground"
                             )}>
-                                {isSupport ? <UserPen className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <User className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
+                                {isSupport ? <CirclePause className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <User className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
                             </div>
 
                             {/* Message Bubble */}
