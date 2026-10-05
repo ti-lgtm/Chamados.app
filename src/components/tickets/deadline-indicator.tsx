@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { differenceInHours, formatDistanceToNowStrict, differenceInSeconds } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { PauseCircle, Truck } from 'lucide-react';
+import { Truck } from 'lucide-react';
 
 interface DeadlineIndicatorProps {
     createdAt: Timestamp;
@@ -96,12 +96,6 @@ export function DeadlineIndicator({
 
     return (
         <div className="space-y-1">
-            {isPaused && (
-                <div className="flex items-center gap-1 text-[8px] font-bold uppercase text-slate-500 mb-0.5">
-                    <PauseCircle className="h-2.5 w-2.5" />
-                    <span>SLA Pausado</span>
-                </div>
-            )}
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
