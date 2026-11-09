@@ -26,14 +26,22 @@ export default function AdminUsersPage() {
         return null;
     }, [firestore, currentUser]);
 
-    const { data: users, isLoading: usersLoading, error: usersError } = useCollection<AppUser>(usersQuery);
+    const { data: users, isLoading: usersLoading } = useCollection<AppUser>(usersQuery);
 
     const sortedUsers = useMemo(() => {
         if (!users) return [];
         return [...users].sort((a, b) => {
-            const dateA = a.createdAt?.toMillis() || 0;
-            const dateB = b.createdAt?.toMillis() || 0;
-            return dateB - dateA;
+            // Lógica robusta para ordenação por data de criação
+            // Se o timestamp ainda não foi resolvido pelo servidor (null no latency compensation),
+            // atribuímos um valor alto para que ele apareça no topo como novidade.
+            const getTimestamp = (u: AppUser) => {
+                if (!u.createdAt) return Date.now() + 60000; // 1 minuto no futuro para garantir topo
+                if (typeof u.createdAt.toMillis === 'function') return u.createdAt.toMillis();
+                if (typeof u.createdAt.seconds === 'number') return u.createdAt.seconds * 1000;
+                return 0;
+            };
+            
+            return getTimestamp(b) - getTimestamp(a);
         });
     }, [users]);
 
@@ -42,17 +50,13 @@ export default function AdminUsersPage() {
         if (!term) return sortedUsers;
 
         return sortedUsers.filter(u => 
-            u.name.toLowerCase().includes(term) || 
-            u.email.toLowerCase().includes(term)
+            (u.name?.toLowerCase() || '').includes(term) || 
+            (u.email?.toLowerCase() || '').includes(term)
         );
     }, [sortedUsers, searchTerm]);
 
     const pendingUsers = useMemo(() => {
         return filteredUsers.filter(u => u.status === 'suspended');
-    }, [filteredUsers]);
-
-    const activeUsers = useMemo(() => {
-        return filteredUsers.filter(u => u.status !== 'suspended');
     }, [filteredUsers]);
 
     const isLoading = authLoading || (currentUser?.role === 'admin' && usersLoading);
@@ -96,14 +100,14 @@ export default function AdminUsersPage() {
             </div>
 
             {pendingUsers.length > 0 && (
-                <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900 animate-in fade-in slide-in-from-top-4 duration-500">
+                <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900 animate-in fade-in slide-in-from-top-4 duration-500 shadow-md">
                     <CardHeader className="pb-3">
                         <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
                             <UserCheck className="h-5 w-5" />
                             <CardTitle className="text-lg">Aguardando Aprovação ({pendingUsers.length})</CardTitle>
                         </div>
                         <CardDescription className="text-orange-600/80">
-                            Novos cadastros que precisam de autorização para entrar.
+                            Novos cadastros que precisam de autorização para entrar no sistema.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -116,11 +120,12 @@ export default function AdminUsersPage() {
                 <CardHeader>
                     <CardTitle>Todos os Usuários</CardTitle>
                     <CardDescription>
-                        Total de {filteredUsers.length} registros.
+                        Total de {filteredUsers.length} registros encontrados.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <UsersTable users={activeUsers} />
+                    {/* Agora exibimos filteredUsers (todos) em vez de apenas os ativos */}
+                    <UsersTable users={filteredUsers} />
                 </CardContent>
             </Card>
         </div>
