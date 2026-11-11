@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, BarChart } from 'recharts';
-import { startOfWeek, startOfMonth, startOfYear, endOfWeek, endOfMonth, endOfYear, getYear, differenceInHours } from 'date-fns';
+import { startOfWeek, startOfMonth, startOfYear, startOfDay, endOfWeek, endOfMonth, endOfYear, endOfDay, getYear, differenceInHours } from 'date-fns';
 
 
 function StatisticsPageContent() {
@@ -22,6 +22,7 @@ function StatisticsPageContent() {
     const [timeRange, setTimeRange] = useState('month');
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
+    const [selectedDay, setSelectedDay] = useState(new Date().getDate()); // 1-31
     const [selectedAttendant, setSelectedAttendant] = useState('all');
     const [selectedDepartment, setSelectedDepartment] = useState('all');
 
@@ -76,6 +77,10 @@ function StatisticsPageContent() {
                 startDate = startOfMonth(new Date(selectedYear, selectedMonth));
                 endDate = endOfMonth(new Date(selectedYear, selectedMonth));
                 break;
+            case 'day':
+                startDate = startOfDay(new Date(selectedYear, selectedMonth, selectedDay));
+                endDate = endOfDay(new Date(selectedYear, selectedMonth, selectedDay));
+                break;
             case 'week':
             default:
                 startDate = startOfWeek(now);
@@ -100,7 +105,7 @@ function StatisticsPageContent() {
         }
 
         return tickets;
-    }, [allTickets, timeRange, selectedYear, selectedMonth, selectedAttendant, selectedDepartment]);
+    }, [allTickets, timeRange, selectedYear, selectedMonth, selectedDay, selectedAttendant, selectedDepartment]);
 
     const resolvedTickets = useMemo(() => filteredTickets.filter(t => t.status === 'resolved'), [filteredTickets]);
 
@@ -232,6 +237,7 @@ function StatisticsPageContent() {
                         <TabsList>
                             <TabsTrigger value="week">Semana</TabsTrigger>
                             <TabsTrigger value="month">Mês</TabsTrigger>
+                            <TabsTrigger value="day">Dia</TabsTrigger>
                             <TabsTrigger value="year">Ano</TabsTrigger>
                         </TabsList>
                     </Tabs>
@@ -271,10 +277,44 @@ function StatisticsPageContent() {
                             </Select>
                         </>
                     )}
+                    {timeRange === 'day' && (
+                        <>
+                            <Select value={String(selectedDay)} onValueChange={(val) => setSelectedDay(Number(val))}>
+                                <SelectTrigger className="w-[100px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                        <SelectItem key={day} value={String(day)}>{day}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={String(selectedMonth)} onValueChange={(val) => setSelectedMonth(Number(val))}>
+                                <SelectTrigger className="w-[140px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {months.map(month => (
+                                        <SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={String(selectedYear)} onValueChange={(val) => setSelectedYear(Number(val))}>
+                                <SelectTrigger className="w-[120px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableYears.map(year => (
+                                        <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </>
+                    )}
                 </div>
                 <div className="hidden print:block text-right text-xs">
                     <p className="font-bold">Gerado em: {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}</p>
-                    <p>Período: {timeRange === 'year' ? `Ano Exercício ${selectedYear}` : timeRange === 'month' ? `${months[selectedMonth].label} / ${selectedYear}` : 'Últimos 7 dias (Semanal)'}</p>
+                    <p>Período: {timeRange === 'year' ? `Ano Exercício ${selectedYear}` : timeRange === 'month' ? `${months[selectedMonth].label} / ${selectedYear}` : timeRange === 'day' ? `${selectedDay}/${months[selectedMonth].label}/${selectedYear}` : 'Últimos 7 dias (Semanal)'}</p>
                 </div>
             </div>
 

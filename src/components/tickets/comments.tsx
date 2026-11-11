@@ -76,6 +76,8 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
   const { toast } = useToast();
   const ticketId = ticket.id;
 
+  const [selectedCannedResponse, setSelectedCannedResponse] = useState('');
+
   const isResolved = ticket.status === 'resolved';
   const isSupportStaff = !!currentUser && (currentUser.role === 'ti' || currentUser.role === 'admin');
 
@@ -118,12 +120,12 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
     {
       id: 'resolvido_encerrando',
       label: 'Resolvido e encerrando',
-      text: 'O problema reportado foi resolvido. Estamos marcando este chamado como "Resolvido". Caso o problema persista, por favor, nos informe respondendo a este chamado.\n\nMotivo:',
+      text: 'O problema reportado foi resolvido. Estamos marcando este chamado como "Resolvido". Caso o problema persista, por favor, nos informe respondendo a este chamado.\n\nMotivo:\nResolução: ',
     },
     {
       id: 'fornecedor_cadastrado',
       label: 'Fornecedor cadastrado',
-      text: 'O fornecedor foi cadastrado em nosso sistema com sucesso. Já pode seguir com o processo.',
+      text: 'O fornecedor foi cadastrado em nosso sistema com sucesso. Já pode seguir com o processo.\nNúmero: XXX',
     },
   ];
 
@@ -134,6 +136,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
       const greeting = getGreeting();
       const newText = `${greeting}\n\n${response.text}`;
       form.setValue('message', newText, { shouldValidate: true });
+      setSelectedCannedResponse('');
     }
   };
 
@@ -445,16 +448,16 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                         <div className="flex flex-col sm:flex-row gap-2.5 justify-between items-stretch sm:items-center">
                             <div className="flex flex-wrap gap-2">
                                 {isSupportStaff && (
-                                    <Select onValueChange={handleCannedResponse}>
-                                        <SelectTrigger className="h-7 text-[9px] w-full sm:w-[150px]">
-                                            <SelectValue placeholder="Respostas rápidas" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {cannedResponses.map((res) => (
-                                                <SelectItem key={res.id} value={res.id} className="text-[9px]">{res.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                <Select onValueChange={handleCannedResponse} value={selectedCannedResponse}>
+                                    <SelectTrigger className="h-7 text-[9px] w-full sm:w-[150px]">
+                                        <SelectValue placeholder="Respostas rápidas" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {cannedResponses.map((res) => (
+                                            <SelectItem key={res.id} value={res.id} className="text-[9px]">{res.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 )}
                                 <div className="relative w-full sm:w-auto">
                                     <Input type="file" multiple {...fileRef} className="h-7 text-[9px] opacity-0 absolute inset-0 cursor-pointer z-20" />
