@@ -81,6 +81,10 @@ function StatisticsPageContent() {
                 startDate = startOfDay(new Date(selectedYear, selectedMonth, selectedDay));
                 endDate = endOfDay(new Date(selectedYear, selectedMonth, selectedDay));
                 break;
+            case 'day':
+                startDate = startOfDay(new Date(selectedYear, selectedMonth, selectedDay));
+                endDate = endOfDay(new Date(selectedYear, selectedMonth, selectedDay));
+                break;
             case 'week':
             default:
                 startDate = startOfWeek(now);
