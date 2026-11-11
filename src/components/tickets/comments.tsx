@@ -100,7 +100,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
     {
       id: 'configurado',
       label: 'Configurado com sucesso',
-      text: 'A configuração solicitada foi realizada com sucesso.',
+      text: 'A configuração solicitada foi realizada com sucesso.\n Favor verificar se tudo está funcionando conforme esperado. Caso haja algum problema, por favor, nos informe.',
     },
     {
       id: 'verificando',

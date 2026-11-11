@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where, Timestamp, addDoc, getDoc } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, useCollection, WithId } from "@/firebase";
-import type { Ticket, AppUser, EmailSettings } from "@/lib/types";
+import type { Ticket, AppUser, EmailSettings, TicketType } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { format, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -94,6 +94,8 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
     const [reopenReason, setReopenReason] = useState("");
     const [newPriority, setNewPriority] = useState<'low' | 'normal' | 'high'>(ticket.priority);
     const [newDepartment, setNewDepartment] = useState(ticket.department);
+    const [newType, setNewType] = useState<TicketType>(ticket.type);
+    const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false);
 
     const canEdit = user?.role === 'ti' || user?.role === 'admin';
     const isOwner = user?.uid === ticket.userId;
@@ -393,6 +395,52 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
         }
     };
 
+    const handleTypeChange = async () => {
+        if (!ticketRef || !firestore || !user) return;
+        if (newType === ticket.type) {
+            setIsTypeDialogOpen(false);
+            return;
+        }
+
+        setIsUpdating(true);
+        try {
+            const typeLabel = newType === 'purchase' ? 'Solicitação de Compra' : 'Chamado de Suporte';
+            const oldTypeLabel = ticket.type === 'purchase' ? 'Solicitação de Compra' : 'Chamado de Suporte';
+            const logMsg = `🔄 [ALTERAÇÃO DE TIPO]\nO registro foi alterado de "${oldTypeLabel}" para "${typeLabel}" pela equipe técnica.`;
+
+            // Redefinir status para um valor apropriado ao novo tipo
+            let newStatus = ticket.status;
+            if (newType === 'purchase' && !['open', 'in_quotation', 'purchased', 'delivered'].includes(ticket.status)) {
+                newStatus = 'open';
+            }
+            if (newType === 'support' && !['open', 'in_progress', 'awaiting_user', 'awaiting_support', 'resolved'].includes(ticket.status)) {
+                newStatus = 'open';
+            }
+
+            await addDoc(collection(firestore, "tickets", ticket.id, "comments"), {
+                ticketId: ticket.id,
+                userId: user.uid,
+                userName: user.name,
+                userAvatarUrl: user.avatarUrl || '',
+                message: logMsg,
+                createdAt: serverTimestamp(),
+            });
+
+            await updateDoc(ticketRef, { 
+                type: newType,
+                status: newStatus,
+                updatedAt: serverTimestamp() 
+            });
+
+            toast({ title: "Tipo de registro atualizado com sucesso!" });
+            setIsTypeDialogOpen(false);
+        } catch (error) {
+            toast({ title: "Erro ao atualizar tipo", variant: "destructive" });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
     const handleAttendantChange = async (attendantId: string) => {
         if (!ticketRef || !firestore || !user) return;
         
@@ -611,8 +659,15 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
 
                                 <div className="flex flex-col gap-1">
                                     <span className="font-bold text-[9px] uppercase text-muted-foreground">Tipo de Serviço</span>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center justify-between pr-4">
                                         <Settings2 className="h-3 w-3 text-primary" />
+                                        {canEdit && (
+                                            <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => { setNewType(ticket.type); setIsTypeDialogOpen(true); }}>
+                                                <Pencil className="h-2 w-2" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
                                         <span className="font-medium">{ticket.service}</span>
                                     </div>
                                 </div>
@@ -656,7 +711,19 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
 
                                 {ticket.expectedDeliveryDate && (
                                     <div className="flex flex-col gap-1 bg-primary/5 p-1.5 rounded border border-primary/10">
-                                        <span className="font-bold text-[9px] uppercase text-primary">Previsão Entrega</span>
+                                        <div className="flex items-center justify-between pr-4">
+                                            <span className="font-bold text-[9px] uppercase text-primary">Previsão Entrega</span>
+                                            {canEdit && (
+                                                <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => {
+                                                    if (ticket.expectedDeliveryDate) {
+                                                        setDeliveryDate(format(ticket.expectedDeliveryDate.toDate(), "yyyy-MM-dd"));
+                                                        setIsDeliveryDialogOpen(true);
+                                                    }
+                                                }}>
+                                                    <Pencil className="h-2 w-2" />
+                                                </Button>
+                                            )}
+                                        </div>
                                         <div className="flex items-center gap-2">
                                             <Calendar className="h-3 w-3 text-primary" />
                                             <span className="font-bold text-primary">{format(ticket.expectedDeliveryDate.toDate(), "dd/MM/yyyy")}</span>
@@ -863,6 +930,32 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                         <DialogFooter className="gap-2">
                             <Button variant="outline" size="sm" onClick={() => setIsDepartmentDialogOpen(false)} className="text-xs">Cancelar</Button>
                             <Button size="sm" onClick={handleDepartmentChange} disabled={isUpdating} className="text-xs">
+                                {isUpdating && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                                Salvar
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={isTypeDialogOpen} onOpenChange={setIsTypeDialogOpen}>
+                    <DialogContent className="max-w-sm">
+                        <DialogHeader><DialogTitle className="text-base">Alterar Tipo de Registro</DialogTitle></DialogHeader>
+                        <div className="py-2 space-y-2">
+                            <Label className="text-xs">Novo Tipo</Label>
+                            <Select value={newType} onValueChange={(v: any) => setNewType(v)}>
+                                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="support" className="text-xs">Chamado de Suporte</SelectItem>
+                                    <SelectItem value="purchase" className="text-xs">Solicitação de Compra</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-[9px] text-muted-foreground">
+                                Alterar o tipo redefinirá o status para "Aberto" caso o status atual não seja compatível com o novo tipo.
+                            </p>
+                        </div>
+                        <DialogFooter className="gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setIsTypeDialogOpen(false)} className="text-xs">Cancelar</Button>
+                            <Button size="sm" onClick={handleTypeChange} disabled={isUpdating} className="text-xs">
                                 {isUpdating && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
                                 Salvar
                             </Button>
