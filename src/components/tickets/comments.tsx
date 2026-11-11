@@ -38,6 +38,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from '@/components/ui/dialog';
 
 interface CommentsProps {
   ticket: Ticket;
@@ -80,6 +88,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
 
   const isResolved = ticket.status === 'resolved';
   const isSupportStaff = !!currentUser && (currentUser.role === 'ti' || currentUser.role === 'admin');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof commentSchema>>({
     resolver: zodResolver(commentSchema),
@@ -310,7 +319,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
       });
   }
 
-  return (
+  return (<>
     <Card className="border-none shadow-none bg-transparent">
       <CardHeader className="px-0 py-4">
         <CardTitle className="font-headline text-lg flex items-center gap-2">
@@ -396,9 +405,9 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                                             {comment.attachments.map((url, idx) => {
                                                 const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
                                                 return isImage ? (
-                                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-md overflow-hidden border hover:opacity-80 transition-opacity">
+                                                    <div key={idx} className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-md overflow-hidden border hover:opacity-80 transition-opacity cursor-pointer" onClick={() => setPreviewImage(url)}>
                                                         <Image src={url} alt="Anexo" layout="fill" className="object-cover" />
-                                                    </a>
+                                                    </div>
                                                 ) : (
                                                     <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[9px] bg-muted/50 p-1.5 rounded-md hover:bg-muted transition-colors max-w-full">
                                                         <Paperclip className="h-2.5 w-2.5 shrink-0" />
@@ -493,5 +502,18 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
         )}
       </CardContent>
     </Card>
-  );
+
+    <Dialog open={previewImage !== null} onOpenChange={() => setPreviewImage(null)}>
+      <DialogContent className="p-0 bg-black">
+        <DialogClose className="absolute top-4 right-4 z-50">
+          <X className="h-6 w-6 text-white" />
+        </DialogClose>
+        <DialogDescription className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 bg-black/80 text-white px-4 py-2 rounded-lg text-xs">
+          Clique fora ou pressione ESC para fechar
+        </DialogDescription>
+        <img src={previewImage!} alt="Preview" className="w-full h-full object-contain max-h-[85vh] mx-auto block" />
+      </DialogContent>
+    </Dialog>
+
+  </>);
 }
