@@ -1051,15 +1051,10 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                                         <SelectTrigger className="h-9 text-sm w-full sm:w-auto"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Configurado com sucesso" className="text-xs">A configuração solicitada foi realizada com sucesso.
- Favor verificar se tudo está funcionando conforme esperado. Caso haja algum problema, por favor, nos informe.
-                                            </SelectItem>
-                                            <SelectItem value="Verificando ocorrido" className="text-xs">Verificando ocorrido</SelectItem>
-                                            <SelectItem value="Solicitar mais informações" className="text-xs">Solicitar mais informações</SelectItem>
-                                            <SelectItem value="Tentativa de contato sem sucesso" className="text-xs">Tentativa de contato sem sucesso</SelectItem>
+ Favor verificar se tudo está funcionando conforme esperado. Caso haja algum problema, por favor, nos informe.</SelectItem>
                                             <SelectItem value="Resolvido e encerrando" className="text-xs">O problema reportado foi resolvido. Estamos marcando este chamado como "Resolvido". Caso o problema persista, por favor, nos informe respondendo a este chamado.
                                             Motivo:
-                                            Resolução: 
-                                            </SelectItem>
+                                            Resolução: </SelectItem>
                                             <SelectItem value="Fornecedor cadastrado" className="text-xs">Fornecedor cadastrado</SelectItem>
                                         </SelectContent>
                                     </Select>
