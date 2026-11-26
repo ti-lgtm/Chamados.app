@@ -1040,21 +1040,32 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                                 <div className="flex items-center justify-between">
                                     <Label className="text-xs">Resposta rápida</Label>
                                     <Select value="" onValueChange={(v: string) => {
-                                        if (v) {
-                                            const hour = new Date().getHours();
-                                            let greeting = "Boa noite.";
-                                            if (hour >= 5 && hour < 12) greeting = "Bom dia.";
-                                            else if (hour >= 12 && hour < 18) greeting = "Boa tarde.";
-                                            setResolutionText(prev => prev ? prev + "\n\n" + greeting + " " + v : greeting + " " + v);
+                                        const hour = new Date().getHours();
+                                        let greeting = "Boa noite.";
+                                        if (hour >= 5 && hour < 12) greeting = "Bom dia.";
+                                        else if (hour >= 12 && hour < 18) greeting = "Boa tarde.";
+
+                                        const texts: Record<string, string> = {
+                                            "Configurado com sucesso": `${greeting}\n\nA configuração solicitada foi realizada com sucesso.\nFavor verificar se tudo está funcionando conforme esperado. Caso haja algum problema, por favor, nos informe.`,
+                                            "Verificando ocorrido": `${greeting}\n\nRecebemos seu chamado e já estamos verificando o ocorrido. Retornaremos em breve com mais informações.`,
+                                            "Solicitar mais informações": `${greeting}\n\nPara prosseguir com o seu atendimento, por favor, nos forneça mais detalhes sobre o problema. Especificamente, precisamos saber...`,
+                                            "Tentativa de contato sem sucesso": `${greeting}\n\nTentamos entrar em contato por telefone para agilizar a solução, mas não obtivemos sucesso. Por favor, nos informe o melhor horário para ligarmos.`,
+                                            "Resolvido e encerrando": `${greeting}\n\nO problema reportado foi resolvido. Estamos marcando este chamado como "Resolvido". Caso o problema persista, por favor, nos informe respondendo a este chamado.\n\nMotivo:\nResolução:`,
+                                            "Fornecedor cadastrado": `${greeting}\n\nO fornecedor foi cadastrado em nosso sistema com sucesso. Já pode seguir com o processo.\nNúmero: XXX`,
+                                        };
+
+                                        const texto = texts[v];
+                                        if (texto) {
+                                            setResolutionText(prev => prev ? prev + "\n\n" + texto : texto);
                                         }
                                     }}>
                                         <SelectTrigger className="h-9 text-sm w-full sm:w-auto"><SelectValue /></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Configurado com sucesso" className="text-xs">A configuração solicitada foi realizada com sucesso.
- Favor verificar se tudo está funcionando conforme esperado. Caso haja algum problema, por favor, nos informe.</SelectItem>
-                                            <SelectItem value="Resolvido e encerrando" className="text-xs">O problema reportado foi resolvido. Estamos marcando este chamado como "Resolvido". Caso o problema persista, por favor, nos informe respondendo a este chamado.
-                                            Motivo:
-                                            Resolução: </SelectItem>
+                                            <SelectItem value="Configurado com sucesso" className="text-xs">Configurado com sucesso</SelectItem>
+                                            <SelectItem value="Verificando ocorrido" className="text-xs">Verificando ocorrido</SelectItem>
+                                            <SelectItem value="Solicitar mais informações" className="text-xs">Solicitar mais informações</SelectItem>
+                                            <SelectItem value="Tentativa de contato sem sucesso" className="text-xs">Tentativa de contato sem sucesso</SelectItem>
+                                            <SelectItem value="Resolvido e encerrando" className="text-xs">Resolvido e encerrando</SelectItem>
                                             <SelectItem value="Fornecedor cadastrado" className="text-xs">Fornecedor cadastrado</SelectItem>
                                         </SelectContent>
                                     </Select>
