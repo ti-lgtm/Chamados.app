@@ -504,7 +504,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
     </Card>
 
     <Dialog open={previewImage !== null} onOpenChange={() => setPreviewImage(null)}>
-      <DialogContent className="p-0 bg-black">
+      <DialogContent className="p-0 bg-black w-[90vw] h-[90vh] max-w-none max-h-none">
         <DialogClose className="absolute top-4 right-4 z-50">
           <X className="h-6 w-6 text-white" />
         </DialogClose>
