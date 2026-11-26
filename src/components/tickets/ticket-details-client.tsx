@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, where, Timestamp, addDoc, getDoc } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, useCollection, WithId } from "@/firebase";
 import type { Ticket, AppUser, EmailSettings, TicketType } from "@/lib/types";
@@ -22,7 +23,7 @@ import {
     CheckCircle, Phone, Mail, Printer, UserPlus, 
     Settings2, RotateCcw, ArrowLeft, MessageSquareWarning, Maximize2, 
     SendHorizontal, ClipboardList, Shield, Tag, Paperclip, Package, Pencil,
-    AlertTriangle,
+    AlertTriangle, X,
     Calendar,
     ShoppingCart
 } from "lucide-react";
@@ -37,7 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { addBusinessDays } from "./new-ticket-form";
 import {
   DropdownMenu,
@@ -96,6 +97,9 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
     const [newDepartment, setNewDepartment] = useState(ticket.department);
     const [newType, setNewType] = useState<TicketType>(ticket.type);
     const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false);
+    const [isResolveDialogOpen, setIsResolveDialogOpen] = useState(false);
+    const [resolutionText, setResolutionText] = useState("");
+    const [previewTicketImage, setPreviewTicketImage] = useState<string | null>(null);
 
     const canEdit = user?.role === 'ti' || user?.role === 'admin';
     const isOwner = user?.uid === ticket.userId;
@@ -441,6 +445,52 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
         }
     };
 
+    const handleResolveTicket = async () => {
+        if (!ticketRef || !firestore || !user) return;
+
+        setIsUpdating(true);
+        try {
+            const isPurchase = ticket.type === 'purchase';
+            const message = resolutionText.trim() 
+                ? `✅ [CHAMADO FINALIZADO]\n\n${resolutionText.trim()}`
+                : `✅ [CHAMADO FINALIZADO]\nO atendimento foi concluído e o chamado foi marcado como resolvido.`;
+
+            // Salva o comentário de resolução
+            await addDoc(collection(firestore, "tickets", ticket.id, "comments"), {
+                ticketId: ticket.id,
+                userId: user.uid,
+                userName: user.name,
+                userAvatarUrl: user.avatarUrl || '',
+                message: message,
+                createdAt: serverTimestamp(),
+            });
+
+            // Fecha o chamado
+            await updateDoc(ticketRef, {
+                status: 'resolved',
+                updatedAt: serverTimestamp(),
+                reopenedByUser: false,
+            });
+
+            toast({ title: "Chamado finalizado com sucesso!" });
+            setIsResolveDialogOpen(false);
+            setResolutionText("");
+
+            // Dispara o e-mail de fechamento
+            triggerTicketResolvedEmail({
+                ticketNumber: ticket.ticketNumber,
+                ticketTitle: ticket.title,
+                userName: ticket.userName,
+                userEmail: ticket.userEmail,
+                ticketUrl: typeof window !== 'undefined' ? window.location.href : '',
+            });
+        } catch (error) {
+            toast({ title: "Erro ao finalizar chamado", variant: "destructive" });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
     const handleAttendantChange = async (attendantId: string) => {
         if (!ticketRef || !firestore || !user) return;
         
@@ -594,14 +644,21 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                                 <div className="mb-4">
                                     <h4 className="font-semibold mb-2 flex items-center gap-2 text-xs">Anexos ({ticket.attachments.length})</h4>
                                     <div className="flex flex-wrap gap-2">
-                                        {ticket.attachments.map((url, index) => (
-                                            <Button key={index} variant="secondary" size="sm" asChild className="h-7 text-[10px] px-2">
-                                                <a href={url} target="_blank" rel="noopener noreferrer">
-                                                    <Paperclip className="h-3 w-3 mr-1" />
-                                                    Anexo {index + 1}
-                                                </a>
-                                            </Button>
-                                        ))}
+                                        {ticket.attachments.map((url, index) => {
+                                            const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+                                            return isImage ? (
+                                                <div key={index} className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-md overflow-hidden border hover:opacity-80 transition-opacity cursor-pointer" onClick={() => setPreviewTicketImage(url)}>
+                                                    <Image src={url} alt="Anexo" layout="fill" className="object-cover" />
+                                                </div>
+                                            ) : (
+                                                <Button key={index} variant="secondary" size="sm" asChild className="h-7 text-[10px] px-2">
+                                                    <a href={url} target="_blank" rel="noopener noreferrer">
+                                                        <Paperclip className="h-3 w-3 mr-1" />
+                                                        Anexo {index + 1}
+                                                    </a>
+                                                </Button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -803,11 +860,11 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                                     </Button>
                                 ) : (
                                     <>
-                                        {!isPurchase ? (
-                                            <Button className="w-full h-9 text-[11px] font-bold" onClick={() => handleStatusChange('resolved')} disabled={isUpdating}>
-                                                {isUpdating ? <Loader2 className="animate-spin mr-1.5 h-3.5 w-3.5" /> : <CheckCircle className="mr-1.5 h-3.5 w-3.5" />}
-                                                FINALIZAR ATENDIMENTO
-                                            </Button>
+                                {!isPurchase ? (
+                                                <Button className="w-full h-9 text-[11px] font-bold" onClick={() => setIsResolveDialogOpen(true)} disabled={isUpdating}>
+                                                    {isUpdating ? <Loader2 className="animate-spin mr-1.5 h-3.5 w-3.5" /> : <CheckCircle className="mr-1.5 h-3.5 w-3.5" />}
+                                                    FINALIZAR ATENDIMENTO
+                                                </Button>
                                         ) : (
                                             <Button className="w-full h-9 text-[11px] font-bold" variant="outline" onClick={() => handleStatusChange('delivered')} disabled={isUpdating}>
                                                 {isUpdating ? <Loader2 className="animate-spin mr-1.5 h-3.5 w-3.5" /> : <Package className="mr-1.5 h-3.5 w-3.5" />}
@@ -960,6 +1017,64 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                                 Salvar
                             </Button>
                         </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={isResolveDialogOpen} onOpenChange={setIsResolveDialogOpen}>
+                    <DialogContent className="max-w-sm">
+                        <DialogHeader>
+                            <DialogTitle className="text-base">Finalizar Chamado</DialogTitle>
+                        </DialogHeader>
+                        <DialogDescription className="text-[10px] text-muted-foreground mb-2">
+                            Informe a solução/resolução deste chamado. Este comentário será salvo no histórico.
+                        </DialogDescription>
+                        <div className="py-2 space-y-2">
+                            <Label className="text-xs">Resolução / Solução</Label>
+                            <Textarea
+                                placeholder="Descreva como o problema foi resolvido..."
+                                value={resolutionText}
+                                onChange={(e) => setResolutionText(e.target.value)}
+                                rows={4}
+                                className="text-sm"
+                            />
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs">Resposta rápida</Label>
+                                <Select value="" onValueChange={(v: string) => {
+                                    if (v) {
+                                        setResolutionText(prev => prev ? prev + "\n\n" + v : v);
+                                    }
+                                }}>
+                                    <SelectTrigger className="h-9 text-sm w-full sm:w-auto"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Configurado com sucesso" className="text-xs">Configurado com sucesso</SelectItem>
+                                        <SelectItem value="Verificando ocorrido" className="text-xs">Verificando ocorrido</SelectItem>
+                                        <SelectItem value="Solicitar mais informações" className="text-xs">Solicitar mais informações</SelectItem>
+                                        <SelectItem value="Tentativa de contato sem sucesso" className="text-xs">Tentativa de contato sem sucesso</SelectItem>
+                                        <SelectItem value="Resolvido e encerrando" className="text-xs">Resolvido e encerrando</SelectItem>
+                                        <SelectItem value="Fornecedor cadastrado" className="text-xs">Fornecedor cadastrado</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <DialogFooter className="gap-2">
+                            <Button variant="outline" size="sm" onClick={() => { setIsResolveDialogOpen(false); setResolutionText(""); }} className="text-xs">Cancelar</Button>
+                            <Button size="sm" onClick={handleResolveTicket} disabled={isUpdating} className="text-xs">
+                                {isUpdating && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                                Finalizar
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={previewTicketImage !== null} onOpenChange={() => setPreviewTicketImage(null)}>
+                    <DialogContent className="p-0 bg-black">
+                        <DialogClose className="absolute top-4 right-4 z-50">
+                            <X className="h-6 w-6 text-white" />
+                        </DialogClose>
+                        <DialogDescription className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 bg-black/80 text-white px-4 py-2 rounded-lg text-xs">
+                            Clique fora ou pressione ESC para fechar
+                        </DialogDescription>
+                        <img src={previewTicketImage!} alt="Preview" className="w-full h-full object-contain max-h-[85vh] mx-auto block" />
                     </DialogContent>
                 </Dialog>
             </div>

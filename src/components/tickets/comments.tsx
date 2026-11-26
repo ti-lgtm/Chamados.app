@@ -405,7 +405,7 @@ export function Comments({ ticket, currentUser, supportUsers }: CommentsProps) {
                                             {comment.attachments.map((url, idx) => {
                                                 const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
                                                 return isImage ? (
-                                                    <div key={idx} className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-md overflow-hidden border hover:opacity-80 transition-opacity cursor-pointer" onClick={() => setPreviewImage(url)}>
+                                                    <div key={idx} className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-md overflow-hidden border hover:opacity-80 transition-opacity cursor-pointer" onClick={() => setPreviewImage(url)}>
                                                         <Image src={url} alt="Anexo" layout="fill" className="object-cover" />
                                                     </div>
                                                 ) : (
