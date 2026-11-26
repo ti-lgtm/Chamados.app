@@ -1021,7 +1021,7 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                 </Dialog>
 
                 <Dialog open={isResolveDialogOpen} onOpenChange={setIsResolveDialogOpen}>
-                    <DialogContent className="max-w-sm">
+                    <DialogContent className="w-[90vw] max-w-[560px] max-h-[90vh]">
                         <DialogHeader>
                             <DialogTitle className="text-base">Finalizar Chamado</DialogTitle>
                         </DialogHeader>
@@ -1037,24 +1037,28 @@ export function TicketDetailsClient({ initialTicket, isPreview = false }: Ticket
                                 rows={4}
                                 className="text-sm"
                             />
-                            <div className="flex items-center justify-between">
-                                <Label className="text-xs">Resposta rápida</Label>
-                                <Select value="" onValueChange={(v: string) => {
-                                    if (v) {
-                                        setResolutionText(prev => prev ? prev + "\n\n" + v : v);
-                                    }
-                                }}>
-                                    <SelectTrigger className="h-9 text-sm w-full sm:w-auto"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Configurado com sucesso" className="text-xs">Configurado com sucesso</SelectItem>
-                                        <SelectItem value="Verificando ocorrido" className="text-xs">Verificando ocorrido</SelectItem>
-                                        <SelectItem value="Solicitar mais informações" className="text-xs">Solicitar mais informações</SelectItem>
-                                        <SelectItem value="Tentativa de contato sem sucesso" className="text-xs">Tentativa de contato sem sucesso</SelectItem>
-                                        <SelectItem value="Resolvido e encerrando" className="text-xs">Resolvido e encerrando</SelectItem>
-                                        <SelectItem value="Fornecedor cadastrado" className="text-xs">Fornecedor cadastrado</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs">Resposta rápida</Label>
+                                    <Select value="" onValueChange={(v: string) => {
+                                        if (v) {
+                                            const hour = new Date().getHours();
+                                            let greeting = "Boa noite.";
+                                            if (hour >= 5 && hour < 12) greeting = "Bom dia.";
+                                            else if (hour >= 12 && hour < 18) greeting = "Boa tarde.";
+                                            setResolutionText(prev => prev ? prev + "\n\n" + greeting + " " + v : greeting + " " + v);
+                                        }
+                                    }}>
+                                        <SelectTrigger className="h-9 text-sm w-full sm:w-auto"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Configurado com sucesso" className="text-xs">Configurado com sucesso</SelectItem>
+                                            <SelectItem value="Verificando ocorrido" className="text-xs">Verificando ocorrido</SelectItem>
+                                            <SelectItem value="Solicitar mais informações" className="text-xs">Solicitar mais informações</SelectItem>
+                                            <SelectItem value="Tentativa de contato sem sucesso" className="text-xs">Tentativa de contato sem sucesso</SelectItem>
+                                            <SelectItem value="Resolvido e encerrando" className="text-xs">Resolvido e encerrando</SelectItem>
+                                            <SelectItem value="Fornecedor cadastrado" className="text-xs">Fornecedor cadastrado</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                         </div>
                         <DialogFooter className="gap-2">
                             <Button variant="outline" size="sm" onClick={() => { setIsResolveDialogOpen(false); setResolutionText(""); }} className="text-xs">Cancelar</Button>
